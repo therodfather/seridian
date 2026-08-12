@@ -59,8 +59,8 @@ function UserCard({ user, onEdit, onDelete }: { user: User; onEdit: (user: User)
   };
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#080d1a]/80 p-4 transition-all hover:border-cyan-500/30 hover:bg-[#0c1222]">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-[#080d1a]/80 p-4 transition-all hover:border-cyan-500/30 hover:bg-[#0c1222] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-4">
         <div className="relative">
           <AvatarUpload
             pubkey={user.pubkey}
@@ -71,9 +71,9 @@ function UserCard({ user, onEdit, onDelete }: { user: User; onEdit: (user: User)
           <span className={`pointer-events-none absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#070b14] ${statusColors[user.status]}`} aria-hidden="true" />
         </div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <span className="text-sm font-bold text-slate-100">{user.name}</span>
-            <span className="font-mono text-[11px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md">
+            <span className="truncate font-mono text-[11px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md">
               {user.pubkey}
             </span>
           </div>
@@ -91,7 +91,7 @@ function UserCard({ user, onEdit, onDelete }: { user: User; onEdit: (user: User)
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <Button variant="ghost" size="sm" onClick={() => onEdit(user)} className="text-slate-400 hover:text-white hover:bg-white/5">
           Edit Profile
         </Button>

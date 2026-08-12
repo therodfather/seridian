@@ -78,7 +78,7 @@ export function ThreadDrawer({
     allMessages?.filter((m) => m.replyTo === parentMessage._id).sort((a, b) => a.createdAt - b.createdAt) ?? [];
 
   return (
-    <div className="flex h-full w-[360px] min-w-[320px] max-w-[420px] flex-col border-l border-white/[0.08] bg-[#0c1222]">
+    <div className="fixed inset-0 z-50 flex flex-col border-white/[0.08] bg-[#0c1222] md:relative md:inset-auto md:z-auto md:h-full md:w-[360px] md:min-w-[320px] md:max-w-[420px] md:border-l">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3 bg-[#080d1a]">
         <div className="flex items-center gap-2">

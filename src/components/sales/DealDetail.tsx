@@ -164,7 +164,7 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="Deal Value" value={formatCurrency(resolvedDeal.value)} />
         <StatCard label="Probability" value={`${resolvedDeal.probability}%`}>
           <Progress value={resolvedDeal.probability} className="mt-2 h-1.5 bg-white/5" />
@@ -178,7 +178,7 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
       {/* Stage stepper */}
       <div className="rounded-lg border border-white/[0.06] bg-[#0c1222]/80 p-4">
         <h3 className="mb-3 text-xs font-medium text-slate-400">Pipeline Stage</h3>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {stages.map((s, i) => {
             const cfg = stageConfig[s];
             const isActive = s === resolvedDeal.stage;

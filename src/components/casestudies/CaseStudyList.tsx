@@ -73,12 +73,12 @@ function CaseStudyRow({
         </p>
       </div>
 
-      <div className="hidden shrink-0 items-center gap-2 sm:flex">
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="shrink-0 text-slate-500 opacity-0 group-hover:opacity-100"
+          className="shrink-0 text-slate-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
           onClick={() => onEdit?.(study._id)}
         >
           Edit
@@ -87,7 +87,7 @@ function CaseStudyRow({
           type="button"
           variant="ghost"
           size="sm"
-          className="shrink-0 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-300"
+          className="shrink-0 text-red-400 opacity-100 hover:text-red-300 sm:opacity-0 sm:group-hover:opacity-100"
           onClick={() => onDelete?.(study._id)}
         >
           Delete

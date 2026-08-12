@@ -4,41 +4,8 @@ import { useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  Home,
-  CheckCircle,
-  Users,
-  Calendar,
-  DollarSign,
-  FileText,
-  Mail,
-  Folder,
-  RefreshCw,
-  MessageSquare,
-  Settings,
-  X,
-  type LucideIcon,
-} from "lucide-react";
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-}
-
-const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: Home },
-  { href: "/dashboard/issues", label: "Issues", icon: CheckCircle },
-  { href: "/dashboard/clients", label: "Clients", icon: Users },
-  { href: "/dashboard/bookings", label: "Bookings", icon: Calendar },
-  { href: "/dashboard/sales", label: "Sales", icon: DollarSign },
-  { href: "/dashboard/proposals", label: "Proposals", icon: FileText },
-  { href: "/dashboard/templates", label: "Templates", icon: Mail },
-  { href: "/dashboard/files", label: "Files", icon: Folder },
-  { href: "/dashboard/sync", label: "Sync", icon: RefreshCw },
-  { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
+import { X } from "lucide-react";
+import { DASHBOARD_NAV } from "@/lib/dashboardNav";
 
 interface MobileNavProps {
   open: boolean;
@@ -84,7 +51,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         </div>
 
         <div className="px-2 py-3">
-          {navItems.map((item) => {
+          {DASHBOARD_NAV.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             const Icon = item.icon;
             return (

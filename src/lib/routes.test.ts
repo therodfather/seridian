@@ -9,6 +9,7 @@ import {
   allRouteHrefs,
   hasRouteGroupLeak,
   ROUTES,
+  settingsTabHref,
 } from "./routes";
 
 const FORBIDDEN_GROUP_RE = /\((?:marketing|dashboard)\)/;
@@ -30,6 +31,9 @@ describe("routes", () => {
     expect(ROUTES.packages).toBe("/packages");
     expect(ROUTES.dashboard.root).toBe("/dashboard");
     expect(ROUTES.dashboard.settings).toBe("/dashboard/settings");
+    expect(ROUTES.dashboard.sync).toBe("/dashboard/sync");
+    expect(settingsTabHref("sync")).toBe("/dashboard/settings?tab=sync");
+    expect(settingsTabHref("general")).toBe("/dashboard/settings");
   });
 
   it("forbids (marketing) / (dashboard) in typed route constants", () => {

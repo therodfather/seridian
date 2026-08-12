@@ -26,11 +26,20 @@ export const ROUTES = {
     brain: "/dashboard/brain",
     templates: "/dashboard/templates",
     files: "/dashboard/files",
+    /** Legacy path; redirects to Settings → Integrations & Sync. */
     sync: "/dashboard/sync",
     chat: "/dashboard/chat",
     settings: "/dashboard/settings",
   },
 } as const;
+
+/** Deep-link into a Settings tab (`general` omits the query). */
+export function settingsTabHref(
+  tab: "general" | "audit" | "users" | "sync" | "secrets" | "agents" = "general",
+): string {
+  if (tab === "general") return ROUTES.dashboard.settings;
+  return `${ROUTES.dashboard.settings}?tab=${tab}`;
+}
 
 export type MarketingRoute =
   | typeof ROUTES.home

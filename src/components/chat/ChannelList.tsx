@@ -85,8 +85,8 @@ export function ChannelList({
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-4 py-3">
         <h2 className="text-sm font-semibold text-slate-200">Channels</h2>
         <button
           type="button"
@@ -97,7 +97,7 @@ export function ChannelList({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 space-y-4">
         {channels === undefined ? (
           <div className="space-y-1 px-1">
             {[1, 2, 3, 4].map((i) => (

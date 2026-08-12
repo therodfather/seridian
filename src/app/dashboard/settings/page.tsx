@@ -41,6 +41,7 @@ import {
   Zap,
 } from "lucide-react";
 import { SyncDashboard } from "@/components/sync/SyncDashboard";
+import { PlatformConnections } from "@/components/settings/PlatformConnections";
 import { SecretsVault } from "@/components/settings/SecretsVault";
 import { AuditLogViewer } from "@/components/settings/AuditLogViewer";
 import { AvatarUpload } from "@/components/settings/AvatarUpload";
@@ -210,7 +211,7 @@ function SettingsContent() {
     { id: "general", label: "General & Org", icon: Sliders, badge: "System" },
     { id: "audit", label: "Audit Logs", icon: Shield, badge: "Governance" },
     { id: "users", label: "Team & Access", icon: Users, badge: `${users?.length ?? 0} Active` },
-    { id: "sync", label: "Integrations & Sync", icon: RefreshCw, badge: "Linear + GitHub" },
+    { id: "sync", label: "Integrations & Sync", icon: RefreshCw, badge: "GitHub · Netlify" },
     { id: "secrets", label: "API Keys & Vault", icon: Key, badge: "Admin Gated" },
     { id: "agents", label: "AI Agent Studio", icon: Bot, badge: "3 Agents" },
   ];
@@ -431,16 +432,21 @@ function SettingsContent() {
 
           {/* TAB 3: INTEGRATIONS & SYNC */}
           {activeTab === "sync" && (
-            <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6 space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 text-cyan-400" /> External Integrations & Data Sync Engine
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Manage manual and automated background synchronization for Linear issues, projects, teams, and GitHub repositories.
-                </p>
+            <div className="space-y-4">
+              <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6">
+                <PlatformConnections />
               </div>
-              <SyncDashboard />
+              <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6 space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 text-slate-500" /> Linear sync (trial)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Legacy issue sync while we finish moving SoT to GitHub. Prefer GitHub issues for new work.
+                  </p>
+                </div>
+                <SyncDashboard />
+              </div>
             </div>
           )}
 

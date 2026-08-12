@@ -9,7 +9,7 @@ import { LinearSyncSection } from "@/components/sync/LinearSyncSection";
 import { GitHubSyncSection } from "@/components/sync/GitHubSyncSection";
 
 export function SyncDashboard() {
-  const [activeTab, setActiveTab] = useState("linear");
+  const [activeTab, setActiveTab] = useState("github");
   const linearStats = useQuery(api.linearIngest.getLinearStats);
   const githubStats = useQuery(api.githubIngest.getGitHubStats);
   const syncLinear = useAction(api.linearSync.syncAllLinear);

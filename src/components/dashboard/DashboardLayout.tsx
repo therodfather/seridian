@@ -46,6 +46,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     pathname.startsWith("/dashboard/chat/") ||
     pathname === "/dashboard/arena" ||
     pathname.startsWith("/dashboard/arena/");
+  // Wiki, Second Brain, Templates, and the Issues kanban board keep normal
+  // padding/scroll but still outgrow the max-w-6xl reading width.
+  const isWideRoute = ["wiki", "brain", "templates", "issues"].includes(
+    currentSection,
+  );
 
   const activeClients = clients?.filter((c) => c.status === "active").length ?? 0;
   const openIssues = issues?.filter((i) => i.status !== "done").length ?? 0;
@@ -145,7 +150,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {children}
             </div>
           ) : (
-            <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-6">
+            <div
+              className={cn(
+                "w-full px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-6",
+                !isWideRoute && "mx-auto max-w-6xl",
+              )}
+            >
               {children}
             </div>
           )}

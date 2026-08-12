@@ -21,6 +21,7 @@ export const ROUTES = {
     bookings: "/dashboard/bookings",
     sales: "/dashboard/sales",
     proposals: "/dashboard/proposals",
+    contracts: "/dashboard/contracts",
     wiki: "/dashboard/wiki",
     arena: "/dashboard/arena",
     brain: "/dashboard/brain",
@@ -78,4 +79,8 @@ export function issueHref(id: string): string {
 
 export function proposalHref(id: string): string {
   return `${ROUTES.dashboard.proposals}/${id}`;
+}
+
+export function contractHref(id: string): string {
+  return `${ROUTES.dashboard.contracts}/${id}`;
 }

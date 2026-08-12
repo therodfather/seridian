@@ -19,6 +19,11 @@ test.describe("business ops dashboard", { tag: "@smoke" }, () => {
     await expect(page.getByRole("heading", { name: "Proposals" })).toBeVisible();
     await expect(page.getByRole("button", { name: /New Proposal/i }).first()).toBeVisible();
 
+    await navigateTo(page, "Contracts");
+    await expect(page).toHaveURL(/\/dashboard\/contracts/);
+    await expect(page.getByRole("heading", { name: "Contracts" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /New Contract/i }).first()).toBeVisible();
+
     await navigateTo(page, "Files");
     await expect(page).toHaveURL(/\/dashboard\/files/);
     await expect(page.getByRole("button", { name: /Create Document/i })).toBeVisible();

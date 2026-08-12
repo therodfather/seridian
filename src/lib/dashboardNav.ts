@@ -6,6 +6,7 @@ import {
   Calendar,
   DollarSign,
   FileText,
+  PenLine,
   Mail,
   Folder,
   MessageSquare,
@@ -35,6 +36,7 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
   { href: d.bookings, label: "Bookings", icon: Calendar, group: "business" },
   { href: d.sales, label: "Sales", icon: DollarSign, group: "business" },
   { href: d.proposals, label: "Proposals", icon: FileText, group: "business" },
+  { href: d.contracts, label: "Contracts", icon: PenLine, group: "business" },
   { href: d.wiki, label: "Wiki", icon: BookOpen, group: "knowledge" },
   { href: d.arena, label: "LLM Arena", icon: Bot, group: "knowledge" },
   { href: d.brain, label: "Second Brain", icon: Brain, group: "knowledge" },
@@ -58,6 +60,7 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   bookings: "Bookings",
   sales: "Sales",
   proposals: "Proposals",
+  contracts: "Contracts",
   wiki: "Wiki",
   arena: "LLM Arena",
   brain: "Second Brain",
@@ -81,7 +84,7 @@ export function navSlug(href: string): string {
 }
 
 export function entityHref(
-  group: "clients" | "issues" | "proposals",
+  group: "clients" | "issues" | "proposals" | "contracts",
   id: string,
 ): string {
   return `${ROUTES.dashboard.root}/${group}/${id}`;

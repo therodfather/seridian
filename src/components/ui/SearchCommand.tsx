@@ -23,7 +23,7 @@ interface SearchResult {
   title: string;
   subtitle: string;
   href: string;
-  group: "clients" | "issues" | "proposals" | "navigation";
+  group: "clients" | "issues" | "proposals" | "contracts" | "navigation";
 }
 
 const extraNavItems: SearchResult[] = [
@@ -62,6 +62,8 @@ const statusIcons: Record<string, string> = {
   accepted: "\u2714",
   rejected: "\u2718",
   expired: "\u2716",
+  signed: "\u2714",
+  completed: "\u2713",
 };
 
 function mapStatus(status: string): string {
@@ -80,6 +82,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const clients = useQuery(api.clients.list, open ? {} : "skip");
   const issues = useQuery(api.issues.list, open ? {} : "skip");
   const proposals = useQuery(api.proposals.list, open ? {} : "skip");
+  const contracts = useQuery(api.contracts.list, open ? {} : "skip");
 
   const searchResults = useMemo<SearchResult[]>(() => {
     const results: SearchResult[] = [];
@@ -124,6 +127,19 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
       }
     }
 
+    if (contracts) {
+      for (const contract of contracts) {
+        if (q && !contract.name.toLowerCase().includes(q)) continue;
+        results.push({
+          id: `contract-${contract._id}`,
+          title: contract.name,
+          subtitle: `${mapStatus(contract.status)} ${contract.status}${contract.value ? ` \u2014 $${contract.value.toLocaleString()}` : ""}`,
+          href: entityHref("contracts", contract._id),
+          group: "contracts",
+        });
+      }
+    }
+
     const filteredNav = q
       ? navigationItems.filter(
           (item) =>
@@ -135,7 +151,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
     results.push(...filteredNav);
 
     return results;
-  }, [query, clients, issues, proposals]);
+  }, [query, clients, issues, proposals, contracts]);
 
   const groupedResults = useMemo(() => {
     const groups: Record<string, SearchResult[]> = {};
@@ -168,9 +184,10 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
     clients: "Clients",
     issues: "Issues",
     proposals: "Proposals",
+    contracts: "Contracts",
   };
 
-  const groupOrder = ["navigation", "clients", "issues", "proposals"];
+  const groupOrder = ["navigation", "clients", "issues", "proposals", "contracts"];
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} showCloseButton={false}>
@@ -208,6 +225,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
                     {groupKey === "clients" && "\u25ce"}
                     {groupKey === "issues" && "\u2610"}
                     {groupKey === "proposals" && "\u229e"}
+                    {groupKey === "contracts" && "\u270e"}
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-sm text-slate-200">

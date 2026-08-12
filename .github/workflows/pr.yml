@@ -106,7 +106,7 @@ jobs:
     needs: ci
     if: github.event_name == 'pull_request'
     steps:
-      - uses: marocchino/sticky-pull-request-comment@v2
+      - uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: bundle-size
           message: |

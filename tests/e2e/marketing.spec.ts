@@ -22,4 +22,13 @@ test.describe("marketing site", { tag: "@smoke" }, () => {
       page.getByRole("heading", { name: /talk about your next project/i }),
     ).toBeVisible();
   });
+
+  test("packages page opens from header nav", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("navigation").getByRole("link", { name: "Packages" }).click();
+    await expect(page).toHaveURL(/\/packages$/);
+    await expect(
+      page.getByRole("heading", { name: /Clear scope/i }),
+    ).toBeVisible();
+  });
 });

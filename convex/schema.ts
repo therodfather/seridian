@@ -369,5 +369,112 @@ export default defineSchema({
     lastUpdatedBy: v.string(),
     updatedAt: v.number(),
   }).index("by_fileId", ["fileId"]),
+
+  memoryBanks: defineTable({
+    name: v.string(),
+    mission: v.string(),
+    directives: v.array(v.string()),
+    disposition: v.object({
+      skepticism: v.number(),
+      literalism: v.number(),
+      empathy: v.number(),
+    }),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }),
+
+  bankConfig: defineTable({
+    bankId: v.id("memoryBanks"),
+    retainMission: v.optional(v.string()),
+    retainExtractionMode: v.union(
+      v.literal("concise"),
+      v.literal("verbose"),
+      v.literal("custom"),
+    ),
+    entityLabels: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_bank", ["bankId"]),
+
+  entities: defineTable({
+    bankId: v.id("memoryBanks"),
+    name: v.string(),
+    type: v.union(
+      v.literal("person"),
+      v.literal("organization"),
+      v.literal("place"),
+      v.literal("concept"),
+      v.literal("product"),
+    ),
+    aliases: v.array(v.string()),
+    metadata: v.optional(v.any()),
+    mentionCount: v.number(),
+    firstSeen: v.number(),
+    lastSeen: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_bank", ["bankId"])
+    .index("by_name", ["bankId", "name"])
+    .index("by_type", ["bankId", "type"]),
+
+  memories: defineTable({
+    bankId: v.id("memoryBanks"),
+    type: v.union(
+      v.literal("world_fact"),
+      v.literal("experience_fact"),
+      v.literal("observation"),
+      v.literal("mental_model"),
+    ),
+    content: v.string(),
+    evidence: v.array(v.string()),
+    proofCount: v.number(),
+    embedding: v.array(v.number()),
+    tags: v.array(v.string()),
+    relations: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    consolidatedAt: v.optional(v.number()),
+  })
+    .index("by_bank", ["bankId"])
+    .index("by_bank_type", ["bankId", "type"]),
+
+  memoryConnections: defineTable({
+    bankId: v.id("memoryBanks"),
+    sourceMemoryId: v.id("memories"),
+    targetMemoryId: v.id("memories"),
+    connectionType: v.union(
+      v.literal("entity"),
+      v.literal("temporal"),
+      v.literal("semantic"),
+      v.literal("causal"),
+    ),
+    strength: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_bank", ["bankId"])
+    .index("by_source", ["sourceMemoryId"])
+    .index("by_target", ["targetMemoryId"]),
+
+  agentActivity: defineTable({
+    bankId: v.id("memoryBanks"),
+    agentId: v.string(),
+    action: v.string(),
+    details: v.string(),
+    timestamp: v.number(),
+  }),
+
+  wikiPages: defineTable({
+    bankId: v.id("memoryBanks"),
+    title: v.string(),
+    slug: v.string(),
+    content: v.string(),
+    tags: v.array(v.string()),
+    lastEditedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_bank", ["bankId"]),
 });
 

@@ -69,6 +69,7 @@ import Image from "next/image";
 - **Live site:** [https://seridian.netlify.app](https://seridian.netlify.app)
 - **GitHub:** [https://github.com/therodfather/seridian](https://github.com/therodfather/seridian)
 - **Netlify dashboard:** [https://app.netlify.com/projects/seridian](https://app.netlify.com/projects/seridian)
+- **Getting paid:** Stripe payouts and client wire/ACH land in Mercury checking — [docs/MONEY_INTO_MERCURY.md](docs/MONEY_INTO_MERCURY.md) (read before travel)
 
 ## Contact form (GitHub Projects)
 

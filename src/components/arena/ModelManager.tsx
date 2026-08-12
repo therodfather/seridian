@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, type ReactNode } from "react";
 import {
   Download,
   Play,
@@ -36,6 +36,10 @@ interface ModelManagerProps {
   selectedModelId?: string;
   modelStatuses: Record<string, ModelState>;
   onModelStatusChange?: (modelId: string, state: ModelState) => void;
+  /** Drop outer card chrome when nested in Arena sidebar/panel. */
+  embedded?: boolean;
+  /** Optional control rendered in the sticky header (e.g. collapse). */
+  headerAction?: ReactNode;
 }
 
 async function isModelCached(modelId: string): Promise<boolean> {
@@ -80,6 +84,8 @@ export function ModelManager({
   selectedModelId,
   modelStatuses,
   onModelStatusChange,
+  embedded = false,
+  headerAction,
 }: ModelManagerProps) {
   const [expandedModel, setExpandedModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<
@@ -210,7 +216,7 @@ export function ModelManager({
         return (
           <button
             onClick={() => handleDownload(model)}
-            className="flex items-center gap-1.5 rounded-md bg-cyan-500/20 border border-cyan-500/30 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+            className="flex items-center gap-1 rounded-md border border-cyan-500/30 bg-cyan-500/20 px-2 py-1 text-[11px] font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30"
           >
             <Download className="h-3 w-3" />
             Download
@@ -219,26 +225,26 @@ export function ModelManager({
       case "downloading":
         const progress = downloadProgress[model.modelId];
         return (
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 text-cyan-400 animate-spin" />
-            <span className="text-xs text-cyan-400">
-              {progress ? `${Math.round(progress.percent)}%` : "Preparing..."}
+          <div className="flex items-center gap-1.5">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" />
+            <span className="text-[11px] text-cyan-400">
+              {progress ? `${Math.round(progress.percent)}%` : "…"}
             </span>
           </div>
         );
       case "cached":
         return (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => handleLoad(model)}
-              className="flex items-center gap-1.5 rounded-md bg-green-500/20 border border-green-500/30 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-500/30 transition-colors"
+              className="flex items-center gap-1 rounded-md border border-green-500/30 bg-green-500/20 px-2 py-1 text-[11px] font-medium text-green-400 transition-colors hover:bg-green-500/30"
             >
               <Play className="h-3 w-3" />
               Load
             </button>
             <button
               onClick={() => handleDelete(model)}
-              className="rounded-md bg-white/[0.05] border border-white/[0.08] px-2 py-1.5 text-slate-500 hover:text-red-400 hover:border-red-500/30 transition-colors"
+              className="rounded-md border border-white/[0.08] bg-white/[0.05] px-1.5 py-1 text-slate-500 transition-colors hover:border-red-500/30 hover:text-red-400"
               title="Delete cached model"
             >
               <Trash2 className="h-3 w-3" />
@@ -248,20 +254,20 @@ export function ModelManager({
       case "loading":
         return (
           <div className="flex items-center gap-1.5">
-            <Loader2 className="h-3.5 w-3.5 text-cyan-400 animate-spin" />
-            <span className="text-xs text-cyan-400">Loading...</span>
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" />
+            <span className="text-[11px] text-cyan-400">Loading…</span>
           </div>
         );
       case "ready":
         return (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => onSelectModel(model)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                "flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
                 selectedModelId === model.modelId
-                  ? "bg-cyan-500/30 border-cyan-500/50 text-cyan-300"
-                  : "bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30"
+                  ? "border-cyan-500/50 bg-cyan-500/30 text-cyan-300"
+                  : "border-green-500/30 bg-green-500/20 text-green-400 hover:bg-green-500/30"
               )}
             >
               {selectedModelId === model.modelId ? (
@@ -278,7 +284,7 @@ export function ModelManager({
             </button>
             <button
               onClick={() => handleDelete(model)}
-              className="rounded-md bg-white/[0.05] border border-white/[0.08] px-2 py-1.5 text-slate-500 hover:text-red-400 hover:border-red-500/30 transition-colors"
+              className="rounded-md border border-white/[0.08] bg-white/[0.05] px-1.5 py-1 text-slate-500 transition-colors hover:border-red-500/30 hover:text-red-400"
               title="Delete cached model"
             >
               <Trash2 className="h-3 w-3" />
@@ -287,15 +293,13 @@ export function ModelManager({
         );
       case "error":
         return (
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => handleDownload(model)}
-              className="flex items-center gap-1.5 rounded-md bg-red-500/20 border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/30 transition-colors"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Retry
-            </button>
-          </div>
+          <button
+            onClick={() => handleDownload(model)}
+            className="flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/20 px-2 py-1 text-[11px] font-medium text-red-400 transition-colors hover:bg-red-500/30"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Retry
+          </button>
         );
       default:
         return null;
@@ -334,16 +338,16 @@ export function ModelManager({
     return (
       <span
         className={cn(
-          "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium",
+          "inline-flex items-center rounded border px-1.5 py-px text-[9px] font-medium",
           badge.className
         )}
       >
         {state === "downloading" || state === "loading" ? (
-          <Loader2 className="mr-1 h-2.5 w-2.5 animate-spin" />
+          <Loader2 className="mr-0.5 h-2 w-2 animate-spin" />
         ) : state === "ready" || state === "cached" ? (
-          <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
+          <CheckCircle2 className="mr-0.5 h-2 w-2" />
         ) : state === "error" ? (
-          <AlertCircle className="mr-1 h-2.5 w-2.5" />
+          <AlertCircle className="mr-0.5 h-2 w-2" />
         ) : null}
         {badge.label}
       </span>
@@ -351,24 +355,39 @@ export function ModelManager({
   };
 
   return (
-    <div className="bg-[#070b14] rounded-xl border border-white/[0.08] overflow-hidden">
-      <div className="border-b border-white/[0.08] bg-[#0c1222]/50 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-cyan-400" />
-            <h3 className="text-sm font-semibold text-white">Model Manager</h3>
+    <div
+      className={cn(
+        "overflow-hidden",
+        embedded
+          ? "flex h-full min-h-0 flex-col bg-transparent"
+          : "rounded-xl border border-white/[0.08] bg-[#070b14]",
+      )}
+    >
+      <div
+        className={cn(
+          "sticky top-0 z-10 border-b border-white/[0.08] px-3 py-2",
+          embedded ? "bg-[#0c1222]" : "bg-[#0c1222]/50",
+        )}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Database className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+            <h3 className="text-xs font-semibold text-white">Model Manager</h3>
           </div>
-          <span className="text-[10px] text-slate-500">
-            {Object.values(cachedStatuses).filter(Boolean).length} / {ARENA_MODELS.length}{" "}
-            cached
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-[10px] tabular-nums text-slate-500">
+              {Object.values(cachedStatuses).filter(Boolean).length}/
+              {ARENA_MODELS.length} cached
+            </span>
+            {headerAction}
+          </div>
         </div>
       </div>
 
-      <div className="divide-y divide-white/[0.06]">
+      <div className={cn("divide-y divide-white/[0.06]", embedded && "min-h-0 flex-1 overflow-y-auto")}>
         {ARENA_MODELS.length === 0 ? (
-          <div className="px-4 py-8 text-center">
-            <AlertCircle className="h-6 w-6 text-slate-600 mx-auto mb-2" />
+          <div className="px-3 py-6 text-center">
+            <AlertCircle className="mx-auto mb-1.5 h-5 w-5 text-slate-600" />
             <p className="text-xs text-slate-500">
               No models in the catalog. Nothing to download yet.
             </p>
@@ -380,68 +399,75 @@ export function ModelManager({
           const progress = downloadProgress[model.modelId];
 
           return (
-            <div key={model.id} className="bg-[#070b14]">
+            <div key={model.id} className="bg-transparent">
               <div
                 className={cn(
-                  "flex items-center justify-between px-4 py-3 transition-colors",
+                  "flex items-start justify-between gap-2 px-3 py-2 transition-colors",
                   selectedModelId === model.modelId && "bg-cyan-500/5",
                   state === "error" && "bg-red-500/5"
                 )}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex min-w-0 items-start gap-1.5">
                   <button
                     onClick={() =>
                       setExpandedModel(isExpanded ? null : model.modelId)
                     }
-                    className="text-slate-500 hover:text-slate-300 transition-colors"
+                    className="mt-0.5 shrink-0 text-slate-500 transition-colors hover:text-slate-300"
+                    aria-label={isExpanded ? "Collapse model details" : "Expand model details"}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-3.5 w-3.5" />
                     ) : (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-3.5 w-3.5" />
                     )}
                   </button>
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white truncate">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="truncate text-xs font-medium text-white">
                         {model.name}
                       </span>
                       {selectedModelId === model.modelId && (
-                        <span className="inline-flex items-center rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-[9px] font-medium text-cyan-400 border border-cyan-500/30">
-                          SELECTED
+                        <span className="inline-flex items-center rounded bg-cyan-500/20 px-1 py-px text-[8px] font-medium uppercase tracking-wide text-cyan-400 border border-cyan-500/30">
+                          Selected
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-slate-500">{model.size}</span>
-                      <span className="text-xs text-slate-600">
-                        {model.modelId.split("/").pop()}
-                      </span>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] text-slate-500">{model.size}</span>
+                      {getStatusBadge(state)}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 ml-4 shrink-0">
-                  {getStatusBadge(state)}
-                  {getActionForState(model, state)}
-                </div>
+                <div className="shrink-0">{getActionForState(model, state)}</div>
               </div>
 
+              {state === "downloading" && progress && !isExpanded && (
+                <div className="px-3 pb-2">
+                  <div className="h-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-cyan-500 transition-all duration-300"
+                      style={{ width: `${progress.percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {isExpanded && (
-                <div className="px-4 pb-3 border-t border-white/[0.04]">
-                  <div className="pt-3 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Model ID</span>
-                      <span className="text-slate-400 font-mono text-[11px]">
+                <div className="border-t border-white/[0.04] px-3 pb-2">
+                  <div className="space-y-1.5 pt-2">
+                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="shrink-0 text-slate-500">Model ID</span>
+                      <span className="truncate font-mono text-[10px] text-slate-400">
                         {model.modelId}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-500">Estimated Size</span>
                       <span className="text-slate-400">{model.size}</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-500">Cache Status</span>
                       <span className="text-slate-400">
                         {isCheckingCache ? (
@@ -458,14 +484,14 @@ export function ModelManager({
                     </div>
 
                     {state === "downloading" && progress && (
-                      <div className="mt-3">
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className="mt-2">
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                           <div
-                            className="h-full bg-cyan-500 rounded-full transition-all duration-300"
+                            className="h-full rounded-full bg-cyan-500 transition-all duration-300"
                             style={{ width: `${progress.percent}%` }}
                           />
                         </div>
-                        <div className="flex justify-between mt-1.5 text-[10px] text-slate-500">
+                        <div className="mt-1 flex justify-between text-[10px] text-slate-500">
                           <span>
                             {formatBytes(progress.loaded)} / {formatBytes(progress.total)}
                           </span>

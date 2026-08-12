@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   Zap,
   HardDrive,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBytes } from "@/lib/format";
@@ -75,6 +77,7 @@ export function LLMArena() {
   const [modelStatuses, setModelStatuses] = useState<ModelStatus>({});
   const [deviceType, setDeviceType] = useState<string>("WebGPU");
   const [memoryUsage, setMemoryUsage] = useState<string | null>(null);
+  const [modelsOpen, setModelsOpen] = useState(true);
   const pipelineRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -214,6 +217,7 @@ export function LLMArena() {
         content: extractGeneratedText(output) || "(empty response)",
       };
       setMessages((prev) => [...prev, assistantMessage]);
+      scrollToBottom();
     } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -224,7 +228,7 @@ export function LLMArena() {
     }
 
     setLoading(false);
-  }, [input, loading, messages]);
+  }, [input, loading, messages, scrollToBottom]);
 
   const handleClear = useCallback(() => {
     setMessages([]);
@@ -250,39 +254,98 @@ export function LLMArena() {
     [loadModel],
   );
 
+  const statusLabel =
+    currentProgress.status === "ready"
+      ? "Ready"
+      : currentProgress.status === "error"
+        ? "Error"
+        : currentProgress.status === "downloading"
+          ? "Downloading"
+          : currentProgress.status === "loading"
+            ? "Initializing"
+            : "Idle";
+
   return (
-    <div className="flex h-full relative">
-      <div className="w-[22rem] shrink-0 border-r border-white/[0.08] bg-[#0c1222] overflow-y-auto">
-        <ModelManager
-          onSelectModel={handleSelectModel}
-          selectedModelId={selectedModel?.modelId}
-          modelStatuses={managerStatuses}
-          onModelStatusChange={(modelId, state) => {
-            updateModelStatus(modelId, {
-              status:
-                state === "cached"
-                  ? "idle"
-                  : state === "ready"
-                    ? "ready"
-                    : state === "error"
-                      ? "error"
-                      : state === "downloading"
-                        ? "downloading"
-                        : state === "loading"
-                          ? "loading"
-                          : "idle",
-            });
-          }}
-        />
-      </div>
+    <div className="relative flex h-full min-h-0 w-full flex-col md:flex-row">
+      {/* Model Manager — top strip on mobile, left rail on desktop */}
+      <aside
+        className={cn(
+          "flex shrink-0 flex-col border-white/[0.08] bg-[#0c1222]",
+          "border-b md:h-full md:border-b-0 md:border-r",
+          modelsOpen
+            ? "max-h-[42%] md:max-h-none md:w-72 lg:w-80"
+            : "max-h-none md:w-10",
+        )}
+      >
+        {modelsOpen ? (
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <ModelManager
+              embedded
+              onSelectModel={handleSelectModel}
+              selectedModelId={selectedModel?.modelId}
+              modelStatuses={managerStatuses}
+              headerAction={
+                <button
+                  type="button"
+                  onClick={() => setModelsOpen(false)}
+                  className="rounded border border-white/[0.08] p-1 text-slate-500 hover:text-white"
+                  title="Collapse models"
+                  aria-label="Collapse models"
+                >
+                  <PanelLeftClose className="hidden h-3.5 w-3.5 md:block" />
+                  <span className="px-0.5 text-[10px] md:hidden">Hide</span>
+                </button>
+              }
+              onModelStatusChange={(modelId, state) => {
+                updateModelStatus(modelId, {
+                  status:
+                    state === "cached"
+                      ? "idle"
+                      : state === "ready"
+                        ? "ready"
+                        : state === "error"
+                          ? "error"
+                          : state === "downloading"
+                            ? "downloading"
+                            : state === "loading"
+                              ? "loading"
+                              : "idle",
+                });
+              }}
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5 md:flex-col md:items-center md:gap-3 md:py-3">
+            <span className="text-[11px] font-medium text-slate-400 md:sr-only">
+              Models
+            </span>
+            <button
+              type="button"
+              onClick={() => setModelsOpen(true)}
+              className="rounded border border-white/[0.08] p-1 text-slate-500 hover:text-white"
+              title="Expand models"
+              aria-label="Expand models"
+            >
+              <PanelLeft className="hidden h-3.5 w-3.5 md:block" />
+              <span className="px-1 text-[11px] md:hidden">Show models</span>
+            </button>
+            <span
+              className="hidden origin-center rotate-180 text-[10px] tracking-widest text-slate-500 md:inline"
+              style={{ writingMode: "vertical-rl" }}
+            >
+              Models
+            </span>
+          </div>
+        )}
+      </aside>
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {ARENA_MODELS.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="text-center p-6">
-              <AlertCircle className="h-8 w-8 text-slate-500 mx-auto mb-3" />
-              <h3 className="text-white font-semibold mb-1">No models available</h3>
+          <div className="absolute inset-0 z-10 flex items-center justify-center">
+            <div className="p-4 text-center">
+              <AlertCircle className="mx-auto mb-2 h-7 w-7 text-slate-500" />
+              <h3 className="mb-0.5 font-semibold text-white">No models available</h3>
               <p className="text-sm text-slate-400">
                 The local model catalog is empty. Add models to start chatting.
               </p>
@@ -290,28 +353,71 @@ export function LLMArena() {
           </div>
         )}
 
+        {/* Compact chat toolbar */}
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/[0.08] bg-[#0c1222]/60 px-3 py-1.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <Cpu className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+            <span className="truncate text-xs font-medium text-white">
+              {selectedModel?.name ?? "No model"}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded border px-1.5 py-px text-[10px]",
+                currentProgress.status === "ready"
+                  ? "border-green-500/30 text-green-400"
+                  : currentProgress.status === "error"
+                    ? "border-red-500/30 text-red-400"
+                    : "border-cyan-500/30 text-cyan-400",
+              )}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  currentProgress.status === "ready"
+                    ? "bg-green-400"
+                    : currentProgress.status === "error"
+                      ? "bg-red-400"
+                      : "animate-pulse bg-cyan-400",
+                )}
+              />
+              {statusLabel}
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-500">
+            <span className="hidden items-center gap-1 sm:inline-flex">
+              <Zap className="h-3 w-3 text-cyan-400" />
+              {deviceType}
+            </span>
+            {memoryUsage && (
+              <span className="hidden items-center gap-1 lg:inline-flex">
+                <HardDrive className="h-3 w-3" />
+                {memoryUsage}
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Progress overlay */}
         {selectedModel &&
           (currentProgress.status === "downloading" ||
             currentProgress.status === "loading") && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10 backdrop-blur-sm transition-opacity duration-300">
-            <div className="bg-[#0c1222] rounded-xl p-6 border border-cyan-500/30 max-w-sm w-full mx-4 shadow-2xl shadow-cyan-500/10">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300">
+            <div className="mx-4 w-full max-w-sm rounded-xl border border-cyan-500/30 bg-[#0c1222] p-5 shadow-2xl shadow-cyan-500/10">
               {currentProgress.status === "loading" &&
               currentProgress.percent >= 100 ? (
-                <CheckCircle2 className="h-8 w-8 text-green-400 mx-auto mb-4" />
+                <CheckCircle2 className="mx-auto mb-3 h-7 w-7 text-green-400" />
               ) : (
-                <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mx-auto mb-4" />
+                <Loader2 className="mx-auto mb-3 h-7 w-7 animate-spin text-cyan-400" />
               )}
-              <h3 className="text-white font-semibold text-center mb-1">
+              <h3 className="mb-0.5 text-center font-semibold text-white">
                 {selectedModel?.name ?? "Model"}
               </h3>
-              <p className="text-slate-400 text-sm text-center mb-4">
+              <p className="mb-3 text-center text-sm text-slate-400">
                 {currentProgress.status === "downloading"
                   ? "Downloading model..."
                   : "Initializing model..."}
               </p>
-              {/* Progress bar */}
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
+              <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500 ease-out",
@@ -323,7 +429,6 @@ export function LLMArena() {
                   style={{ width: `${currentProgress.percent}%` }}
                 />
               </div>
-              {/* Stats row */}
               <div className="flex justify-between text-xs text-slate-500">
                 <span>
                   {formatBytes(currentProgress.loaded)} /{" "}
@@ -337,9 +442,8 @@ export function LLMArena() {
                       : "Preparing..."}
                 </span>
               </div>
-              {/* Percentage */}
-              <div className="text-center mt-3">
-                <span className="text-2xl font-bold text-cyan-400">
+              <div className="mt-2 text-center">
+                <span className="text-xl font-bold text-cyan-400">
                   {Math.round(currentProgress.percent)}%
                 </span>
               </div>
@@ -349,18 +453,18 @@ export function LLMArena() {
 
         {/* Error overlay */}
         {selectedModel && currentProgress.status === "error" && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10 backdrop-blur-sm transition-opacity duration-300">
-            <div className="bg-[#0c1222] rounded-xl p-6 border border-red-500/30 max-w-sm w-full mx-4 shadow-2xl shadow-red-500/10">
-              <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
-              <h3 className="text-white font-semibold text-center mb-1">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300">
+            <div className="mx-4 w-full max-w-sm rounded-xl border border-red-500/30 bg-[#0c1222] p-5 shadow-2xl shadow-red-500/10">
+              <AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-400" />
+              <h3 className="mb-0.5 text-center font-semibold text-white">
                 Failed to Load
               </h3>
-              <p className="text-slate-400 text-sm text-center mb-4">
+              <p className="mb-3 text-center text-sm text-slate-400">
                 {currentProgress.error || "An error occurred while loading the model."}
               </p>
               <button
                 onClick={() => selectedModel && loadModel(selectedModel)}
-                className="w-full rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm text-red-400 hover:bg-red-500/30 transition-colors"
+                className="w-full rounded-lg border border-red-500/30 bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30"
               >
                 Retry
               </button>
@@ -369,14 +473,14 @@ export function LLMArena() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
           {messages.length === 0 && currentProgress.status === "idle" && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Bot className="w-12 h-12 text-slate-600 mb-4" />
-              <h2 className="text-lg font-semibold text-white mb-2">
+            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+              <Bot className="mb-2 h-9 w-9 text-slate-600" />
+              <h2 className="mb-1 text-base font-semibold text-white">
                 LLM Arena
               </h2>
-              <p className="text-sm text-slate-400 max-w-md">
+              <p className="max-w-md text-sm text-slate-400">
                 Download a model in the Model Manager, then click Load to start
                 chatting. Models stay local in your browser.
               </p>
@@ -386,23 +490,23 @@ export function LLMArena() {
             currentProgress.status !== "ready" &&
             currentProgress.status !== "idle" &&
             currentProgress.status !== "error" && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Bot className="w-12 h-12 text-slate-600 mb-4" />
-              <h2 className="text-lg font-semibold text-white mb-2">
+            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+              <Bot className="mb-2 h-9 w-9 text-slate-600" />
+              <h2 className="mb-1 text-base font-semibold text-white">
                 LLM Arena
               </h2>
-              <p className="text-sm text-slate-400 max-w-md">
+              <p className="max-w-md text-sm text-slate-400">
                 Preparing the selected model…
               </p>
             </div>
           )}
           {messages.length === 0 && currentProgress.status === "ready" && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Bot className="w-12 h-12 text-cyan-400 mb-4" />
-              <h2 className="text-lg font-semibold text-white mb-2">
+            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+              <Bot className="mb-2 h-9 w-9 text-cyan-400" />
+              <h2 className="mb-1 text-base font-semibold text-white">
                 {selectedModel?.name ?? "Model"} Ready
               </h2>
-              <p className="text-sm text-slate-400 max-w-md">
+              <p className="max-w-md text-sm text-slate-400">
                 Start a conversation below.
               </p>
             </div>
@@ -411,13 +515,13 @@ export function LLMArena() {
             <div
               key={msg.id}
               className={cn(
-                "flex gap-3",
+                "flex gap-2",
                 msg.role === "user" ? "justify-end" : "justify-start"
               )}
             >
               <div
                 className={cn(
-                  "max-w-[70%] rounded-xl px-4 py-3 text-sm whitespace-pre-wrap",
+                  "max-w-[80%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm md:max-w-[70%]",
                   msg.role === "user"
                     ? "bg-cyan-500/20 text-cyan-100"
                     : "bg-white/[0.05] text-slate-200"
@@ -438,12 +542,14 @@ export function LLMArena() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input area */}
-        <div className="border-t border-white/[0.08] p-4">
-          <div className="flex gap-2">
+        {/* Composer */}
+        <div className="shrink-0 border-t border-white/[0.08] bg-[#0c1222]/40 p-2.5">
+          <div className="flex gap-1.5">
             <button
               onClick={handleClear}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.05] p-2 text-slate-400 hover:text-white transition-colors"
+              className="rounded-lg border border-white/[0.08] bg-white/[0.05] p-2 text-slate-400 transition-colors hover:text-white"
+              title="Clear chat"
+              aria-label="Clear chat"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -456,74 +562,23 @@ export function LLMArena() {
                   ? "Type a message..."
                   : currentProgress.status === "error"
                     ? "Model failed to load"
-                    : "Loading model..."
+                    : currentProgress.status === "idle"
+                      ? "Load a model to chat…"
+                      : "Loading model..."
               }
               disabled={currentProgress.status !== "ready" || loading}
-              className="flex-1 rounded-lg border border-white/[0.08] bg-[#070b14] px-4 py-2 text-sm text-white placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none disabled:opacity-50 transition-colors"
+              className="flex-1 rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-cyan-400 focus:outline-none disabled:opacity-50"
             />
             <button
               onClick={handleSend}
               disabled={
                 currentProgress.status !== "ready" || loading || !input.trim()
               }
-              className="rounded-lg bg-cyan-500 px-4 py-2 text-white hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+              className="rounded-lg bg-cyan-500 px-3 py-2 text-white transition-colors hover:bg-cyan-600 disabled:opacity-50"
+              aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </button>
-          </div>
-        </div>
-
-        {/* Status bar */}
-        <div className="border-t border-white/[0.08] bg-[#0c1222]/50 px-4 py-2 flex items-center justify-between text-[11px] text-slate-500">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3 w-3 text-cyan-400" />
-              <span>{deviceType}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Cpu className="h-3 w-3 text-cyan-400" />
-              <span>{selectedModel?.name ?? "No model"}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {memoryUsage && (
-              <div className="flex items-center gap-1.5">
-                <HardDrive className="h-3 w-3 text-slate-500" />
-                <span>{memoryUsage}</span>
-              </div>
-            )}
-            <div
-              className={cn(
-                "flex items-center gap-1.5",
-                currentProgress.status === "ready"
-                  ? "text-green-400"
-                  : currentProgress.status === "error"
-                    ? "text-red-400"
-                    : "text-cyan-400"
-              )}
-            >
-              <div
-                className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  currentProgress.status === "ready"
-                    ? "bg-green-400"
-                    : currentProgress.status === "error"
-                      ? "bg-red-400"
-                      : "bg-cyan-400 animate-pulse"
-                )}
-              />
-              <span>
-                {currentProgress.status === "ready"
-                  ? "Ready"
-                  : currentProgress.status === "error"
-                    ? "Error"
-                    : currentProgress.status === "downloading"
-                      ? "Downloading"
-                      : currentProgress.status === "loading"
-                        ? "Initializing"
-                        : "Idle"}
-              </span>
-            </div>
           </div>
         </div>
       </div>

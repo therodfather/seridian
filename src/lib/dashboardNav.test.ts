@@ -123,7 +123,7 @@ describe("dashboard nav", () => {
   });
 
   test("sidebar nav covers every static dashboard page", () => {
-    const navHrefs = new Set(DASHBOARD_NAV.map((item) => item.href));
+    const navHrefs = new Set<string>(DASHBOARD_NAV.map((item) => item.href));
     for (const href of collectDashboardPageHrefs()) {
       expect(navHrefs.has(href), `missing nav entry for ${href}`).toBe(true);
     }

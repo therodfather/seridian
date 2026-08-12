@@ -15,6 +15,21 @@ const eslintConfig = [
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "react/no-unescaped-entities": "warn",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "Literal[value=/\\/(?:\\(marketing\\)|\\(dashboard\\))/]",
+          message:
+            "Do not put Next.js route groups in URLs. Use constants from @/lib/routes (e.g. /packages, /dashboard).",
+        },
+        {
+          selector:
+            "TemplateLiteral[quasis.0.value.raw=/\\/(?:\\(marketing\\)|\\(dashboard\\))/]",
+          message:
+            "Do not put Next.js route groups in URLs. Use constants from @/lib/routes (e.g. /packages, /dashboard).",
+        },
+      ],
     },
   },
 ];

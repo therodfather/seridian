@@ -16,6 +16,7 @@ import {
   KbdGroup,
 } from "@bytecats/ui-kit";
 import { DASHBOARD_NAV, NAV_GROUP_LABELS, entityHref } from "@/lib/dashboardNav";
+import { ROUTES } from "@/lib/routes";
 
 interface SearchResult {
   id: string;
@@ -26,8 +27,8 @@ interface SearchResult {
 }
 
 const extraNavItems: SearchResult[] = [
-  { id: "nav-home", title: "Home", subtitle: "Marketing site", href: "/", group: "navigation" },
-  { id: "nav-packages", title: "Packages", subtitle: "Service packages", href: "/packages", group: "navigation" },
+  { id: "nav-home", title: "Home", subtitle: "Marketing site", href: ROUTES.home, group: "navigation" },
+  { id: "nav-packages", title: "Packages", subtitle: "Service packages", href: ROUTES.packages, group: "navigation" },
 ];
 
 const navigationItems: SearchResult[] = [

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@bytecats/ui-kit";
+import { ROUTES } from "@/lib/routes";
 
 const navLinks = [
-  { href: "/#services", label: "Services" },
-  { href: "/packages", label: "Packages" },
-  { href: "/#approach", label: "Approach" },
-  { href: "/#expertise", label: "Expertise" },
-  { href: "/#contact", label: "Contact" },
+  { href: ROUTES.services, label: "Services" },
+  { href: ROUTES.packages, label: "Packages" },
+  { href: ROUTES.approach, label: "Approach" },
+  { href: ROUTES.expertise, label: "Expertise" },
+  { href: ROUTES.contact, label: "Contact" },
 ];
 
 export function Header() {
@@ -18,7 +19,7 @@ export function Header() {
   return (
     <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href={ROUTES.home} className="flex items-center gap-2.5">
           <span
             aria-label="Seridian logo"
             className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg"
@@ -57,7 +58,7 @@ export function Header() {
             size="sm"
             className="rounded-lg bg-seridian-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-seridian-400"
           >
-            <Link href="/#contact">Get in touch</Link>
+            <Link href={ROUTES.contact}>Get in touch</Link>
           </Button>
         </nav>
 
@@ -103,7 +104,7 @@ export function Header() {
               className="rounded-lg bg-seridian-500 px-4 py-2.5 text-center text-sm font-medium text-slate-950 hover:bg-seridian-400"
               onClick={() => setMobileOpen(false)}
             >
-              <Link href="/#contact">Get in touch</Link>
+              <Link href={ROUTES.contact}>Get in touch</Link>
             </Button>
           </div>
         </nav>

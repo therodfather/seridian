@@ -10,8 +10,11 @@
 - `bun run lint` — `eslint src/` (matches CI; do not use `next lint`, removed in Next 16)
 - `bun run typecheck` — `tsc --noEmit`
 - `bun run test` — Vitest (Convex `edge-runtime` + `src/**/*.test.ts` unit)
-- `bun run test:convex` / `bun run test:unit` — single Vitest project
-- `bun run test:e2e:smoke` — Playwright Chromium smoke (`@smoke`); `bun run test:e2e` is the full suite
+- `bun run test:unit` — unit project only (`src/**/*.test.ts`, includes route leak guards)
+- `bun run test:convex` — Convex project only (`convex/**/*.test.ts`)
+- `bun run test:e2e` — full Playwright suite (starts local server unless `BASE_URL` is remote)
+- `bun run test:e2e:smoke` — Playwright Chromium smoke (`@smoke` tag); covers marketing + dashboard login page
+- `bun run test:e2e:smoke:prod` — same smoke against **https://seridian.netlify.app** via `BASE_URL` (no local server, no secrets; client `localStorage` auth only)
 - `bun run build` — production build (`next build`); `NEXT_TELEMETRY_DISABLED=1` in CI
 
 ## CI / PR gate
@@ -23,9 +26,11 @@
 
 ## Architecture
 - Next.js 16 App Router + React 19 + Tailwind CSS 4 (`@tailwindcss/postcss` in `postcss.config.mjs`) + TypeScript strict (`@/*` → `src/*`).
-- Single-page marketing site: `src/app/layout.tsx` (root layout, metadata, font) + `src/app/page.tsx` composes `Header` → `Hero` → `Services` → `Approach` → `Expertise` → `Contact` → `Footer`. No API routes yet; `.env.example` anticipates `/api/contact` → Linear `issueCreate`.
-- `src/app/icon.tsx` — app icon route.
+- Marketing lives under `src/app/(marketing)/` (route group — **not** part of the URL): home `/`, `/packages`, `/casestudies`. Dashboard lives under `src/app/dashboard/` → `/dashboard/*`.
+- Root layout: `src/app/layout.tsx` (metadata, font, providers). Contact API: `src/app/api/contact/route.ts`.
+- Typed public paths: `src/lib/routes.ts` + `src/lib/dashboardNav.ts`. Never put `(marketing)` / `(dashboard)` in `href`s — unit test + eslint guard.
 - Sections live in `src/components/`; global theme in `src/app/globals.css`.
+- `src/app/icon.tsx` — app icon route.
 
 ## Vendored UI kit — do not break
 - `@bytecats/ui-kit` is vendored at `vendor/ui-kit/` with committed `dist/` (no build step). `package.json` uses `file:./vendor/ui-kit` (relative path only — absolute `file:` paths break CI/Netlify).
@@ -51,7 +56,8 @@
   - Check env list: `bunx netlify env:list`
 
 ## Branches
-- Active feature branches off `main`: `feature/ui-kit`, `feature/webgl`, `feature/fonts`, `feature/shadcn`, `feature/linear-sync`, `chore/next-16` (this branch — Next 15→16 bump). Check `git branch -a` before creating new work.
+- Branch feature work from `origin/main`. Check `git branch -a` / use a dedicated worktree before creating new work.
+- Historical track branches (may be merged/stale): `feature/ui-kit`, `feature/webgl`, `feature/fonts`, `feature/linear-sync`.
 
 ## Gotchas & Quirks
 - `next lint` was removed in Next 16 — `package.json` `lint` script is `eslint src/`, matching CI.
@@ -60,6 +66,7 @@
 - Do not add `npm`-generated lockfiles or run `npm install` — it drifts from `bun.lock`.
 - Do not move or rebuild `vendor/ui-kit/dist/` — Netlify/CI need the committed artifacts.
 - Tailwind v4 uses `@import "tailwindcss"` + `@theme` in `globals.css`, not `tailwind.config.*`.
+- **Route groups ≠ URLs**: `(marketing)` is a folder only. Links must be `/packages`, not `/(marketing)/packages`. Prefer `ROUTES` from `src/lib/routes.ts`.
 
 <!-- convex-ai-start -->
 

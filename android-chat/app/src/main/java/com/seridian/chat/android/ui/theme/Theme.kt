@@ -23,7 +23,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun SeridianTheme(content: @Composable () -> Unit) {
+fun SeridianChatTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
         typography = Typography,

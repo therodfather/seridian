@@ -6,6 +6,7 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 
 type Client = Doc<"clients">;
 
@@ -28,11 +29,11 @@ function ClientRow({
       className={cn(
         "group flex items-center gap-4 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3",
         "transition-all duration-150",
-        "hover:border-seridian-500/20 hover:bg-[#0c1222]"
+        "hover:border-seridian-500/20 hover:bg-[#0c1222]",
       )}
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-seridian-500/10 text-sm font-semibold text-seridian-400 uppercase">
-        {client.name.charAt(0)}
+        {client.name.charAt(0) || "?"}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -49,14 +50,14 @@ function ClientRow({
               "shrink-0 text-[10px] px-1.5 py-0",
               client.status === "active"
                 ? "bg-green-500/10 text-green-400 border-green-500/20"
-                : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                : "bg-slate-500/10 text-slate-500 border-slate-500/20",
             )}
           >
             {client.status}
           </Badge>
         </div>
         <p className="mt-0.5 truncate text-xs text-slate-500">
-          {client.company}
+          {client.company || "No company"}
           {client.industry && (
             <span className="ml-1.5 text-slate-600">· {client.industry}</span>
           )}
@@ -97,11 +98,9 @@ export function ClientList({ onEdit, onAdd }: ClientListProps) {
 
   const issueCountByClient = useMemo(() => {
     const map = new Map<string, number>();
-    if (issues) {
-      for (const issue of issues) {
-        if (issue.clientId) {
-          map.set(issue.clientId, (map.get(issue.clientId) ?? 0) + 1);
-        }
+    for (const issue of issues ?? []) {
+      if (issue.clientId) {
+        map.set(issue.clientId, (map.get(issue.clientId) ?? 0) + 1);
       }
     }
     return map;
@@ -130,9 +129,15 @@ export function ClientList({ onEdit, onAdd }: ClientListProps) {
           ))}
         </div>
       ) : clients.length === 0 ? (
-        <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-sm text-slate-600">
-          No clients yet. Add your first client to get started.
-        </div>
+        <EmptyState
+          title="No clients yet"
+          description="Add your first client to unlock deals, proposals, and files."
+          action={
+            <Button type="button" size="sm" onClick={onAdd}>
+              + Add Client
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {clients.map((client) => (

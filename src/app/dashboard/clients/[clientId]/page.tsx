@@ -26,6 +26,8 @@ import {
   DialogTitle,
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { isConvexId } from "@/lib/convexId";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { ClientForm } from "@/components/clients/ClientForm";
 import {
   Building2,
@@ -68,10 +70,17 @@ export default function ClientDetailPage({
   params: Promise<{ clientId: string }>;
 }) {
   const { clientId } = use(params);
-  const client = useQuery(api.clients.get, { clientId: clientId as Id<"clients"> });
+  const validClientId = isConvexId(clientId);
+  const client = useQuery(
+    api.clients.get,
+    validClientId ? { clientId: clientId as Id<"clients"> } : "skip",
+  );
   const updateClient = useMutation(api.clients.update);
 
-  const deals = useQuery(api.deals.list, { clientId: clientId as Id<"clients"> });
+  const deals = useQuery(
+    api.deals.list,
+    validClientId ? { clientId: clientId as Id<"clients"> } : "skip",
+  );
 
   const [editOpen, setEditOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("network");
@@ -104,6 +113,17 @@ export default function ClientDetailPage({
   const [dsIndustry, setDsIndustry] = useState("");
   const [dsRelType, setDsRelType] = useState("Key Account");
 
+  if (!validClientId) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
+        <p>Invalid client link.</p>
+        <Link href="/dashboard/clients" className="text-cyan-400 hover:underline">
+          Back to Clients
+        </Link>
+      </div>
+    );
+  }
+
   if (client === undefined) {
     return (
       <div className="space-y-6 p-1">
@@ -115,8 +135,11 @@ export default function ClientDetailPage({
 
   if (client === null) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        Client record not found.
+      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
+        <p>Client record not found.</p>
+        <Link href="/dashboard/clients" className="text-cyan-400 hover:underline">
+          Back to Clients
+        </Link>
       </div>
     );
   }
@@ -125,17 +148,25 @@ export default function ClientDetailPage({
 
   // Save Corporate Social Media Hub links
   async function handleSaveCorporateSocials() {
-    await updateClient({
-      clientId: client!._id,
-      companyLinkedin: compLinkedin || undefined,
-      companyTwitter: compTwitter || undefined,
-      companyGithub: compGithub || undefined,
-    });
+    try {
+      await updateClient({
+        clientId: client!._id,
+        companyLinkedin: compLinkedin || undefined,
+        companyTwitter: compTwitter || undefined,
+        companyGithub: compGithub || undefined,
+      });
+      toastMutationSuccess("Company socials saved");
+    } catch (error) {
+      toastMutationError(error, "Failed to save company socials");
+    }
   }
 
   // Handlers for Employee / Who's Who Dossiers
   async function handleSavePersonnel() {
-    if (!pName.trim() || !pRole.trim()) return;
+    if (!pName.trim() || !pRole.trim()) {
+      toastMutationError("Name and role are required");
+      return;
+    }
     const current = client?.keyPersonnel ?? [];
     const newRecord = {
       id: editingPersonId || `person-${Date.now()}`,
@@ -160,13 +191,17 @@ export default function ClientDetailPage({
       updatedList = [...current, newRecord];
     }
 
-    await updateClient({
-      clientId: client!._id,
-      keyPersonnel: updatedList,
-    });
-
-    setPersonnelModalOpen(false);
-    resetPersonnelForm();
+    try {
+      await updateClient({
+        clientId: client!._id,
+        keyPersonnel: updatedList,
+      });
+      toastMutationSuccess(editingPersonId ? "Dossier updated" : "Dossier added");
+      setPersonnelModalOpen(false);
+      resetPersonnelForm();
+    } catch (error) {
+      toastMutationError(error, "Failed to save dossier");
+    }
   }
 
   function resetPersonnelForm() {
@@ -204,21 +239,29 @@ export default function ClientDetailPage({
 
   // Handler for Downstream Clients ("Their Clients")
   async function handleAddDownstreamClient() {
-    if (!dsName.trim()) return;
+    if (!dsName.trim()) {
+      toastMutationError("Downstream company name is required");
+      return;
+    }
     const current = client?.downstreamClients ?? [];
-    await updateClient({
-      clientId: client!._id,
-      downstreamClients: [
-        ...current,
-        {
-          name: dsName.trim(),
-          industry: dsIndustry.trim() || undefined,
-          relationshipType: dsRelType,
-        },
-      ],
-    });
-    setDsName("");
-    setDsIndustry("");
+    try {
+      await updateClient({
+        clientId: client!._id,
+        downstreamClients: [
+          ...current,
+          {
+            name: dsName.trim(),
+            industry: dsIndustry.trim() || undefined,
+            relationshipType: dsRelType,
+          },
+        ],
+      });
+      toastMutationSuccess("Downstream client tracked");
+      setDsName("");
+      setDsIndustry("");
+    } catch (error) {
+      toastMutationError(error, "Failed to add downstream client");
+    }
   }
 
   return (
@@ -470,8 +513,7 @@ export default function ClientDetailPage({
         </TabsContent>
 
         {/* TAB 2: CLIENT'S CLIENT NETWORK ("THEIR CLIENTS") */}
-        {activeTab === "their_clients" && (
-          <TabsContent value="their_clients" className="space-y-6 pt-4">
+        <TabsContent value="their_clients" className="space-y-6 pt-4">
             <div className="p-5 rounded-xl border border-white/[0.08] bg-[#0c1222] space-y-4">
               <h3 className="text-sm font-semibold text-white">Add Downstream Account / Customer of {client.name}</h3>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -523,7 +565,40 @@ export default function ClientDetailPage({
               )}
             </div>
           </TabsContent>
-        )}
+
+        <TabsContent value="deals" className="space-y-4 pt-4">
+          {deals === undefined ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-16 rounded-lg" />
+            </div>
+          ) : deals.length === 0 ? (
+            <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
+              No deals linked to this client yet.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {deals.map((deal) => (
+                <div
+                  key={deal._id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-white">{deal.name}</p>
+                    <p className="text-xs text-slate-500 capitalize">{deal.stage.replace(/_/g, " ")}</p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold tabular-nums text-white">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    }).format(deal.value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Personnel Dossier & Background Check Modal */}
@@ -628,6 +703,19 @@ export default function ClientDetailPage({
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-[#0c1222] border-white/[0.08] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Corporate Profile</DialogTitle>
+          </DialogHeader>
+          <ClientForm
+            client={client}
+            onSuccess={() => setEditOpen(false)}
+            onCancel={() => setEditOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

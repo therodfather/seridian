@@ -5,6 +5,7 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 
 type Proposal = Doc<"proposals">;
 
@@ -168,9 +169,15 @@ export function ProposalList({ onEdit, onView, onAdd }: ProposalListProps) {
           ))}
         </div>
       ) : proposals.length === 0 ? (
-        <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-sm text-slate-600">
-          No proposals yet. Create your first proposal to get started.
-        </div>
+        <EmptyState
+          title="No proposals yet"
+          description="Create your first proposal to track outbound deals."
+          action={
+            <Button type="button" size="sm" onClick={onAdd}>
+              + New Proposal
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {proposals.map((proposal) => (

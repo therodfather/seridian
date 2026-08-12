@@ -6,6 +6,7 @@ import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
 import { Button } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 interface FileUploadProps {
   parentId?: string;
@@ -52,9 +53,13 @@ export function FileUpload({ parentId, clientId, onComplete }: FileUploadProps) 
 
         setFileName("");
         setProgress(0);
+        toastMutationSuccess(
+          files.length === 1 ? "File uploaded" : `${files.length} files uploaded`,
+        );
         onComplete?.();
-      } catch {
+      } catch (error) {
         setFileName("Upload failed");
+        toastMutationError(error, "Upload failed");
       } finally {
         setUploading(false);
       }

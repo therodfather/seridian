@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
@@ -14,6 +15,8 @@ import {
   DialogTitle,
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { isConvexId } from "@/lib/convexId";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { ProposalForm } from "@/components/proposals/ProposalForm";
 
 const STATUS_CONFIG = {
@@ -46,7 +49,11 @@ export default function ProposalDetailPage({
   params: Promise<{ proposalId: string }>;
 }) {
   const { proposalId } = use(params);
-  const proposal = useQuery(api.proposals.get, { proposalId: proposalId as Id<"proposals"> });
+  const validProposalId = isConvexId(proposalId);
+  const proposal = useQuery(
+    api.proposals.get,
+    validProposalId ? { proposalId: proposalId as Id<"proposals"> } : "skip",
+  );
   const client = useQuery(
     api.clients.get,
     proposal?.clientId ? { clientId: proposal.clientId } : "skip",
@@ -60,30 +67,53 @@ export default function ProposalDetailPage({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   async function handleSend() {
+    if (!validProposalId) return;
     setActionLoading("send");
     try {
       await sendProposal({ proposalId: proposalId as Id<"proposals"> });
+      toastMutationSuccess("Proposal sent");
+    } catch (error) {
+      toastMutationError(error, "Failed to send proposal");
     } finally {
       setActionLoading(null);
     }
   }
 
   async function handleAccept() {
+    if (!validProposalId) return;
     setActionLoading("accept");
     try {
       await acceptProposal({ proposalId: proposalId as Id<"proposals"> });
+      toastMutationSuccess("Proposal accepted");
+    } catch (error) {
+      toastMutationError(error, "Failed to accept proposal");
     } finally {
       setActionLoading(null);
     }
   }
 
   async function handleReject() {
+    if (!validProposalId) return;
     setActionLoading("reject");
     try {
       await rejectProposal({ proposalId: proposalId as Id<"proposals"> });
+      toastMutationSuccess("Proposal rejected");
+    } catch (error) {
+      toastMutationError(error, "Failed to reject proposal");
     } finally {
       setActionLoading(null);
     }
+  }
+
+  if (!validProposalId) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
+        <p>Invalid proposal link.</p>
+        <Link href="/dashboard/proposals" className="text-cyan-400 hover:underline">
+          Back to Proposals
+        </Link>
+      </div>
+    );
   }
 
   if (proposal === undefined) {
@@ -98,8 +128,11 @@ export default function ProposalDetailPage({
 
   if (proposal === null) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        Proposal not found.
+      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
+        <p>Proposal not found.</p>
+        <Link href="/dashboard/proposals" className="text-cyan-400 hover:underline">
+          Back to Proposals
+        </Link>
       </div>
     );
   }
@@ -142,7 +175,7 @@ export default function ProposalDetailPage({
                   {client.name.charAt(0)}
                 </span>
                 {client.name}
-                <span className="text-slate-600">\u00B7 {client.company}</span>
+                <span className="text-slate-600">· {client.company}</span>
               </a>
             )}
           </div>

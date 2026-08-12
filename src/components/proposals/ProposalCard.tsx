@@ -5,6 +5,7 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 type Proposal = Doc<"proposals">;
 
@@ -87,15 +88,30 @@ export function ProposalCard({ proposalId, onBack, onEdit }: ProposalCardProps) 
   const status = STATUS_CONFIG[proposal.status];
 
   async function handleSend() {
-    await sendProposal({ proposalId });
+    try {
+      await sendProposal({ proposalId });
+      toastMutationSuccess("Proposal sent");
+    } catch (error) {
+      toastMutationError(error, "Failed to send proposal");
+    }
   }
 
   async function handleAccept() {
-    await acceptProposal({ proposalId });
+    try {
+      await acceptProposal({ proposalId });
+      toastMutationSuccess("Proposal accepted");
+    } catch (error) {
+      toastMutationError(error, "Failed to accept proposal");
+    }
   }
 
   async function handleReject() {
-    await rejectProposal({ proposalId });
+    try {
+      await rejectProposal({ proposalId });
+      toastMutationSuccess("Proposal rejected");
+    } catch (error) {
+      toastMutationError(error, "Failed to reject proposal");
+    }
   }
 
   return (
@@ -109,7 +125,7 @@ export function ProposalCard({ proposalId, onBack, onEdit }: ProposalCardProps) 
             onClick={onBack}
             className="text-slate-400"
           >
-            \u2190 Back
+            ← Back
           </Button>
         )}
         <div className="flex-1 min-w-0" />

@@ -141,7 +141,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <footer
         role="contentinfo"
         className={cn(
-          "flex items-center justify-between border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out",
+          "relative z-40 flex items-center justify-between border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out",
           sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
         )}>
         <div className="flex items-center gap-4">

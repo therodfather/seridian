@@ -6,5 +6,5 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  BUN_VERSION = "canary"
+  BUN_VERSION = "1.3.14"
   NETLIFY_NEXT_SKEW_PROTECTION = "true"

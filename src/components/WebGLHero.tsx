@@ -53,11 +53,11 @@ void main(){
   // top-center glow wash aligned with existing glow-orb
   float orb = exp(-length(p - vec2(0.0, 0.38)) * 2.15) * 0.9;
 
-  // particle field — sparse, slow drift
+  // particle field — sparse, slow drift (int loop: float counters fail on some GPUs)
   float particles = 0.0;
-  // 8 particles seeded by grid
-  for(float i = 0.0; i < 8.0; i++){
-    vec2 seed = vec2(hash(vec2(i, 1.3)), hash(vec2(i, 7.7)));
+  for (int i = 0; i < 8; i++) {
+    float fi = float(i);
+    vec2 seed = vec2(hash(vec2(fi, 1.3)), hash(vec2(fi, 7.7)));
     // drift slowly on x/y
     vec2 pos = vec2(
       fract(seed.x + t * (0.015 + seed.y * 0.02) + sin(seed.y * 6.28) * 0.1),

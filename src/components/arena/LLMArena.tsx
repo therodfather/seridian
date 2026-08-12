@@ -13,18 +13,14 @@ import {
   HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+import { ARENA_MODELS, type ArenaModel } from "@/lib/arenaModels";
+import { ModelManager, type ModelState } from "@/components/arena/ModelManager";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-}
-
-interface ModelOption {
-  id: string;
-  name: string;
-  size: string;
-  modelId: string;
 }
 
 interface LoadProgress {
@@ -38,40 +34,6 @@ interface LoadProgress {
 
 interface ModelStatus {
   [modelId: string]: LoadProgress;
-}
-
-const MODELS: ModelOption[] = [
-  {
-    id: "smol-135m",
-    name: "SmolLM 135M",
-    size: "270MB",
-    modelId: "HuggingFaceTB/SmolLM-135M-Instruct",
-  },
-  {
-    id: "smol-360m",
-    name: "SmolLM2 360M",
-    size: "770MB",
-    modelId: "HuggingFaceTB/SmolLM2-360M-Instruct",
-  },
-  {
-    id: "gemma-270m",
-    name: "Gemma 270M",
-    size: "500MB",
-    modelId: "onnx-community/gemma-3-270m-it-ONNX",
-  },
-  {
-    id: "qwen-05b",
-    name: "Qwen 0.5B",
-    size: "1GB",
-    modelId: "onnx-community/Qwen2.5-0.5B-Instruct",
-  },
-];
-
-function formatSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
 }
 
 function calculateSpeed(loaded: number, startTime: number): number {
@@ -101,7 +63,7 @@ function buildPrompt(messages: { role: string; content: string }[]): string {
 
 export function LLMArena() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedModel, setSelectedModel] = useState<ModelOption>(MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState<ArenaModel>(ARENA_MODELS[0]);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [modelStatuses, setModelStatuses] = useState<ModelStatus>({});
@@ -145,7 +107,7 @@ export function LLMArena() {
   }, []);
 
   const loadModel = useCallback(
-    async (model: ModelOption) => {
+    async (model: ArenaModel) => {
       if (modelStatuses[model.modelId]?.status === "ready") return;
 
       updateModelStatus(model.modelId, {
@@ -274,79 +236,29 @@ export function LLMArena() {
       ? calculateETA(currentProgress.loaded, currentProgress.total, speed)
       : "—";
 
+  const managerStatuses: Record<string, ModelState> = Object.fromEntries(
+    Object.entries(modelStatuses).map(([id, progress]) => [id, progress.status]),
+  );
+
+  const handleSelectModel = useCallback(
+    (model: ArenaModel) => {
+      setSelectedModel(model);
+      void loadModel(model);
+    },
+    [loadModel],
+  );
+
   return (
     <div className="flex h-full relative">
-      {/* Sidebar */}
-      <div className="w-64 shrink-0 border-r border-white/[0.08] bg-[#0c1222] p-4 overflow-y-auto">
-        <div className="flex items-center gap-2 mb-4">
-          <Cpu className="h-4 w-4 text-cyan-400" />
-          <span className="text-sm font-semibold text-white">Models</span>
-        </div>
-        <div className="space-y-2">
-          {MODELS.map((model) => {
-            const status = modelStatuses[model.modelId];
-            const isActive = selectedModel?.id === model.id;
-            const isReady = status?.status === "ready";
-            const isError = status?.status === "error";
-            const isLoading =
-              status?.status === "downloading" || status?.status === "loading";
-
-            return (
-              <button
-                key={model.id}
-                onClick={() => setSelectedModel(model)}
-                className={cn(
-                  "w-full rounded-lg border p-3 text-left transition-all duration-200",
-                  isActive
-                    ? "border-cyan-500/50 bg-cyan-500/10"
-                    : "border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05]",
-                  isError && "border-red-500/50 bg-red-500/10"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      isActive ? "text-cyan-400" : "text-slate-300"
-                    )}
-                  >
-                    {model.name}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {isReady && (
-                      <CheckCircle2 className="h-4 w-4 text-green-400" />
-                    )}
-                    {isError && (
-                      <AlertCircle className="h-4 w-4 text-red-400" />
-                    )}
-                    {isLoading && (
-                      <Loader2 className="h-4 w-4 text-cyan-400 animate-spin" />
-                    )}
-                  </div>
-                </div>
-                <div className="text-xs text-slate-500 mt-1">{model.size}</div>
-                {isLoading && status?.percent > 0 && (
-                  <div className="mt-2">
-                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-cyan-500 transition-all duration-300"
-                        style={{ width: `${status.percent}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-slate-500 mt-1 block">
-                      {Math.round(status.percent)}%
-                    </span>
-                  </div>
-                )}
-                {isError && status?.error && (
-                  <div className="text-[10px] text-red-400 mt-1 truncate">
-                    {status.error}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="w-[22rem] shrink-0 border-r border-white/[0.08] bg-[#0c1222] overflow-y-auto">
+        <ModelManager
+          onSelectModel={handleSelectModel}
+          selectedModelId={selectedModel.modelId}
+          modelStatuses={managerStatuses}
+          onModelStatusChange={(modelId, state) => {
+            updateModelStatus(modelId, { status: state === "cached" ? "idle" : state });
+          }}
+        />
       </div>
 
       {/* Main chat area */}
@@ -386,8 +298,8 @@ export function LLMArena() {
               {/* Stats row */}
               <div className="flex justify-between text-xs text-slate-500">
                 <span>
-                  {formatSize(currentProgress.loaded)} /{" "}
-                  {formatSize(currentProgress.total)}
+                  {formatBytes(currentProgress.loaded)} /{" "}
+                  {formatBytes(currentProgress.total)}
                 </span>
                 <span>
                   {currentProgress.status === "downloading"

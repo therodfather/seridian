@@ -1,0 +1,47 @@
+export interface ArenaModel {
+  id: string;
+  name: string;
+  size: string;
+  modelId: string;
+}
+
+export const ARENA_MODELS: ArenaModel[] = [
+  {
+    id: "minicpm5-1b",
+    name: "MiniCPM5 1B",
+    size: "2.4GB",
+    modelId: "skjortan/MiniCPM5-1B-ONNX",
+  },
+  {
+    id: "qwen3-06b",
+    name: "Qwen3 0.6B",
+    size: "1.2GB",
+    modelId: "onnx-community/Qwen3-0.6B-ONNX",
+  },
+  {
+    id: "gemma-270m",
+    name: "Gemma 270M",
+    size: "500MB",
+    modelId: "onnx-community/gemma-3-270m-it-ONNX",
+  },
+  {
+    id: "qwen-05b",
+    name: "Qwen 0.5B",
+    size: "1GB",
+    modelId: "onnx-community/Qwen2.5-0.5B-Instruct",
+  },
+  {
+    id: "smol-360m",
+    name: "SmolLM2 360M",
+    size: "770MB",
+    modelId: "HuggingFaceTB/SmolLM2-360M-Instruct",
+  },
+];
+
+export function getArenaModel(id: string): ArenaModel | undefined {
+  return ARENA_MODELS.find((model) => model.id === id);
+}
+
+export function isOnnxCompatible(model: ArenaModel): boolean {
+  return /onnx/i.test(model.modelId) || model.modelId.startsWith("HuggingFaceTB/");
+}

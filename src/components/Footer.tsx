@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { ROUTES } from "@/lib/routes";
+import { healthCheckCtaLabel, healthCheckPayHref } from "@/lib/healthCheckOffer";
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -27,9 +31,26 @@ export function Footer() {
             <span className="font-display text-sm font-semibold text-white">Seridian</span>
           </div>
 
-          <p className="text-sm text-slate-500">
-            Cloud infrastructure & application development consulting.
-          </p>
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+            <Link
+              href={ROUTES.packagesHealthCheck}
+              className="text-seridian-400 transition-colors hover:text-seridian-300"
+            >
+              {healthCheckCtaLabel()}
+            </Link>
+            <a
+              href={healthCheckPayHref()}
+              className="text-slate-400 transition-colors hover:text-white"
+            >
+              Pay / invoice
+            </a>
+            <a
+              href="mailto:hello@seridian.dev"
+              className="text-slate-400 transition-colors hover:text-white"
+            >
+              hello@seridian.dev
+            </a>
+          </nav>
 
           <p className="text-sm text-slate-600">
             &copy; {currentYear} Seridian. All rights reserved.

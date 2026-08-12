@@ -29,6 +29,7 @@ describe("routes", () => {
   it("exposes dashboard root and marketing packages without route groups", () => {
     expect(ROUTES.home).toBe("/");
     expect(ROUTES.packages).toBe("/packages");
+    expect(ROUTES.packagesHealthCheck).toBe("/packages#health-check");
     expect(ROUTES.dashboard.root).toBe("/dashboard");
     expect(ROUTES.dashboard.settings).toBe("/dashboard/settings");
     expect(ROUTES.dashboard.sync).toBe("/dashboard/sync");

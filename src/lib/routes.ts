@@ -9,6 +9,7 @@
 export const ROUTES = {
   home: "/",
   packages: "/packages",
+  packagesHealthCheck: "/packages#health-check",
   casestudies: "/casestudies",
   contact: "/#contact",
   services: "/#services",
@@ -44,6 +45,7 @@ export function settingsTabHref(
 export type MarketingRoute =
   | typeof ROUTES.home
   | typeof ROUTES.packages
+  | typeof ROUTES.packagesHealthCheck
   | typeof ROUTES.casestudies
   | typeof ROUTES.contact
   | typeof ROUTES.services

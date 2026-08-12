@@ -1,24 +1,38 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "convex/_generated/api";
 import { Button, Input, Label } from "@bytecats/ui-kit";
+import { LogIn } from "lucide-react";
 
 interface LoginScreenProps {
   onLogin: (pubkey: string, name: string) => void;
 }
 
 export function LoginScreen({ onLogin }: LoginScreenProps) {
+  const login = useMutation(api.chat.login);
   const [pubkey, setPubkey] = useState("");
-  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleQuickLogin() {
-    onLogin("admin", "Admin");
-  }
-
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (pubkey.trim() && name.trim()) {
-      onLogin(pubkey.trim(), name.trim());
+    if (!pubkey.trim() || !password.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await login({ pubkey: pubkey.trim(), password: password.trim() });
+      if (result.ok) {
+        onLogin(result.user.pubkey, result.user.name);
+      } else {
+        setError(result.error);
+      }
+    } catch {
+      setError("Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -32,51 +46,38 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-slate-400">Your ID</Label>
+            <Label className="text-xs text-slate-400">Username</Label>
             <Input
               value={pubkey}
               onChange={(e) => setPubkey(e.target.value)}
-              placeholder="e.g. admin"
+              placeholder="e.g. dee"
               className="bg-white/5 border-white/10"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-slate-400">Display Name</Label>
+            <Label className="text-xs text-slate-400">Password</Label>
             <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Admin"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
               className="bg-white/5 border-white/10"
             />
           </div>
+          {error && (
+            <p className="text-sm text-red-400">{error}</p>
+          )}
           <Button
             type="submit"
             className="w-full bg-seridian-500 text-slate-950 hover:bg-seridian-400"
-            disabled={!pubkey.trim() || !name.trim()}
+            disabled={!pubkey.trim() || !password.trim() || loading}
           >
-            Sign In
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-[#070b14] px-2 text-slate-500">or</span>
-          </div>
-        </div>
-
-        <Button
-          onClick={handleQuickLogin}
-          variant="outline"
-          className="w-full border-white/10 text-white hover:bg-white/5"
-        >
-          Quick Login as Admin
-        </Button>
-
         <p className="text-center text-xs text-slate-600">
-          Seed data: use &quot;admin&quot; / &quot;Admin&quot; or &quot;rod&quot; / &quot;Rod&quot;
+          Contact admin for credentials
         </p>
       </div>
     </div>

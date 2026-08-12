@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
-import { cn } from "@/lib/utils";
+import { Input } from "@bytecats/ui-kit";
+import { MultiStepForm, Field, FormGrid, FormSection } from "@/components/ui/form";
 
 interface ChannelFormProps {
   open: boolean;
@@ -17,14 +18,12 @@ export function ChannelForm({ open, onOpenChange, currentUserId, onSuccess }: Ch
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"public" | "private">("public");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const createChannel = useMutation(api.channels.create);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
+  async function handleSubmit() {
+    if (!name.trim() || saving) return;
+    setSaving(true);
     try {
       const channelId = await createChannel({
         name: name.trim(),
@@ -40,106 +39,100 @@ export function ChannelForm({ open, onOpenChange, currentUserId, onSuccess }: Ch
     } catch {
       // Silently fail
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   }
 
+  function handleCancel() {
+    onOpenChange(false);
+  }
+
   if (!open) return null;
+
+  const steps = [
+    {
+      id: "details",
+      label: "Details",
+      fields: (
+        <FormSection title="Channel Information">
+          <FormGrid>
+            <Field label="Name" required className="sm:col-span-2">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. general"
+                autoFocus
+                className="bg-white/5 border-white/10"
+              />
+            </Field>
+            <Field label="Description" className="sm:col-span-2">
+              <Input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional description"
+                className="bg-white/5 border-white/10"
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
+      ),
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      fields: (
+        <FormSection title="Channel Type">
+          <div className="flex gap-3">
+            {(["public", "private"] as const).map((channelType) => (
+              <button
+                key={channelType}
+                type="button"
+                onClick={() => setType(channelType)}
+                className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                  type === channelType
+                    ? "border-seridian-500/30 bg-seridian-500/10 text-seridian-400"
+                    : "border-white/[0.08] bg-white/5 text-slate-500 hover:border-white/[0.12] hover:text-slate-300"
+                }`}
+              >
+                {channelType}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500">
+            {type === "public"
+              ? "Anyone in the workspace can view and join this channel."
+              : "Only invited members can access this channel."}
+          </p>
+        </FormSection>
+      ),
+    },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/60"
-        onClick={() => onOpenChange(false)}
+        onClick={handleCancel}
       />
       <div className="relative w-full max-w-md rounded-xl border border-white/[0.08] bg-[#0c1222] p-6 shadow-2xl">
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Create Channel</h2>
           <button
             type="button"
-            onClick={() => onOpenChange(false)}
+            onClick={handleCancel}
             className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-white/[0.05] hover:text-slate-300 transition-colors"
           >
-            ×
+            &times;
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="channel-name"
-              className="mb-1.5 block text-xs font-medium text-slate-400"
-            >
-              Name
-            </label>
-            <input
-              id="channel-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. general"
-              className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-seridian-500/30 focus:outline-none transition-colors"
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="channel-description"
-              className="mb-1.5 block text-xs font-medium text-slate-400"
-            >
-              Description
-            </label>
-            <input
-              id="channel-description"
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description"
-              className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-seridian-500/30 focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">
-              Type
-            </label>
-            <div className="flex gap-2">
-              {(["public", "private"] as const).map((channelType) => (
-                <button
-                  key={channelType}
-                  type="button"
-                  onClick={() => setType(channelType)}
-                  className={cn(
-                    "flex-1 rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors",
-                    type === channelType
-                      ? "border-seridian-500/30 bg-seridian-500/10 text-seridian-400"
-                      : "border-white/[0.08] bg-[#070b14] text-slate-500 hover:border-white/[0.12] hover:text-slate-300"
-                  )}
-                >
-                  {channelType}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="rounded-lg border border-white/[0.08] px-4 py-2 text-sm text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim() || isSubmitting}
-              className="rounded-lg bg-seridian-500 px-4 py-2 text-sm font-medium text-[#070b14] hover:bg-seridian-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? "Creating..." : "Create Channel"}
-            </button>
-          </div>
-        </form>
+        <MultiStepForm
+          steps={steps}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          submitting={saving}
+          submitLabel="Create Channel"
+        />
       </div>
     </div>
   );

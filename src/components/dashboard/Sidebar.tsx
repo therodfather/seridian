@@ -1,126 +1,138 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@bytecats/ui-kit";
+import {
+  Home,
+  CheckCircle,
+  Users,
+  Calendar,
+  DollarSign,
+  FileText,
+  Mail,
+  Folder,
+  RefreshCw,
+  MessageSquare,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+} from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
+  group: "core" | "business" | "tools";
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: "\u2302" },
-  { href: "/dashboard/issues", label: "Issues", icon: "\u2610" },
-  { href: "/dashboard/clients", label: "Clients", icon: "\u25CE" },
-  { href: "/dashboard/bookings", label: "Bookings", icon: "\u25F7" },
-  { href: "/dashboard/sales", label: "Sales", icon: "\u25AD" },
-  { href: "/dashboard/proposals", label: "Proposals", icon: "\u229E" },
-  { href: "/dashboard/templates", label: "Templates", icon: "\u2709" },
-  { href: "/dashboard/files", label: "Files", icon: "\u{1F4C4}" },
-  { href: "/dashboard/sync", label: "Sync", icon: "\u21BB" },
-  { href: "/dashboard/chat", label: "Chat", icon: "\u{1F4AC}" },
+  { href: "/dashboard", label: "Overview", icon: Home, group: "core" },
+  { href: "/dashboard/issues", label: "Issues", icon: CheckCircle, group: "core" },
+  { href: "/dashboard/clients", label: "Clients", icon: Users, group: "core" },
+  { href: "/dashboard/bookings", label: "Bookings", icon: Calendar, group: "business" },
+  { href: "/dashboard/sales", label: "Sales", icon: DollarSign, group: "business" },
+  { href: "/dashboard/proposals", label: "Proposals", icon: FileText, group: "business" },
+  { href: "/dashboard/templates", label: "Templates", icon: Mail, group: "tools" },
+  { href: "/dashboard/files", label: "Files", icon: Folder, group: "tools" },
+  { href: "/dashboard/sync", label: "Sync", icon: RefreshCw, group: "tools" },
+  { href: "/dashboard/chat", label: "Chat", icon: MessageSquare, group: "tools" },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, group: "tools" },
 ];
 
-export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+const groupLabels = { core: "Core", business: "Business", tools: "Tools" } as const;
+
+function NavGroup({ group, items, pathname, collapsed }: { group: string; items: NavItem[]; pathname: string; collapsed: boolean }) {
+  return (
+    <div className="mb-3">
+      {!collapsed && (
+        <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+          {groupLabels[group as keyof typeof groupLabels]}
+        </div>
+      )}
+      <div className="space-y-0.5">
+        {items.map((item) => {
+          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          return (
+            <NavLink key={item.href} item={item} isActive={isActive} collapsed={collapsed} />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function NavLink({ item, isActive, collapsed }: { item: NavItem; isActive: boolean; collapsed: boolean }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-seridian-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14]",
+        isActive
+          ? "bg-seridian-500/10 text-seridian-400 shadow-[inset_0_0_0_1px_rgba(6,182,212,0.12)]"
+          : "text-slate-400 hover:bg-white/[0.05] hover:text-white",
+        collapsed && "justify-center px-2",
+      )}
+      aria-current={isActive ? "page" : undefined}
+      title={collapsed ? item.label : undefined}
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      {!collapsed && <span className="truncate">{item.label}</span>}
+    </Link>
+  );
+}
+
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+
+  const grouped = navItems.reduce(
+    (acc, item) => {
+      (acc[item.group] ??= []).push(item);
+      return acc;
+    },
+    {} as Record<string, NavItem[]>,
+  );
 
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-full flex-col border-r border-white/5 bg-slate-950 transition-all duration-300",
+        "fixed left-0 top-0 z-40 flex h-full flex-col border-r border-white/[0.06] bg-[#070b14] transition-all duration-300 ease-in-out",
         collapsed ? "w-[60px]" : "w-[240px]",
       )}
     >
-      <div
-        className={cn(
-          "flex h-16 items-center border-b border-white/5",
-          collapsed ? "justify-center px-2" : "px-4",
-        )}
-      >
-        <Link href="/" className="flex items-center gap-2.5">
-          <span
-            aria-label="Seridian logo"
-            className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg"
-          >
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-full w-full object-contain"
-              aria-hidden="true"
-            >
-              <source
-                src="/assets/images/Can_you_make_a_video_of_that_a.mp4"
-                type="video/mp4"
-              />
-            </video>
+      <div className={cn("flex h-14 items-center border-b border-white/[0.06]", collapsed ? "justify-center px-2" : "px-4")}>
+        <Link href="/" className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-seridian-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14] rounded-lg">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-seridian-500/10">
+            <span className="font-display text-sm font-bold text-seridian-400">S</span>
           </span>
-          {!collapsed && (
-            <span className="font-display text-base font-semibold tracking-tight text-white">
-              Seridian
-            </span>
-          )}
+          {!collapsed && <span className="font-display text-base font-semibold tracking-tight text-white">Seridian</span>}
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-seridian-500/10 text-seridian-400"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white",
-                collapsed && "justify-center px-2",
-              )}
-              title={collapsed ? item.label : undefined}
-            >
-              <span className="text-base shrink-0" aria-hidden="true">
-                {item.icon}
-              </span>
-              {!collapsed && <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-        })}
+      <nav role="navigation" aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
+        {Object.entries(grouped).map(([group, items]) => (
+          <NavGroup key={group} group={group} items={items} pathname={pathname} collapsed={collapsed} />
+        ))}
       </nav>
 
-      <div className="border-t border-white/5 p-2">
+      <div className="border-t border-white/[0.06] p-2">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="flex h-9 w-full items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white"
-          onClick={() => setCollapsed(!collapsed)}
+          className="flex h-9 w-full items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.05] hover:text-white transition-colors duration-200"
+          onClick={onToggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <svg
-            className={cn(
-              "h-4 w-4 transition-transform",
-              collapsed && "rotate-180",
-            )}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
     </aside>

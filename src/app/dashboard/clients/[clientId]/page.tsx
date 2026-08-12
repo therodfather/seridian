@@ -8,6 +8,13 @@ import { Id } from "convex/_generated/dataModel";
 import {
   Badge,
   Button,
+  Input,
+  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Skeleton,
   Tabs,
   TabsContent,
@@ -20,82 +27,40 @@ import {
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import { ClientForm } from "@/components/clients/ClientForm";
+import {
+  Building2,
+  Users,
+  Cpu,
+  Target,
+  Swords,
+  DollarSign,
+  Plus,
+  BrainCircuit,
+  Lightbulb,
+  ShieldCheck,
+  ShieldAlert,
+  Network,
+  Share2,
+  Heart,
+  Link2,
+  Mail,
+  Phone,
+  UserCheck,
+  Globe,
+  ExternalLink,
+} from "lucide-react";
 
 const STATUS_CONFIG = {
-  active: {
-    color: "bg-green-500/10 text-green-400 border-green-500/20",
-    label: "Active",
-  },
-  inactive: {
-    color: "bg-slate-500/10 text-slate-500 border-slate-500/20",
-    label: "Inactive",
-  },
+  active: { color: "bg-green-500/10 text-green-400 border-green-500/20", label: "Active" },
+  inactive: { color: "bg-slate-500/10 text-slate-500 border-slate-500/20", label: "Inactive" },
 } as const;
 
-const PRIORITY_CONFIG = {
-  urgent: { color: "bg-red-500/15 text-red-400 border-red-500/20", icon: "!!" },
-  high: { color: "bg-orange-500/15 text-orange-400 border-orange-500/20", icon: "!" },
-  medium: { color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20", icon: "~" },
-  low: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20", icon: "\u2193" },
-  none: { color: "bg-slate-500/15 text-slate-400 border-slate-500/20", icon: "\u2014" },
+const INFLUENCE_CONFIG = {
+  champion: { color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", label: "Champion" },
+  decision_maker: { color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20", label: "Decision Maker" },
+  blocker: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "Blocker" },
+  neutral: { color: "bg-slate-500/10 text-slate-400 border-slate-500/20", label: "Neutral" },
 } as const;
-
-const ISSUE_STATUS_CONFIG = {
-  backlog: { color: "bg-slate-500/15 text-slate-400 border-slate-500/20", label: "Backlog" },
-  todo: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20", label: "Todo" },
-  in_progress: { color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20", label: "In Progress" },
-  in_review: { color: "bg-purple-500/15 text-purple-400 border-purple-500/20", label: "In Review" },
-  done: { color: "bg-green-500/15 text-green-400 border-green-500/20", label: "Done" },
-} as const;
-
-const DEAL_STAGE_CONFIG = {
-  lead: { color: "bg-slate-500/15 text-slate-400 border-slate-500/20", label: "Lead" },
-  proposal: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20", label: "Proposal" },
-  negotiation: { color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20", label: "Negotiation" },
-  closed_won: { color: "bg-green-500/15 text-green-400 border-green-500/20", label: "Won" },
-  closed_lost: { color: "bg-red-500/15 text-red-400 border-red-500/20", label: "Lost" },
-} as const;
-
-const PROPOSAL_STATUS_CONFIG = {
-  draft: { color: "bg-slate-500/15 text-slate-400 border-slate-500/20", label: "Draft" },
-  sent: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20", label: "Sent" },
-  accepted: { color: "bg-green-500/15 text-green-400 border-green-500/20", label: "Accepted" },
-  rejected: { color: "bg-red-500/15 text-red-400 border-red-500/20", label: "Rejected" },
-  expired: { color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20", label: "Expired" },
-} as const;
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatDate(value: string | number): string {
-  const d = typeof value === "number" ? new Date(value) : new Date(value);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatDateTime(value: string): string {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function SectionSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <Skeleton key={i} className="h-16 rounded-lg" />
-      ))}
-    </div>
-  );
-}
 
 export default function ClientDetailPage({
   params,
@@ -104,21 +69,46 @@ export default function ClientDetailPage({
 }) {
   const { clientId } = use(params);
   const client = useQuery(api.clients.get, { clientId: clientId as Id<"clients"> });
-  const issues = useQuery(api.issues.list, { clientId: clientId as Id<"clients"> });
+  const updateClient = useMutation(api.clients.update);
+
   const deals = useQuery(api.deals.list, { clientId: clientId as Id<"clients"> });
-  const bookings = useQuery(api.bookings.list, { clientId: clientId as Id<"clients"> });
-  const proposals = useQuery(api.proposals.list, { clientId: clientId as Id<"clients"> });
-  const files = useQuery(api.files.getByClient, { clientId: clientId as Id<"clients"> });
 
   const [editOpen, setEditOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("issues");
+  const [activeTab, setActiveTab] = useState("network");
+
+  // State for Personnel Dossier modal & creation
+  const [personnelModalOpen, setPersonnelModalOpen] = useState(false);
+  const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
+
+  // Individual Dossier states
+  const [pName, setPName] = useState("");
+  const [pRole, setPRole] = useState("");
+  const [pEmail, setPEmail] = useState("");
+  const [pPhone, setPPhone] = useState("");
+  const [pLinkedin, setPLinkedin] = useState("");
+  const [pTwitter, setPTwitter] = useState("");
+  const [pGithub, setPGithub] = useState("");
+  const [pPersonalWebsite, setPPersonalWebsite] = useState("");
+  const [pInfluence, setPInfluence] = useState<"champion" | "decision_maker" | "blocker" | "neutral">("neutral");
+  const [pInterests, setPInterests] = useState("");
+  const [pBgNotes, setPBgNotes] = useState("");
+  const [pBgStatus, setPBgStatus] = useState<"pending" | "verified" | "flagged" | "none">("none");
+
+  // Corporate social media edit states
+  const [compLinkedin, setCompLinkedin] = useState("");
+  const [compTwitter, setCompTwitter] = useState("");
+  const [compGithub, setCompGithub] = useState("");
+
+  // State for Downstream Client ("Their Clients")
+  const [dsName, setDsName] = useState("");
+  const [dsIndustry, setDsIndustry] = useState("");
+  const [dsRelType, setDsRelType] = useState("Key Account");
 
   if (client === undefined) {
     return (
       <div className="space-y-6 p-1">
         <Skeleton className="h-10 w-48 rounded-lg" />
         <Skeleton className="h-40 rounded-xl" />
-        <SectionSkeleton />
       </div>
     );
   }
@@ -126,354 +116,520 @@ export default function ClientDetailPage({
   if (client === null) {
     return (
       <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        Client not found.
+        Client record not found.
       </div>
     );
   }
 
   const status = STATUS_CONFIG[client.status];
 
+  // Save Corporate Social Media Hub links
+  async function handleSaveCorporateSocials() {
+    await updateClient({
+      clientId: client!._id,
+      companyLinkedin: compLinkedin || undefined,
+      companyTwitter: compTwitter || undefined,
+      companyGithub: compGithub || undefined,
+    });
+  }
+
+  // Handlers for Employee / Who's Who Dossiers
+  async function handleSavePersonnel() {
+    if (!pName.trim() || !pRole.trim()) return;
+    const current = client?.keyPersonnel ?? [];
+    const newRecord = {
+      id: editingPersonId || `person-${Date.now()}`,
+      name: pName.trim(),
+      role: pRole.trim(),
+      email: pEmail.trim() || undefined,
+      phone: pPhone.trim() || undefined,
+      linkedin: pLinkedin.trim() || undefined,
+      twitter: pTwitter.trim() || undefined,
+      github: pGithub.trim() || undefined,
+      personalWebsite: pPersonalWebsite.trim() || undefined,
+      influenceLevel: pInfluence,
+      personalInterests: pInterests.split(",").map((s) => s.trim()).filter(Boolean),
+      backgroundCheckNotes: pBgNotes.trim() || undefined,
+      backgroundCheckStatus: pBgStatus,
+    };
+
+    let updatedList;
+    if (editingPersonId) {
+      updatedList = current.map((p) => (p.id === editingPersonId ? { ...p, ...newRecord } : p));
+    } else {
+      updatedList = [...current, newRecord];
+    }
+
+    await updateClient({
+      clientId: client!._id,
+      keyPersonnel: updatedList,
+    });
+
+    setPersonnelModalOpen(false);
+    resetPersonnelForm();
+  }
+
+  function resetPersonnelForm() {
+    setEditingPersonId(null);
+    setPName("");
+    setPRole("");
+    setPEmail("");
+    setPPhone("");
+    setPLinkedin("");
+    setPTwitter("");
+    setPGithub("");
+    setPPersonalWebsite("");
+    setPInfluence("neutral");
+    setPInterests("");
+    setPBgNotes("");
+    setPBgStatus("none");
+  }
+
+  function handleOpenEditPersonnel(p: any) {
+    setEditingPersonId(p.id);
+    setPName(p.name);
+    setPRole(p.role);
+    setPEmail(p.email || "");
+    setPPhone(p.phone || "");
+    setPLinkedin(p.linkedin || "");
+    setPTwitter(p.twitter || "");
+    setPGithub(p.github || "");
+    setPPersonalWebsite(p.personalWebsite || "");
+    setPInfluence(p.influenceLevel || "neutral");
+    setPInterests(p.personalInterests ? p.personalInterests.join(", ") : "");
+    setPBgNotes(p.backgroundCheckNotes || "");
+    setPBgStatus(p.backgroundCheckStatus || "none");
+    setPersonnelModalOpen(true);
+  }
+
+  // Handler for Downstream Clients ("Their Clients")
+  async function handleAddDownstreamClient() {
+    if (!dsName.trim()) return;
+    const current = client?.downstreamClients ?? [];
+    await updateClient({
+      clientId: client!._id,
+      downstreamClients: [
+        ...current,
+        {
+          name: dsName.trim(),
+          industry: dsIndustry.trim() || undefined,
+          relationshipType: dsRelType,
+        },
+      ],
+    });
+    setDsName("");
+    setDsIndustry("");
+  }
+
   return (
     <div className="space-y-6 p-1">
-      <div className="flex items-center gap-3">
+      {/* Top Navigation */}
+      <div className="flex items-center justify-between gap-4">
         <Link
           href="/dashboard/clients"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-seridian-500/20 hover:text-white"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-cyan-500/20 hover:text-white"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-          Back to Clients
+          &larr; Back to Clients
         </Link>
-        <div className="flex-1" />
-        <Button type="button" size="sm" onClick={() => setEditOpen(true)}>
-          Edit Client
+        <Button type="button" size="sm" onClick={() => setEditOpen(true)} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold">
+          Edit Corporate Profile
         </Button>
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-seridian-500/10 text-xl font-bold text-seridian-400 uppercase">
-            {client.name.charAt(0)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold text-white">{client.name}</h1>
-              <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0", status.color)}>
-                {status.label}
-              </Badge>
+      {/* Main Corporate Intelligence Card */}
+      <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-2xl font-bold text-cyan-400 uppercase border border-cyan-500/20">
+              {client.name.charAt(0)}
             </div>
-            <p className="mt-0.5 text-sm text-slate-500">{client.company}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold text-white">{client.name}</h1>
+                <Badge variant="secondary" className={cn("text-[10px] px-2 py-0.5", status.color)}>
+                  {status.label}
+                </Badge>
+              </div>
+              <p className="text-sm font-medium text-slate-400 mt-0.5">{client.company} {client.industry && `· ${client.industry}`}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+            {client.annualRevenue && (
+              <Badge variant="outline" className="border-white/10 bg-white/5 py-1 px-2.5">
+                <DollarSign className="w-3.5 h-3.5 mr-1 text-emerald-400" /> Revenue: {client.annualRevenue}
+              </Badge>
+            )}
+            {client.companySize && (
+              <Badge variant="outline" className="border-white/10 bg-white/5 py-1 px-2.5">
+                <Building2 className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Size: {client.companySize}
+              </Badge>
+            )}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <InfoField label="Email" value={client.email} href={`mailto:${client.email}`} />
-          {client.phone && <InfoField label="Phone" value={client.phone} href={`tel:${client.phone}`} />}
-          {client.website && (
-            <InfoField
-              label="Website"
-              value={client.website.replace(/^https?:\/\//, "")}
-              href={client.website.startsWith("http") ? client.website : `https://${client.website}`}
-              external
-            />
-          )}
-          {client.industry && <InfoField label="Industry" value={client.industry} />}
-          {client.notes && <InfoField label="Notes" value={client.notes} className="sm:col-span-2 lg:col-span-3" />}
+        {/* Corporate Social Media & Web Hub Bar */}
+        <div className="pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-2">Company Web & Social Hub:</span>
+            {client.website && (
+              <a href={client.website.startsWith("http") ? client.website : `https://${client.website}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-cyan-400 hover:bg-white/10 transition-all">
+                <Globe className="w-3.5 h-3.5 text-cyan-400" /> Website <ExternalLink className="w-3 h-3 ml-0.5" />
+              </a>
+            )}
+            {client.companyLinkedin && (
+              <a href={client.companyLinkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 transition-all">
+                <Link2 className="w-3.5 h-3.5 text-cyan-400" /> LinkedIn <ExternalLink className="w-3 h-3 ml-0.5" />
+              </a>
+            )}
+            {client.companyTwitter && (
+              <a href={client.companyTwitter} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/20 text-sky-300 hover:bg-sky-500/20 transition-all">
+                <Link2 className="w-3.5 h-3.5 text-sky-400" /> Twitter/X <ExternalLink className="w-3 h-3 ml-0.5" />
+              </a>
+            )}
+            {client.companyGithub && (
+              <a href={client.companyGithub} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition-all">
+                <Link2 className="w-3.5 h-3.5 text-purple-400" /> GitHub <ExternalLink className="w-3 h-3 ml-0.5" />
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Intelligence Stats Summary */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-4 border-t border-white/[0.06]">
+          <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Key Personnel Dossiers</span>
+            <span className="text-lg font-bold text-white mt-1 block">{client.keyPersonnel?.length ?? 0} Profiles</span>
+          </div>
+          <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Their Client Network</span>
+            <span className="text-lg font-bold text-cyan-400 mt-1 block">{client.downstreamClients?.length ?? 0} Accounts</span>
+          </div>
+          <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Verified Background Checks</span>
+            <span className="text-lg font-bold text-emerald-400 mt-1 block">
+              {(client.keyPersonnel ?? []).filter((p) => p.backgroundCheckStatus === "verified").length} Cleared
+            </span>
+          </div>
+          <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Identified Needs</span>
+            <span className="text-lg font-bold text-purple-400 mt-1 block">{client.identifiedNeeds?.length ?? 0} Items</span>
+          </div>
         </div>
       </div>
 
+      {/* Tabs Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList variant="line" className="gap-0.5">
-          <TabsTrigger value="issues" className="gap-1 px-3 py-1.5 text-xs">
-            Issues
-            {issues && (
-              <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-slate-500">
-                {issues.length}
-              </span>
-            )}
+        <TabsList variant="line" className="gap-2 border-b border-white/[0.08]">
+          <TabsTrigger value="network" className="gap-2 text-xs font-semibold">
+            <Network className="w-4 h-4 text-cyan-400" /> Personnel Social & Background Dossiers
           </TabsTrigger>
-          <TabsTrigger value="deals" className="gap-1 px-3 py-1.5 text-xs">
-            Deals
-            {deals && (
-              <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-slate-500">
-                {deals.length}
-              </span>
-            )}
+          <TabsTrigger value="their_clients" className="gap-2 text-xs font-semibold">
+            <Share2 className="w-4 h-4 text-emerald-400" /> Client's Client Network ({client.downstreamClients?.length ?? 0})
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="gap-1 px-3 py-1.5 text-xs">
-            Bookings
-            {bookings && (
-              <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-slate-500">
-                {bookings.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="proposals" className="gap-1 px-3 py-1.5 text-xs">
-            Proposals
-            {proposals && (
-              <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-slate-500">
-                {proposals.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="files" className="gap-1 px-3 py-1.5 text-xs">
-            Files
-            {files && (
-              <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-slate-500">
-                {files.length}
-              </span>
-            )}
+          <TabsTrigger value="deals" className="gap-2 text-xs">
+            Deals ({deals?.length ?? 0})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="issues" className="mt-4">
-          {issues === undefined ? (
-            <SectionSkeleton />
-          ) : issues.length === 0 ? (
-            <EmptyState message="No issues assigned to this client." />
-          ) : (
-            <div className="space-y-2">
-              {issues.map((issue) => {
-                const priority = PRIORITY_CONFIG[issue.priority];
-                const issueStatus = ISSUE_STATUS_CONFIG[issue.status];
+        {/* TAB 1: WHO'S WHO PERSONNEL & BACKGROUND DOSSIERS */}
+        <TabsContent value="network" className="space-y-6 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Individual Employee Social Media & Intelligence Dossiers</h3>
+              <p className="text-xs text-slate-400">Personal social media handles (LinkedIn, Twitter, GitHub, Website), influence mapping, and background audit records.</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                resetPersonnelForm();
+                setPersonnelModalOpen(true);
+              }}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs"
+            >
+              <UserCheck className="w-3.5 h-3.5 mr-1" /> Add Personnel Dossier
+            </Button>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {(client.keyPersonnel ?? []).length === 0 ? (
+              <div className="col-span-full h-40 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
+                <span>No personnel dossiers created yet.</span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={() => setPersonnelModalOpen(true)}
+                  className="text-cyan-400 text-xs mt-1"
+                >
+                  + Add first personnel profile
+                </Button>
+              </div>
+            ) : (
+              client.keyPersonnel?.map((person) => {
+                const influence = INFLUENCE_CONFIG[person.influenceLevel || "neutral"];
                 return (
-                  <a
-                    key={issue._id}
-                    href={`/dashboard/issues/${issue._id}`}
-                    className={cn(
-                      "group flex items-center gap-4 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3",
-                      "transition-all duration-150",
-                      "hover:border-seridian-500/20 hover:bg-[#0c1222]"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "inline-flex h-5 min-w-[20px] items-center justify-center rounded border px-1 text-[10px] font-bold tabular-nums",
-                        priority.color
-                      )}
-                    >
-                      {priority.icon}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-200 group-hover:text-white">
-                        {issue.title}
-                      </p>
-                      {issue.labels.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {issue.labels.slice(0, 3).map((label) => (
-                            <span key={label} className="rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] text-slate-500">
-                              {label}
-                            </span>
-                          ))}
+                  <div key={person.id} className="p-5 rounded-xl border border-white/[0.08] bg-[#0c1222] flex flex-col justify-between space-y-4 shadow-lg">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-sm">
+                            {person.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">{person.name}</h4>
+                            <p className="text-xs text-slate-400">{person.role}</p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className={cn("text-[10px] px-2 py-0.5", influence.color)}>
+                          {influence.label}
+                        </Badge>
+                      </div>
+
+                      {/* Contact & Social Links */}
+                      <div className="space-y-1 text-xs text-slate-300 pt-1 border-t border-white/[0.06]">
+                        {person.email && <div className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-500" /><span className="truncate">{person.email}</span></div>}
+                        {person.phone && <div className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-500" /><span>{person.phone}</span></div>}
+
+                        {/* Individual Social Media Icons */}
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {person.linkedin && (
+                            <a href={person.linkedin} target="_blank" rel="noreferrer" className="p-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20" title="LinkedIn">
+                              <Link2 className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          {person.twitter && (
+                            <a href={person.twitter} target="_blank" rel="noreferrer" className="p-1 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20" title="Twitter/X">
+                              <Link2 className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          {person.github && (
+                            <a href={person.github} target="_blank" rel="noreferrer" className="p-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20" title="GitHub">
+                              <Link2 className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          {person.personalWebsite && (
+                            <a href={person.personalWebsite} target="_blank" rel="noreferrer" className="p-1 rounded bg-white/10 text-slate-300 border border-white/20 hover:bg-white/20" title="Personal Site">
+                              <Globe className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Personal Interests */}
+                      {person.personalInterests && person.personalInterests.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 flex items-center gap-1">
+                            <Heart className="w-3 h-3 text-rose-400" /> Personal Interests
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {person.personalInterests.map((interest, i) => (
+                              <Badge key={i} variant="outline" className="border-rose-500/20 bg-rose-500/5 text-rose-300 text-[10px]">
+                                {interest}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       )}
-                    </div>
-                    <Badge variant="secondary" className={cn("shrink-0 text-[10px] px-1.5 py-0", issueStatus.color)}>
-                      {issueStatus.label}
-                    </Badge>
-                  </a>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
 
-        <TabsContent value="deals" className="mt-4">
-          {deals === undefined ? (
-            <SectionSkeleton />
-          ) : deals.length === 0 ? (
-            <EmptyState message="No deals with this client." />
-          ) : (
-            <div className="space-y-2">
-              {deals.map((deal) => {
-                const stage = DEAL_STAGE_CONFIG[deal.stage];
-                return (
-                  <div
-                    key={deal._id}
-                    className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-200">{deal.name}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {deal.probability}% probability
-                        {deal.expectedCloseDate && (
-                          <span className="ml-2">Close: {formatDate(deal.expectedCloseDate)}</span>
+                      {/* Background Check Indicator */}
+                      <div className="pt-2 border-t border-white/[0.06]">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[11px] text-slate-400">Background Check:</span>
+                          {person.backgroundCheckStatus === "verified" ? (
+                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
+                              <ShieldCheck className="w-3 h-3 mr-1" /> Verified Clean
+                            </Badge>
+                          ) : person.backgroundCheckStatus === "flagged" ? (
+                            <Badge variant="outline" className="border-red-500/30 text-red-400 bg-red-500/10 text-[10px]">
+                              <ShieldAlert className="w-3 h-3 mr-1" /> Flagged
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-slate-500/30 text-slate-400 text-[10px]">
+                              Pending / None
+                            </Badge>
+                          )}
+                        </div>
+                        {person.backgroundCheckNotes && (
+                          <p className="text-[11px] text-slate-400 mt-1 bg-white/[0.02] p-2 rounded border border-white/[0.04] italic">
+                            "{person.backgroundCheckNotes}"
+                          </p>
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <p className="shrink-0 text-sm font-semibold text-white tabular-nums">
-                      {formatCurrency(deal.value)}
-                    </p>
-                    <Badge variant="secondary" className={cn("shrink-0 text-[10px] px-1.5 py-0", stage.color)}>
-                      {stage.label}
-                    </Badge>
+
+                    <Button type="button" variant="outline" size="sm" onClick={() => handleOpenEditPersonnel(person)} className="w-full text-xs border-white/10">
+                      Update Dossier
+                    </Button>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </TabsContent>
 
-        <TabsContent value="bookings" className="mt-4">
-          {bookings === undefined ? (
-            <SectionSkeleton />
-          ) : bookings.length === 0 ? (
-            <EmptyState message="No bookings for this client." />
-          ) : (
-            <div className="space-y-2">
-              {bookings.map((booking) => (
-                <div
-                  key={booking._id}
-                  className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-seridian-500/10 text-[10px] font-bold text-seridian-400 uppercase">
-                    {booking.type === "consultation" ? "\u260E" : booking.type === "development" ? "\u2699" : "\u2611"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-200">{booking.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {formatDateTime(booking.startTime)}
-                      {booking.location && <span className="ml-2">\u2302 {booking.location}</span>}
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0 bg-white/[0.06] text-slate-400 border-white/[0.08] capitalize">
-                    {booking.type}
-                  </Badge>
+        {/* TAB 2: CLIENT'S CLIENT NETWORK ("THEIR CLIENTS") */}
+        {activeTab === "their_clients" && (
+          <TabsContent value="their_clients" className="space-y-6 pt-4">
+            <div className="p-5 rounded-xl border border-white/[0.08] bg-[#0c1222] space-y-4">
+              <h3 className="text-sm font-semibold text-white">Add Downstream Account / Customer of {client.name}</h3>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Input
+                  value={dsName}
+                  onChange={(e) => setDsName(e.target.value)}
+                  placeholder="Downstream Company Name"
+                  className="bg-white/5 border-white/10 text-xs text-white"
+                />
+                <Input
+                  value={dsIndustry}
+                  onChange={(e) => setDsIndustry(e.target.value)}
+                  placeholder="Industry / Vertical"
+                  className="bg-white/5 border-white/10 text-xs text-white"
+                />
+                <Select value={dsRelType} onValueChange={setDsRelType}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Key Account">Key Account</SelectItem>
+                    <SelectItem value="Vendor">Vendor</SelectItem>
+                    <SelectItem value="Strategic Partner">Strategic Partner</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end">
+                <Button type="button" size="sm" onClick={handleAddDownstreamClient} className="bg-emerald-500 text-black font-semibold text-xs">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Track Downstream Client
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(client.downstreamClients ?? []).length === 0 ? (
+                <div className="col-span-full h-32 flex items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
+                  No downstream accounts tracked yet.
                 </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="proposals" className="mt-4">
-          {proposals === undefined ? (
-            <SectionSkeleton />
-          ) : proposals.length === 0 ? (
-            <EmptyState message="No proposals for this client." />
-          ) : (
-            <div className="space-y-2">
-              {proposals.map((proposal) => {
-                const proposalStatus = PROPOSAL_STATUS_CONFIG[proposal.status];
-                return (
-                  <a
-                    key={proposal._id}
-                    href={`/dashboard/proposals/${proposal._id}`}
-                    className={cn(
-                      "group flex items-center gap-4 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3",
-                      "transition-all duration-150",
-                      "hover:border-seridian-500/20 hover:bg-[#0c1222]"
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-200 group-hover:text-white">
-                        {proposal.title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        Created {formatDate(proposal.createdAt)}
-                        {proposal.value !== undefined && (
-                          <span className="ml-2">{formatCurrency(proposal.value)}</span>
-                        )}
-                      </p>
+              ) : (
+                client.downstreamClients?.map((ds, idx) => (
+                  <div key={idx} className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white">{ds.name}</h4>
+                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
+                        {ds.relationshipType}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className={cn("shrink-0 text-[10px] px-1.5 py-0", proposalStatus.color)}>
-                      {proposalStatus.label}
-                    </Badge>
-                  </a>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="files" className="mt-4">
-          {files === undefined ? (
-            <SectionSkeleton />
-          ) : files.length === 0 ? (
-            <EmptyState message="No files for this client." />
-          ) : (
-            <div className="space-y-2">
-              {files.map((file) => (
-                <div
-                  key={file._id}
-                  className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-xs text-slate-500">
-                    {file.type.includes("pdf") ? "PDF" : file.type.includes("image") ? "IMG" : "FILE"}
+                    {ds.industry && <p className="text-xs text-slate-400">{ds.industry}</p>}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-200">{file.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {formatBytes(file.size)} \u00B7 {formatDate(file.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-          )}
-        </TabsContent>
+          </TabsContent>
+        )}
       </Tabs>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="bg-[#0c1222] border-white/[0.08] sm:max-w-lg">
+      {/* Personnel Dossier & Background Check Modal */}
+      <Dialog open={personnelModalOpen} onOpenChange={setPersonnelModalOpen}>
+        <DialogContent className="bg-[#0c1222] border-white/[0.08] sm:max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white">Edit Client</DialogTitle>
+            <DialogTitle className="text-white">
+              {editingPersonId ? "Edit Personnel Intelligence Dossier" : "New Personnel Intelligence Dossier"}
+            </DialogTitle>
           </DialogHeader>
-          <ClientForm
-            client={client}
-            onSuccess={() => setEditOpen(false)}
-            onCancel={() => setEditOpen(false)}
-          />
+
+          <div className="space-y-4 py-2 text-xs">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Full Name *</label>
+                <Input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="Jane Smith" className="bg-white/5 border-white/10 text-white" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Title / Position *</label>
+                <Input value={pRole} onChange={(e) => setPRole(e.target.value)} placeholder="VP of Product" className="bg-white/5 border-white/10 text-white" />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Email</label>
+                <Input value={pEmail} onChange={(e) => setPEmail(e.target.value)} placeholder="jane@client.com" className="bg-white/5 border-white/10 text-white" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Phone</label>
+                <Input value={pPhone} onChange={(e) => setPPhone(e.target.value)} placeholder="+1 (555) 000-0000" className="bg-white/5 border-white/10 text-white" />
+              </div>
+            </div>
+
+            {/* Social Media Inputs */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">LinkedIn URL</label>
+                <Input value={pLinkedin} onChange={(e) => setPLinkedin(e.target.value)} placeholder="https://linkedin.com/in/..." className="bg-white/5 border-white/10 text-white" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Twitter / X Handle</label>
+                <Input value={pTwitter} onChange={(e) => setPTwitter(e.target.value)} placeholder="https://x.com/..." className="bg-white/5 border-white/10 text-white" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">GitHub Profile</label>
+                <Input value={pGithub} onChange={(e) => setPGithub(e.target.value)} placeholder="https://github.com/..." className="bg-white/5 border-white/10 text-white" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Personal Website / Blog</label>
+                <Input value={pPersonalWebsite} onChange={(e) => setPPersonalWebsite(e.target.value)} placeholder="https://..." className="bg-white/5 border-white/10 text-white" />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Influence & Buying Role</label>
+                <Select value={pInfluence} onValueChange={(v) => setPInfluence(v as any)}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="champion">Champion (Internal Supporter)</SelectItem>
+                    <SelectItem value="decision_maker">Decision Maker</SelectItem>
+                    <SelectItem value="blocker">Blocker</SelectItem>
+                    <SelectItem value="neutral">Neutral</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Background Check Status</label>
+                <Select value={pBgStatus} onValueChange={(v) => setPBgStatus(v as any)}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None / Unchecked</SelectItem>
+                    <SelectItem value="pending">Pending Audit</SelectItem>
+                    <SelectItem value="verified">Verified Clean</SelectItem>
+                    <SelectItem value="flagged">Flagged Notes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-slate-300 font-medium">Personal Interests & Hobbies (comma-separated)</label>
+              <Input value={pInterests} onChange={(e) => setPInterests(e.target.value)} placeholder="Sailing, Machine Learning, Angel Investing" className="bg-white/5 border-white/10 text-white" />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-slate-300 font-medium">Background Check & Compliance Notes</label>
+              <Textarea
+                value={pBgNotes}
+                onChange={(e) => setPBgNotes(e.target.value)}
+                placeholder="Audit findings, public profile verification, previous leadership roles..."
+                rows={3}
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="ghost" onClick={() => setPersonnelModalOpen(false)} className="text-slate-400">Cancel</Button>
+              <Button type="button" onClick={handleSavePersonnel} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold">
+                Save Dossier
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
   );
-}
-
-function InfoField({
-  label,
-  value,
-  href,
-  external,
-  className,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-  external?: boolean;
-  className?: string;
-}) {
-  return (
-    <div className={cn("space-y-1", className)}>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{label}</p>
-      {href ? (
-        <a
-          href={href}
-          target={external ? "_blank" : undefined}
-          rel={external ? "noopener noreferrer" : undefined}
-          className="text-sm text-seridian-400 hover:text-seridian-300 transition-colors break-all"
-        >
-          {value}
-        </a>
-      ) : (
-        <p className="text-sm text-slate-300 break-all">{value}</p>
-      )}
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-      {message}
-    </div>
-  );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }

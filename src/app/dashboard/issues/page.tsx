@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -10,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   Input,
   Textarea,
@@ -23,6 +26,7 @@ import {
 } from "@bytecats/ui-kit";
 import { IssueCard } from "@/components/kanban/IssueCard";
 import { cn } from "@/lib/utils";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 type Issue = Doc<"issues">;
 type Status = Issue["status"];
@@ -68,6 +72,7 @@ export default function IssuesPage() {
   // Data
   const issues = useQuery(api.issues.list, {});
   const clients = useQuery(api.clients.list, {});
+  const users = useQuery(api.chat.getUsers, {});
   const createIssue = useMutation(api.issues.create);
   const updateIssue = useMutation(api.issues.update);
   const removeIssue = useMutation(api.issues.remove);
@@ -91,6 +96,10 @@ export default function IssuesPage() {
   const [formAssignee, setFormAssignee] = useState("");
   const [formDueDate, setFormDueDate] = useState("");
   const [creating, setCreating] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // Notifications
+  const { addNotification } = useNotifications();
 
   // Detail issue data
   const detailIssue = useQuery(
@@ -174,24 +183,54 @@ export default function IssuesPage() {
       });
       resetCreateForm();
       setCreateOpen(false);
+      addNotification({
+        title: "Issue Created",
+        message: `"${formTitle.trim()}" has been created.`,
+        type: "success",
+      });
+    } catch (err) {
+      addNotification({
+        title: "Failed to Create Issue",
+        message: err instanceof Error ? err.message : "An unexpected error occurred.",
+        type: "error",
+      });
     } finally {
       setCreating(false);
     }
   }, [
     formTitle, formDescription, formStatus, formPriority,
     formClientId, formLabels, formAssignee, formDueDate,
-    creating, createIssue, resetCreateForm,
+    creating, createIssue, resetCreateForm, addNotification,
   ]);
 
   const handleIssueClick = useCallback((issueId: Id<"issues">) => {
     setDetailIssueId(issueId);
   }, []);
 
+  const handleDeleteRequest = useCallback(() => {
+    if (!detailIssueId) return;
+    setDeleteConfirmOpen(true);
+  }, [detailIssueId]);
+
   const handleDelete = useCallback(async () => {
     if (!detailIssueId) return;
-    await removeIssue({ issueId: detailIssueId });
-    setDetailIssueId(null);
-  }, [detailIssueId, removeIssue]);
+    try {
+      await removeIssue({ issueId: detailIssueId });
+      setDetailIssueId(null);
+      setDeleteConfirmOpen(false);
+      addNotification({
+        title: "Issue Deleted",
+        message: "The issue has been permanently deleted.",
+        type: "success",
+      });
+    } catch (err) {
+      addNotification({
+        title: "Failed to Delete Issue",
+        message: err instanceof Error ? err.message : "An unexpected error occurred.",
+        type: "error",
+      });
+    }
+  }, [detailIssueId, removeIssue, addNotification]);
 
   const clearFilters = useCallback(() => {
     setFilterStatus("all");
@@ -441,16 +480,25 @@ export default function IssuesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="create-assignee" className="text-xs text-slate-400">
+                <Label className="text-xs text-slate-400">
                   Assignee
                 </Label>
-                <Input
-                  id="create-assignee"
-                  value={formAssignee}
-                  onChange={(e) => setFormAssignee(e.target.value)}
-                  placeholder="Optional"
-                  className="h-9 border-white/[0.08] bg-white/[0.03] text-sm text-white placeholder:text-slate-600"
-                />
+                <Select value={formAssignee} onValueChange={setFormAssignee}>
+                  <SelectTrigger className="h-9 border-white/[0.08] bg-white/[0.03] text-sm text-slate-300">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0c1222] border-white/[0.08]">
+                    <SelectItem value="_unassigned">Unassigned</SelectItem>
+                    {(users ?? [
+                      { _id: "dee", name: "Dee" },
+                      { _id: "rod", name: "Rod" },
+                    ]).map((u) => (
+                      <SelectItem key={u._id} value={u.name}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -617,9 +665,30 @@ export default function IssuesPage() {
                     <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                       Assignee
                     </span>
-                    <p className="text-sm text-slate-300">
-                      {detailIssue.assignee || "Unassigned"}
-                    </p>
+                    <Select
+                      value={detailIssue.assignee || "_unassigned"}
+                      onValueChange={(v) => {
+                        updateIssue({
+                          issueId: detailIssue._id,
+                          assignee: v === "_unassigned" ? undefined : v,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="h-8 border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
+                        <SelectValue placeholder="Unassigned" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0c1222] border-white/[0.08]">
+                        <SelectItem value="_unassigned">Unassigned</SelectItem>
+                        {(users ?? [
+                          { _id: "dee", name: "Dee" },
+                          { _id: "rod", name: "Rod" },
+                        ]).map((u) => (
+                          <SelectItem key={u._id} value={u.name}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
@@ -666,7 +735,7 @@ export default function IssuesPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={handleDelete}
+                  onClick={handleDeleteRequest}
                   className="text-red-400 hover:text-red-300 hover:bg-red-500/10 mr-auto"
                 >
                   Delete
@@ -685,6 +754,37 @@ export default function IssuesPage() {
           ) : (
             <div className="h-48 animate-pulse rounded-lg bg-white/[0.02]" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation Dialog ─────────────────────── */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="bg-[#0c1222] border-white/[0.08] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white">Delete Issue</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Are you sure you want to delete this issue? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteConfirmOpen(false)}
+              className="text-slate-400 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleDelete}
+              className="bg-red-600 text-white hover:bg-red-500"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

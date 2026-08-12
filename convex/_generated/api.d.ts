@@ -24,6 +24,7 @@ import type * as linearIngest from "../linearIngest.js";
 import type * as linearSync from "../linearSync.js";
 import type * as messages from "../messages.js";
 import type * as proposals from "../proposals.js";
+import type * as secrets from "../secrets.js";
 import type * as users from "../users.js";
 
 import type {
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   linearSync: typeof linearSync;
   messages: typeof messages;
   proposals: typeof proposals;
+  secrets: typeof secrets;
   users: typeof users;
 }>;
 

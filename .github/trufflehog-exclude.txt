@@ -1,3 +1,4 @@
-# Paths TruffleHog should skip (vendored / generated).
-vendor/ui-kit/dist/**
-android-client/.gradle/**
+# Regex exclude rules for TruffleHog (not gitignore globs).
+^vendor/ui-kit/dist/
+^android-client/\.gradle/
+^bun\.lock$

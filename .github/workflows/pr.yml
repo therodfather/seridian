@@ -53,6 +53,7 @@ jobs:
           path: .next
           if-no-files-found: error
           retention-days: 1
+          include-hidden-files: true
 
   e2e:
     name: Playwright E2E

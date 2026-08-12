@@ -14,5 +14,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SeridianChat"
-include(":app")
+rootProject.name = "android-client"

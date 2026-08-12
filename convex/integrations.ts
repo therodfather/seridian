@@ -7,6 +7,8 @@ const providerValidator = v.union(
   v.literal("linear"),
   v.literal("github"),
   v.literal("netlify"),
+  v.literal("stripe"),
+  v.literal("mercury"),
 );
 
 const statusValidator = v.union(
@@ -15,10 +17,18 @@ const statusValidator = v.union(
   v.literal("connected"),
 );
 
-type Provider = "linear" | "github" | "netlify";
+type Provider = "linear" | "github" | "netlify" | "stripe" | "mercury";
 type IntegrationStatus = "not_configured" | "configured" | "connected";
 
 const LINEAR_SECRET_NAME = "LINEAR_API_KEY";
+const STRIPE_WEBHOOK_SECRET_NAME = "STRIPE_WEBHOOK_SECRET";
+const MERCURY_API_TOKEN_NAME = "MERCURY_API_TOKEN";
+
+/** Single-secret providers whose only setup step is pasting one credential. */
+const SINGLE_SECRET_PROVIDERS = {
+  stripe: STRIPE_WEBHOOK_SECRET_NAME,
+  mercury: MERCURY_API_TOKEN_NAME,
+} as const;
 
 function maskSecret(val: string): string {
   if (val.length <= 8) return "••••••••";
@@ -88,7 +98,13 @@ export const listStatuses = query({
   args: {},
   returns: v.array(statusRowValidator),
   handler: async (ctx) => {
-    const providers: Provider[] = ["github", "netlify", "linear"];
+    const providers: Provider[] = [
+      "github",
+      "netlify",
+      "linear",
+      "stripe",
+      "mercury",
+    ];
     const rows = [];
 
     for (const provider of providers) {
@@ -97,6 +113,9 @@ export const listStatuses = query({
         .withIndex("by_provider", (q) => q.eq("provider", provider))
         .first();
 
+      const requiresSecret =
+        provider === "linear" || provider in SINGLE_SECRET_PROVIDERS;
+
       let hasSecret = false;
       if (provider === "linear") {
         const secret = await ctx.db
@@ -104,23 +123,30 @@ export const listStatuses = query({
           .withIndex("by_name", (q) => q.eq("name", LINEAR_SECRET_NAME))
           .first();
         hasSecret = Boolean(secret?.ciphertext);
+      } else if (provider === "stripe" || provider === "mercury") {
+        const secret = await ctx.db
+          .query("secrets")
+          .withIndex("by_name", (q) =>
+            q.eq("name", SINGLE_SECRET_PROVIDERS[provider]),
+          )
+          .first();
+        hasSecret = Boolean(secret?.ciphertext);
       }
 
       if (!config) {
         rows.push({
           provider,
-          enabled: provider !== "linear",
-          status:
-            provider === "linear"
-              ? ("not_configured" as const)
-              : ("configured" as const),
+          enabled: !requiresSecret,
+          status: requiresSecret
+            ? ("not_configured" as const)
+            : ("configured" as const),
           hasSecret,
         });
         continue;
       }
 
       const status: IntegrationStatus =
-        provider === "linear" && !hasSecret && config.status !== "not_configured"
+        requiresSecret && !hasSecret && config.status !== "not_configured"
           ? "not_configured"
           : config.status;
 
@@ -337,6 +363,222 @@ export const disconnectLinear = mutation({
       category: "secret",
       timestamp: Date.now(),
       metadata: JSON.stringify({ secretName: LINEAR_SECRET_NAME }),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Complete Stripe connect: store the webhook signing secret in the vault so
+ * convex/http.ts can verify incoming webhooks without a `convex env set`.
+ */
+export const completeStripeSetup = mutation({
+  args: { currentUserId: v.string(), webhookSecret: v.string() },
+  returns: v.object({ success: v.boolean(), maskedValue: v.string() }),
+  handler: async (ctx, args) => {
+    requireAdmin(args.currentUserId);
+
+    const trimmed = args.webhookSecret.trim();
+    if (!trimmed.startsWith("whsec_")) {
+      throw new Error("Stripe webhook secret should start with whsec_");
+    }
+
+    const masked = maskSecret(trimmed);
+    const now = Date.now();
+    const existingSecret = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", STRIPE_WEBHOOK_SECRET_NAME))
+      .first();
+
+    if (existingSecret) {
+      await ctx.db.patch(existingSecret._id, {
+        maskedValue: masked,
+        ciphertext: trimmed,
+        description: "Stripe webhook signing secret",
+        category: "api",
+        updatedBy: args.currentUserId,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.insert("secrets", {
+        name: STRIPE_WEBHOOK_SECRET_NAME,
+        maskedValue: masked,
+        ciphertext: trimmed,
+        description: "Stripe webhook signing secret",
+        category: "api",
+        updatedBy: args.currentUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await upsertConfig(ctx, {
+      provider: "stripe",
+      enabled: true,
+      status: "connected",
+      secretName: STRIPE_WEBHOOK_SECRET_NAME,
+      configuredBy: args.currentUserId,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      action: "Stripe Integration Connected",
+      actor: args.currentUserId,
+      details: "Completed admin Stripe setup (webhook secret stored in Convex vault)",
+      category: "secret",
+      timestamp: now,
+      metadata: JSON.stringify({
+        secretName: STRIPE_WEBHOOK_SECRET_NAME,
+        masked,
+      }),
+    });
+
+    return { success: true, maskedValue: masked };
+  },
+});
+
+export const disconnectStripe = mutation({
+  args: { currentUserId: v.string() },
+  returns: v.object({ success: v.boolean() }),
+  handler: async (ctx, args) => {
+    requireAdmin(args.currentUserId);
+
+    const secret = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", STRIPE_WEBHOOK_SECRET_NAME))
+      .first();
+    if (secret) {
+      await ctx.db.delete(secret._id);
+    }
+
+    await upsertConfig(ctx, {
+      provider: "stripe",
+      enabled: false,
+      status: "not_configured",
+      configuredBy: args.currentUserId,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      action: "Stripe Integration Disconnected",
+      actor: args.currentUserId,
+      details: "Removed Stripe vault key and marked integration not configured",
+      category: "secret",
+      timestamp: Date.now(),
+      metadata: JSON.stringify({ secretName: STRIPE_WEBHOOK_SECRET_NAME }),
+    });
+
+    return { success: true };
+  },
+});
+
+/** Server-only Stripe webhook secret for convex/http.ts. Never exposed to clients. */
+export const getStripeWebhookSecret = internalQuery({
+  args: {},
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx) => {
+    const secret = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", STRIPE_WEBHOOK_SECRET_NAME))
+      .first();
+    return secret?.ciphertext ?? null;
+  },
+});
+
+/**
+ * Complete Mercury connect: store a read-only Mercury API token in the vault.
+ */
+export const completeMercurySetup = mutation({
+  args: { currentUserId: v.string(), apiToken: v.string() },
+  returns: v.object({ success: v.boolean(), maskedValue: v.string() }),
+  handler: async (ctx, args) => {
+    requireAdmin(args.currentUserId);
+
+    const trimmed = args.apiToken.trim();
+    if (trimmed.length < 16) {
+      throw new Error("That doesn't look like a full Mercury API token");
+    }
+
+    const masked = maskSecret(trimmed);
+    const now = Date.now();
+    const existingSecret = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", MERCURY_API_TOKEN_NAME))
+      .first();
+
+    if (existingSecret) {
+      await ctx.db.patch(existingSecret._id, {
+        maskedValue: masked,
+        ciphertext: trimmed,
+        description: "Mercury read-only API token",
+        category: "api",
+        updatedBy: args.currentUserId,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.insert("secrets", {
+        name: MERCURY_API_TOKEN_NAME,
+        maskedValue: masked,
+        ciphertext: trimmed,
+        description: "Mercury read-only API token",
+        category: "api",
+        updatedBy: args.currentUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await upsertConfig(ctx, {
+      provider: "mercury",
+      enabled: true,
+      status: "connected",
+      secretName: MERCURY_API_TOKEN_NAME,
+      configuredBy: args.currentUserId,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      action: "Mercury Integration Connected",
+      actor: args.currentUserId,
+      details: "Completed admin Mercury setup (API token stored in Convex vault)",
+      category: "secret",
+      timestamp: now,
+      metadata: JSON.stringify({
+        secretName: MERCURY_API_TOKEN_NAME,
+        masked,
+      }),
+    });
+
+    return { success: true, maskedValue: masked };
+  },
+});
+
+export const disconnectMercury = mutation({
+  args: { currentUserId: v.string() },
+  returns: v.object({ success: v.boolean() }),
+  handler: async (ctx, args) => {
+    requireAdmin(args.currentUserId);
+
+    const secret = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", MERCURY_API_TOKEN_NAME))
+      .first();
+    if (secret) {
+      await ctx.db.delete(secret._id);
+    }
+
+    await upsertConfig(ctx, {
+      provider: "mercury",
+      enabled: false,
+      status: "not_configured",
+      configuredBy: args.currentUserId,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      action: "Mercury Integration Disconnected",
+      actor: args.currentUserId,
+      details: "Removed Mercury vault key and marked integration not configured",
+      category: "secret",
+      timestamp: Date.now(),
+      metadata: JSON.stringify({ secretName: MERCURY_API_TOKEN_NAME }),
     });
 
     return { success: true };

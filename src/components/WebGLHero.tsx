@@ -25,7 +25,11 @@ void main(){
   vec2 frag = gl_FragCoord.xy;
   vec2 uv = frag / u_res;
   vec2 p = uv - 0.5;
-  p.x *= u_res.x / max(u_res.y, 1.0);
+  // Dampened aspect correction — blend toward square coordinates
+  // instead of full ratio, preventing elongation on portrait screens
+  float aspect = u_res.x / max(u_res.y, 1.0);
+  float ac = mix(1.0, aspect, 0.4);
+  p.x *= ac;
 
   float t = u_time * 0.14;
 
@@ -41,9 +45,10 @@ void main(){
   float b1 = 0.42 / (1.0 + d1 * 3.2);
   float b2 = 0.36 / (1.0 + d2 * 2.9);
 
-  // soft flow lines
-  float flow = sin(uv.x * 7.0 + t * 1.1) * 0.5 + cos(uv.y * 6.0 - t * 0.9) * 0.5;
-  float flowMask = smoothstep(0.35, 0.85, fract(flow * 0.9 + uv.y * 0.6)) * 0.07;
+  // soft flow lines — use aspect-corrected uv so patterns don't stretch
+  vec2 flowUv = vec2(uv.x * ac, uv.y);
+  float flow = sin(flowUv.x * 7.0 + t * 1.1) * 0.5 + cos(flowUv.y * 6.0 - t * 0.9) * 0.5;
+  float flowMask = smoothstep(0.35, 0.85, fract(flow * 0.9 + flowUv.y * 0.6)) * 0.07;
 
   // top-center glow wash aligned with existing glow-orb
   float orb = exp(-length(p - vec2(0.0, 0.38)) * 2.15) * 0.9;
@@ -58,9 +63,9 @@ void main(){
       fract(seed.x + t * (0.015 + seed.y * 0.02) + sin(seed.y * 6.28) * 0.1),
       fract(seed.y + t * 0.008 + cos(seed.x * 6.28) * 0.05)
     );
-    // convert to p-space
+    // convert to aspect-corrected p-space
     vec2 pp = pos - 0.5;
-    pp.x *= u_res.x / max(u_res.y, 1.0);
+    pp.x *= ac;
     float d = length(p - pp);
     // soft point
     particles += 0.006 / (1.0 + d * 220.0);
@@ -75,8 +80,9 @@ void main(){
   // particles add on top at low mix
   col += particles * 0.55 * vec3(0.6, 0.95, 1.0);
 
-  // vignette to keep edges dark
-  float vig = 1.0 - dot(p, p) * 0.42;
+  // vignette — aspect-aware so it doesn't stretch on portrait
+  float vigX = p.x / max(ac, 0.5);
+  float vig = 1.0 - (vigX * vigX + p.y * p.y) * 0.42;
   col *= vig;
 
   // keep alpha 1 (opaque) but colors are subtle; parent bg stays #070b14

@@ -249,16 +249,13 @@ class ConvexClientTest {
     @Test
     fun fakeChatClientTracksConnectionStateFlow() = runTest {
         val client = FakeChatClient()
-        val states = mutableListOf<ConnectionState>()
-
-        client.connectionState.collect { states.add(it) }
+        assertEquals(ConnectionState.DISCONNECTED, client.connectionState.value)
 
         client.connect("https://test.convex.cloud")
-        client.disconnect()
+        assertEquals(ConnectionState.CONNECTED, client.connectionState.value)
 
-        assertTrue(states.contains(ConnectionState.DISCONNECTED))
-        assertTrue(states.contains(ConnectionState.CONNECTING))
-        assertTrue(states.contains(ConnectionState.CONNECTED))
+        client.disconnect()
+        assertEquals(ConnectionState.DISCONNECTED, client.connectionState.value)
     }
 
     @Test

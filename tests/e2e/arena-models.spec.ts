@@ -7,8 +7,8 @@ test.describe("LLM Arena model manager", () => {
     await page.goto("/dashboard/arena");
     await expect(page.getByRole("heading", { name: "LLM Arena", level: 1 })).toBeVisible();
     await expect(page.getByText("Model Manager")).toBeVisible();
-    await expect(page.getByText("MiniCPM5 1B")).toBeVisible();
-    await expect(page.getByText("Qwen3 0.6B")).toBeVisible();
+    await expect(page.getByText("MiniCPM5 1B").first()).toBeVisible();
+    await expect(page.getByText("Qwen3 0.6B").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Download" }).first()).toBeVisible();
   });
 });

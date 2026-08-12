@@ -8,6 +8,7 @@ import { Bot, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
 import { LLMArena } from "@/components/arena/LLMArena";
 import { WikiEngine } from "@/components/arena/WikiEngine";
+import { cn } from "@/lib/utils";
 
 type Tab = "arena" | "wiki";
 
@@ -65,63 +66,64 @@ export default function ArenaDashboardPage() {
   }, [banks, creatingBank, bankId, bankError]);
 
   return (
-    <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
-              <Bot className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">
-                LLM Arena
-              </h1>
-              <p className="text-xs text-slate-400">
-                Local AI models + Self-building wiki
-              </p>
-            </div>
+    <div className="flex min-h-0 flex-col gap-2">
+      <div className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] bg-[#070b14]/95 px-1 py-2 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+            <Bot className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-base font-bold tracking-tight text-white">
+              LLM Arena
+            </h1>
+            <p className="truncate text-[11px] text-slate-500">
+              Local models · Self-building wiki
+            </p>
           </div>
         </div>
 
-        <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-[#0c1222] p-1">
+        <div className="flex shrink-0 gap-0.5 rounded-md border border-white/[0.08] bg-[#0c1222] p-0.5">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              className={cn(
+                "rounded px-3 py-1.5 text-xs font-medium transition-colors",
                 activeTab === tab.id
                   ? "bg-cyan-500/20 text-cyan-400"
-                  : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
-              }`}
+                  : "text-slate-400 hover:bg-white/[0.05] hover:text-white",
+              )}
             >
               {tab.label}
             </button>
           ))}
         </div>
+      </div>
 
-        <div className="flex h-[calc(100vh-14rem)] rounded-xl border border-white/[0.08] overflow-hidden bg-[#070b14]">
-          {activeTab === "arena" ? (
-            <LLMArena />
-          ) : bankId ? (
-            <WikiEngine bankId={bankId} />
-          ) : bankError ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
-              <AlertCircle className="h-8 w-8 text-red-400" />
-              <p className="text-sm text-slate-400 max-w-sm">{bankError}</p>
-              <Button
-                onClick={() => void ensureBank()}
-                disabled={creatingBank}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white text-sm"
-              >
-                {creatingBank ? "Retrying…" : "Retry setup"}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="h-6 w-6 text-cyan-400 animate-spin" />
-              <p className="text-sm text-slate-400">Setting up wiki engine…</p>
-            </div>
-          )}
-        </div>
+      <div className="flex min-h-[28rem] flex-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#070b14] h-[calc(100vh-9.5rem)]">
+        {activeTab === "arena" ? (
+          <LLMArena />
+        ) : bankId ? (
+          <WikiEngine bankId={bankId} />
+        ) : bankError ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+            <AlertCircle className="h-7 w-7 text-red-400" />
+            <p className="max-w-sm text-sm text-slate-400">{bankError}</p>
+            <Button
+              onClick={() => void ensureBank()}
+              disabled={creatingBank}
+              className="bg-cyan-500 text-sm text-white hover:bg-cyan-600"
+            >
+              {creatingBank ? "Retrying…" : "Retry setup"}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+            <p className="text-sm text-slate-400">Setting up wiki engine…</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

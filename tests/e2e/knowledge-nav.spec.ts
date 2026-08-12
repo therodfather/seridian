@@ -23,6 +23,7 @@ test.describe("knowledge navigation", () => {
     await navigateTo(page, "Wiki");
     await expect(page).toHaveURL(/\/dashboard\/wiki/);
     await expect(page.getByRole("heading", { name: "Wiki", level: 1 })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Load company knowledge/i })).toBeVisible();
   });
 
   test("opens second brain from the sidebar", async ({ page }) => {

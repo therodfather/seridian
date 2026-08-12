@@ -34,6 +34,7 @@ import type * as secrets from "../secrets.js";
 import type * as seedIssues from "../seedIssues.js";
 import type * as users from "../users.js";
 import type * as wiki from "../wiki.js";
+import type * as wikiSeed from "../wikiSeed.js";
 
 import type {
   ApiFromModules,
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   seedIssues: typeof seedIssues;
   users: typeof users;
   wiki: typeof wiki;
+  wikiSeed: typeof wikiSeed;
 }>;
 
 /**

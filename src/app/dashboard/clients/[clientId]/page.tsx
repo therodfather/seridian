@@ -363,7 +363,7 @@ export default function ClientDetailPage({
 
       {/* Tabs Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList variant="line" className="gap-2 border-b border-white/[0.08]">
+        <TabsList variant="line" className="max-w-full gap-2 overflow-x-auto border-b border-white/[0.08]">
           <TabsTrigger value="network" className="gap-2 text-xs font-semibold">
             <Network className="w-4 h-4 text-cyan-400" /> Personnel Social & Background Dossiers
           </TabsTrigger>

@@ -607,7 +607,7 @@ export function ConvexFilePreview({
         )}
 
         {/* Studio Split Workspace Editor & Live Rendered Preview */}
-        <div className="grid flex-1 grid-cols-2 divide-x divide-white/[0.08] min-h-[580px]">
+        <div className="grid min-h-[320px] flex-1 grid-cols-1 divide-y divide-white/[0.08] md:min-h-[580px] md:grid-cols-2 md:divide-x md:divide-y-0">
           {/* Left Column: Source Editor */}
           <div className="flex flex-col bg-[#070b14] p-3">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1">

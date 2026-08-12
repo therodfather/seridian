@@ -227,33 +227,34 @@ export function FileManager({ clientId }: FileManagerProps) {
   return (
     <div className="flex flex-col gap-3">
       {/* Header & Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <HardDrive className="h-5 w-5 text-slate-400" />
-          <span className="text-sm text-slate-400">{fileItems.length} files · {formatBytes(totalSize)}</span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <HardDrive className="h-5 w-5 shrink-0 text-slate-400" />
+          <span className="truncate text-sm text-slate-400">{fileItems.length} files · {formatBytes(totalSize)}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search files..."
-              className="h-7 w-40 pl-8 bg-white/5 border-white/10 text-xs"
+              className="h-8 w-full pl-8 bg-white/5 border-white/10 text-xs sm:h-7 sm:w-40"
             />
           </div>
           <div className="flex items-center rounded-md border border-white/10 bg-white/[0.03] p-0.5">
-            <button type="button" onClick={() => setViewMode("list")} className={cn("h-6 w-6 flex items-center justify-center rounded text-xs", viewMode === "list" ? "bg-white/10 text-white" : "text-slate-500")}><List className="h-3.5 w-3.5" /></button>
-            <button type="button" onClick={() => setViewMode("grid")} className={cn("h-6 w-6 flex items-center justify-center rounded text-xs", viewMode === "grid" ? "bg-white/10 text-white" : "text-slate-500")}><Grid className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setViewMode("list")} className={cn("h-7 w-7 sm:h-6 sm:w-6 flex items-center justify-center rounded text-xs", viewMode === "list" ? "bg-white/10 text-white" : "text-slate-500")} aria-label="List view"><List className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setViewMode("grid")} className={cn("h-7 w-7 sm:h-6 sm:w-6 flex items-center justify-center rounded text-xs", viewMode === "grid" ? "bg-white/10 text-white" : "text-slate-500")} aria-label="Grid view"><Grid className="h-3.5 w-3.5" /></button>
           </div>
 
-          <Button size="sm" onClick={() => setShowCreateDoc(true)} className="h-7 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1">
+          <Button size="sm" onClick={() => setShowCreateDoc(true)} className="h-8 flex-1 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1 sm:h-7 sm:flex-none">
             <FilePlus className="h-3.5 w-3.5" />
-            Create Document
+            <span className="sm:inline">Create</span>
+            <span className="hidden sm:inline"> Document</span>
           </Button>
 
-          <Button size="sm" onClick={() => setShowUpload(!showUpload)} className="h-7 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1">
-            {showUpload ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+          <Button size="sm" onClick={() => setShowUpload(!showUpload)} className="h-8 flex-1 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1 sm:h-7 sm:flex-none">
+            {showUpload ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
             {showUpload ? "Close" : "Upload"}
           </Button>
         </div>
@@ -325,7 +326,7 @@ export function FileManager({ clientId }: FileManagerProps) {
                   <p className="truncate text-sm text-slate-200 group-hover:text-white">{file.name}</p>
                   <p className="text-[11px] text-slate-500">{formatBytes(file.size)} · {config.label} · {formatDate(file.createdAt)}</p>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   {isPreviewable(file.type, file.name) && (
                     <button type="button" onClick={() => setPreviewFile(file)} className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-white/10" title="Preview / Edit"><Eye className="h-3.5 w-3.5" /></button>
                   )}
@@ -439,7 +440,7 @@ export function FileManager({ clientId }: FileManagerProps) {
                   />
                 </div>
 
-                <div className="flex justify-between items-center pt-3 border-t border-white/[0.08]">
+                <div className="flex flex-col-reverse gap-2 border-t border-white/[0.08] pt-3 sm:flex-row sm:items-center sm:justify-between">
                   <Button type="button" variant="ghost" onClick={() => setDocWizardStep(1)} className="text-slate-400 text-xs flex items-center gap-1">
                     <ArrowLeft className="h-3.5 w-3.5" /> Back
                   </Button>
@@ -482,14 +483,14 @@ export function FileManager({ clientId }: FileManagerProps) {
       {/* Preview Dialog */}
       <Dialog open={!!previewFile} onOpenChange={(o) => !o && setPreviewFile(null)}>
         {previewFile && (
-          <DialogContent className="sm:max-w-5xl w-[92vw] max-h-[92vh] border-white/[0.08] bg-[#0c1222] p-0 overflow-hidden shadow-2xl">
+          <DialogContent className="max-h-[92vh] w-[95vw] overflow-hidden border-white/[0.08] bg-[#0c1222] p-0 shadow-2xl sm:max-w-5xl">
             <DialogHeader className="px-5 py-3 border-b border-white/[0.08] flex items-center justify-between">
               <DialogTitle className="text-sm font-bold text-white flex items-center gap-2">
                 {(() => { const Icon = getFileConfig(previewFile.type).icon; return <Icon className="h-4 w-4 text-cyan-400" />; })()}
                 {previewFile.name}
               </DialogTitle>
             </DialogHeader>
-            <div className="p-4 bg-[#070b14] flex-1 flex flex-col min-h-[650px] max-h-[80vh]">
+            <div className="flex max-h-[min(80vh,100%)] min-h-[40vh] flex-1 flex-col bg-[#070b14] p-3 sm:min-h-[520px] sm:p-4">
               <ConvexFilePreview
                 fileId={previewFile._id}
                 fileName={previewFile.name}
@@ -516,10 +517,10 @@ export function FileManager({ clientId }: FileManagerProps) {
               <div className="flex justify-between"><span className="text-slate-500">Created</span><span className="text-slate-300">{formatDate(selectedFile.createdAt)} {formatTime(selectedFile.createdAt)}</span></div>
               {selectedFile.parentId && <div className="flex justify-between"><span className="text-slate-500">Folder</span><span className="text-slate-300">{selectedFile.parentId}</span></div>}
             </div>
-            <div className="flex gap-2 pt-2 border-t border-white/[0.06]">
-              {isPreviewable(selectedFile.type, selectedFile.name) && <Button size="sm" variant="outline" onClick={() => { setPreviewFile(selectedFile); setSelectedFile(null); }} className="flex-1 border-white/10 text-xs"><Eye className="h-3.5 w-3.5 mr-1" />Preview</Button>}
-              <Button size="sm" variant="outline" onClick={() => { setRenameFileItem(selectedFile); setNewFileName(selectedFile.name); setSelectedFile(null); }} className="flex-1 border-white/10 text-xs"><Edit2 className="h-3.5 w-3.5 mr-1" />Rename</Button>
-              <Button size="sm" variant="outline" onClick={() => setDeleteConfirm(selectedFile)} className="flex-1 border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs"><Trash2 className="h-3.5 w-3.5 mr-1" />Delete</Button>
+            <div className="flex flex-col gap-2 border-t border-white/[0.06] pt-2 sm:flex-row">
+              {isPreviewable(selectedFile.type, selectedFile.name) && <Button size="sm" variant="outline" onClick={() => { setPreviewFile(selectedFile); setSelectedFile(null); }} className="w-full border-white/10 text-xs sm:flex-1"><Eye className="h-3.5 w-3.5 mr-1" />Preview</Button>}
+              <Button size="sm" variant="outline" onClick={() => { setRenameFileItem(selectedFile); setNewFileName(selectedFile.name); setSelectedFile(null); }} className="w-full border-white/10 text-xs sm:flex-1"><Edit2 className="h-3.5 w-3.5 mr-1" />Rename</Button>
+              <Button size="sm" variant="outline" onClick={() => setDeleteConfirm(selectedFile)} className="w-full border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs sm:flex-1"><Trash2 className="h-3.5 w-3.5 mr-1" />Delete</Button>
             </div>
           </DialogContent>
         )}

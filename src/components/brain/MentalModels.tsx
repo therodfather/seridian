@@ -262,7 +262,7 @@ export function MentalModels({ bankId }: MentalModelsProps) {
                         </span>
                       </div>
                     </div>
-                    <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                       <button
                         onClick={() => startEditing(model._id, model.content)}
                         className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-amber-400 transition-colors"

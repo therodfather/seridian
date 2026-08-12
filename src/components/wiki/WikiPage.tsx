@@ -95,13 +95,13 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
 
   return (
     <div className="bg-[#070b14] rounded-lg border border-white/[0.08] overflow-hidden">
-      <div className="bg-[#0c1222] border-b border-white/[0.08] px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="bg-[#0c1222] border-b border-white/[0.08] px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             {onBack && (
               <Button
                 onClick={onBack}
-                className="bg-white/5 hover:bg-white/10 text-white text-sm px-3 py-1"
+                className="shrink-0 bg-white/5 hover:bg-white/10 text-white text-sm px-3 py-1 md:hidden"
               >
                 ← Back
               </Button>
@@ -114,11 +114,11 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
                 className="bg-[#070b14] border-white/[0.08] text-white text-xl font-semibold focus:border-cyan-400"
               />
             ) : (
-              <h1 className="text-xl font-semibold text-white">{page.title ?? "Untitled"}</h1>
+              <h1 className="truncate text-xl font-semibold text-white">{page.title ?? "Untitled"}</h1>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {isEditing ? (
               <>
                 <Button

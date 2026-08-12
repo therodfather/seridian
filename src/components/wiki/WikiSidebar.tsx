@@ -54,7 +54,7 @@ export function WikiSidebar({
   };
 
   return (
-    <div className="w-64 h-full bg-[#070b14] border-r border-white/[0.08] flex flex-col">
+    <div className="flex h-full w-full flex-col border-white/[0.08] bg-[#070b14] md:border-r">
       <div className="p-3 border-b border-white/[0.08]">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-white">

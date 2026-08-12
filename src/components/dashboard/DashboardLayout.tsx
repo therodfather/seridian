@@ -152,26 +152,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <footer
         role="contentinfo"
         className={cn(
-          "relative z-40 flex items-center justify-between border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out",
+          "relative z-40 flex flex-col gap-2 border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
           sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
         )}>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span>{pageName}</span>
-          <span className="text-white/10">|</span>
-          <span>{activeClients} active clients</span>
-          <span className="text-white/10">|</span>
-          <span>{openIssues} open issues</span>
-          <span className="text-white/10">|</span>
-          <span>${pipelineValue.toLocaleString()} pipeline</span>
+          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden sm:inline">{activeClients} active clients</span>
+          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden sm:inline">{openIssues} open issues</span>
+          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden sm:inline">${pipelineValue.toLocaleString()} pipeline</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <StatusIndicator />
           <NotificationBell />
-          <span className="text-white/10">|</span>
           {user && (
             <>
-              <span className="text-white/10">|</span>
-              <span>{user.name}</span>
+              <span className="hidden text-white/10 sm:inline">|</span>
+              <span className="truncate max-w-[8rem] sm:max-w-none">{user.name}</span>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -181,8 +180,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </button>
             </>
           )}
-          <span className="text-white/10">|</span>
-          <span>Seridian v0.1.0</span>
+          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden sm:inline">Seridian v0.1.0</span>
         </div>
       </footer>
 

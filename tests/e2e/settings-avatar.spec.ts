@@ -8,6 +8,7 @@ test.describe("settings avatars", () => {
     await expect(page).toHaveURL(/\/dashboard\/settings/);
 
     await page.getByRole("button", { name: /Team & Access/i }).first().click();
+    await expect(page).toHaveURL(/tab=users/);
     await expect(
       page.getByRole("button", { name: /Add User Access/i }),
     ).toBeVisible();

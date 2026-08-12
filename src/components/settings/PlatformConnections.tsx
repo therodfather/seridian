@@ -1,18 +1,20 @@
 "use client";
 
-import { ExternalLink, GitBranch, Globe, CheckCircle2, AlertCircle } from "lucide-react";
+import { ExternalLink, GitBranch, Globe } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
-
-const GITHUB_REPO = "https://github.com/therodfather/seridian";
-const GITHUB_ACTIONS = `${GITHUB_REPO}/actions`;
-const NETLIFY_SITE = "https://app.netlify.com/projects/seridian";
-const NETLIFY_DEPLOYS = `${NETLIFY_SITE}/deploys`;
-const PRODUCTION_URL = "https://seridian.netlify.app";
+import {
+  GITHUB_ACTIONS,
+  GITHUB_REPO,
+  NETLIFY_DEPLOYS,
+  PLATFORM_LINK_STATUS,
+  PRODUCTION_URL,
+  type PlatformLinkStatus,
+} from "./platformLinks";
 
 interface ConnectionCardProps {
   title: string;
   description: string;
-  status: "connected" | "configure";
+  status: PlatformLinkStatus;
   icon: React.ReactNode;
   primaryHref: string;
   primaryLabel: string;
@@ -42,19 +44,8 @@ function ConnectionCard({
             <p className="text-xs text-slate-500 mt-0.5">{description}</p>
           </div>
         </div>
-        <span
-          className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-            status === "connected"
-              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-              : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-          }`}
-        >
-          {status === "connected" ? (
-            <CheckCircle2 className="h-3 w-3" />
-          ) : (
-            <AlertCircle className="h-3 w-3" />
-          )}
-          {status === "connected" ? "Live" : "Setup"}
+        <span className="inline-flex items-center gap-1 rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300">
+          {status === "linked" ? "Links" : status}
         </span>
       </div>
 
@@ -101,8 +92,8 @@ export function PlatformConnections() {
           Platform connections
         </h3>
         <p className="text-xs text-slate-400 mt-1">
-          GitHub is the source of truth. Netlify ships production. Open these from
-          here instead of hunting tabs.
+          GitHub is the source of truth. Netlify ships production. These open the
+          known project URLs — they are not live OAuth connection checks.
         </p>
       </div>
 
@@ -110,7 +101,7 @@ export function PlatformConnections() {
         <ConnectionCard
           title="GitHub"
           description="Code, PRs, Actions, and Deploy Previews for therodfather/seridian"
-          status="connected"
+          status={PLATFORM_LINK_STATUS}
           icon={<GitBranch className="h-5 w-5" />}
           primaryHref={GITHUB_REPO}
           primaryLabel="Open repository"
@@ -120,7 +111,7 @@ export function PlatformConnections() {
         <ConnectionCard
           title="Netlify"
           description="Production site and Deploy Previews for the Seridian marketing app"
-          status="connected"
+          status={PLATFORM_LINK_STATUS}
           icon={<Globe className="h-5 w-5" />}
           primaryHref={NETLIFY_DEPLOYS}
           primaryLabel="Open deploys"

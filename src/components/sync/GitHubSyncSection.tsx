@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { SyncCard } from "./SyncCard";
-
 import { CheckSquare, FolderKanban } from "lucide-react";
 
 interface GitHubSyncSectionProps {
@@ -52,13 +51,15 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
     }),
   );
 
+  const hasAnyData = stats.totalIssues + stats.totalProjects > 0;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-lg font-semibold text-white">GitHub Sync</h2>
-          <p className="text-sm text-slate-500">
-            Manage GitHub repository data synchronization
+          <h2 className="text-sm font-bold text-white">GitHub sync</h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Primary source of truth for issues and projects.
           </p>
         </div>
         <button
@@ -88,7 +89,7 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              Syncing All...
+              Syncing…
             </>
           ) : (
             <>
@@ -105,15 +106,24 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              Sync All
+              Sync GitHub
             </>
           )}
         </button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           {error}
+        </div>
+      )}
+
+      {!hasAnyData && !error && (
+        <div className="rounded-xl border border-dashed border-white/[0.08] px-4 py-8 text-center">
+          <p className="text-xs text-slate-400">No GitHub issues or projects synced yet.</p>
+          <p className="text-[11px] text-slate-600 mt-1">
+            Run Sync GitHub when a GITHUB_TOKEN is configured in Convex.
+          </p>
         </div>
       )}
 
@@ -126,7 +136,7 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
           countLabel="synced issues"
           syncing={syncing}
           onSync={handleSync}
-          connected={true}
+          connected={!!stats.lastIssueSync || stats.totalIssues > 0}
           details={issueDetails.length > 0 ? issueDetails : undefined}
         />
         <SyncCard
@@ -137,7 +147,7 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
           countLabel="synced projects"
           syncing={syncing}
           onSync={handleSync}
-          connected={true}
+          connected={!!stats.lastProjectSync || stats.totalProjects > 0}
           details={projectDetails.length > 0 ? projectDetails : undefined}
         />
       </div>

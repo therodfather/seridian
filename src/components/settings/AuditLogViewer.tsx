@@ -50,18 +50,26 @@ export function AuditLogViewer() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [seeding, setSeeding] = useState(false);
+  const [seedError, setSeedError] = useState<string | null>(null);
+  const [autoSeedAttempted, setAutoSeedAttempted] = useState(false);
 
   // Automatically seed initial logs if table is completely empty on load
   useEffect(() => {
-    if (auditLogs && auditLogs.length === 0) {
-      seedLogs().catch(console.error);
+    if (auditLogs && auditLogs.length === 0 && !autoSeedAttempted) {
+      setAutoSeedAttempted(true);
+      seedLogs().catch((err) => {
+        setSeedError(err instanceof Error ? err.message : "Could not seed audit logs");
+      });
     }
-  }, [auditLogs, seedLogs]);
+  }, [auditLogs, seedLogs, autoSeedAttempted]);
 
   async function handleSeed() {
     setSeeding(true);
+    setSeedError(null);
     try {
       await seedLogs();
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : "Could not refresh audit logs");
     } finally {
       setSeeding(false);
     }
@@ -214,6 +222,12 @@ export function AuditLogViewer() {
           </Button>
         </div>
       </div>
+
+      {seedError && (
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {seedError}
+        </div>
+      )}
 
       {/* Audit Log Table */}
       <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c1222]/80">

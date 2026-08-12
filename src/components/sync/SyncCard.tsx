@@ -2,7 +2,7 @@
 
 import { ComponentType } from "react";
 import { cn } from "@/lib/utils";
-import { RefreshCw, CheckCircle, Clock } from "lucide-react";
+import { RefreshCw, Clock } from "lucide-react";
 
 function formatTimeSince(ts: number | null): string {
   if (!ts) return "Never";
@@ -66,7 +66,7 @@ export function SyncCard({
                   )}
                 />
                 <span className="text-[10px] font-semibold text-slate-400">
-                  {connected ? "Connected" : "Inactive"}
+                  {connected ? "Synced" : "Not synced"}
                 </span>
               </div>
             </div>

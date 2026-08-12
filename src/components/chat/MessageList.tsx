@@ -408,7 +408,10 @@ export function MessageList({
   );
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
+    <div
+      ref={containerRef}
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin"
+    >
       {messages === undefined ? (
         <div className="flex flex-1 items-center justify-center p-6">
           <div className="space-y-4 w-full max-w-md">

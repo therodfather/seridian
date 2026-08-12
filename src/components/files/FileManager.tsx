@@ -6,6 +6,8 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Button, Skeleton, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { FileUpload } from "./FileUpload";
 import {
   Folder, File, FileText, FileImage, FileVideo, FileAudio, FileCode, FileArchive,
@@ -119,24 +121,37 @@ export function FileManager({ clientId }: FileManagerProps) {
   const totalSize = useMemo(() => fileItems.reduce((sum, f) => sum + f.size, 0), [fileItems]);
 
   const handleDelete = useCallback(async (fileId: Id<"files">) => {
-    await removeFile({ fileId });
-    setDeleteConfirm(null);
-    setSelectedFile(null);
+    try {
+      await removeFile({ fileId });
+      setDeleteConfirm(null);
+      setSelectedFile(null);
+      toastMutationSuccess("File deleted");
+    } catch (error) {
+      toastMutationError(error, "Failed to delete file");
+    }
   }, [removeFile]);
 
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!renameFileItem || !newFileName.trim()) return;
-    await renameFile({ fileId: renameFileItem._id, name: newFileName.trim() });
-    setRenameFileItem(null);
-    setNewFileName("");
+    try {
+      await renameFile({ fileId: renameFileItem._id, name: newFileName.trim() });
+      setRenameFileItem(null);
+      setNewFileName("");
+      toastMutationSuccess("File renamed");
+    } catch (error) {
+      toastMutationError(error, "Failed to rename file");
+    }
   };
 
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
 
   const handleCreateDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createTitle.trim()) return;
+    if (!createTitle.trim()) {
+      toastMutationError("Document title is required");
+      return;
+    }
     setCreating(true);
     try {
       const template = CREATE_FILE_TEMPLATES.find((t) => t.id === selectedTemplateId) || CREATE_FILE_TEMPLATES[0];
@@ -180,6 +195,10 @@ export function FileManager({ clientId }: FileManagerProps) {
         body: blob,
       });
 
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
       const { storageId } = await res.json();
 
       await createDoc({
@@ -196,6 +215,10 @@ export function FileManager({ clientId }: FileManagerProps) {
       setShowCreateDoc(false);
       setCreateTitle("");
       setCreateInitialContent("");
+      setDocWizardStep(1);
+      toastMutationSuccess("Document created");
+    } catch (error) {
+      toastMutationError(error, "Failed to create document");
     } finally {
       setCreating(false);
     }
@@ -252,9 +275,34 @@ export function FileManager({ clientId }: FileManagerProps) {
       {files === undefined ? (
         <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
       ) : files.length === 0 ? (
-        <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-sm text-slate-600">
-          {currentFolder ? "Empty folder" : "No files yet"}
-        </div>
+        <EmptyState
+          title={currentFolder ? "Empty folder" : "No files yet"}
+          description={
+            currentFolder
+              ? "Upload a file or create a document in this folder."
+              : "Upload files or create a document to get started."
+          }
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setShowCreateDoc(true)}
+                className="h-7 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1"
+              >
+                <FilePlus className="h-3.5 w-3.5" />
+                Create Document
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowUpload(true)}
+                className="h-7 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Upload
+              </Button>
+            </div>
+          }
+        />
       ) : viewMode === "list" ? (
         <div className="space-y-0.5">
           {/* Folders */}

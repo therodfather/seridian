@@ -5,6 +5,7 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button, Progress } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 type Deal = Doc<"deals">;
 
@@ -92,13 +93,23 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
   const stage = stageConfig[resolvedDeal.stage];
 
   async function handleStageChange(newStage: Deal["stage"]) {
-    await updateDeal({ dealId: resolvedDeal._id, stage: newStage });
+    try {
+      await updateDeal({ dealId: resolvedDeal._id, stage: newStage });
+      toastMutationSuccess("Stage updated");
+    } catch (error) {
+      toastMutationError(error, "Failed to update stage");
+    }
   }
 
   async function handleDelete() {
     if (!confirm("Delete this deal? This cannot be undone.")) return;
-    await removeDeal({ dealId: resolvedDeal._id });
-    onBack();
+    try {
+      await removeDeal({ dealId: resolvedDeal._id });
+      toastMutationSuccess("Deal deleted");
+      onBack();
+    } catch (error) {
+      toastMutationError(error, "Failed to delete deal");
+    }
   }
 
   return (

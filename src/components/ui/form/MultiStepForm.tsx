@@ -12,7 +12,7 @@ export interface FormStep {
 
 interface MultiStepFormProps {
   steps: FormStep[];
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<void>;
   onCancel?: () => void;
   submitting?: boolean;
   submitLabel?: string;

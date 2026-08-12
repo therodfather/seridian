@@ -7,6 +7,7 @@ import { Doc, Id } from "convex/_generated/dataModel";
 import { DealCard } from "./DealCard";
 import { Button, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 
 type Deal = Doc<"deals">;
 type Stage = Deal["stage"];
@@ -91,6 +92,19 @@ export function PipelineBoard({ onDealClick, onAddDeal }: PipelineBoardProps) {
         )}
       </div>
 
+      {deals !== undefined && deals.length === 0 ? (
+        <EmptyState
+          title="No deals in the pipeline"
+          description="Create a deal to start tracking opportunities by stage."
+          action={
+            onAddDeal ? (
+              <Button type="button" size="sm" onClick={onAddDeal}>
+                + Add Deal
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
       <div className="flex h-[calc(100vh-14rem)] sm:h-[calc(100vh-12rem)] gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         {columns.map((column) => {
           const columnDeals = dealsByStage(column.key);
@@ -151,6 +165,7 @@ export function PipelineBoard({ onDealClick, onAddDeal }: PipelineBoardProps) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

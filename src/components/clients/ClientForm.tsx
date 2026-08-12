@@ -3,9 +3,18 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
-import { Doc, Id } from "convex/_generated/dataModel";
-import { Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-kit";
+import { Doc } from "convex/_generated/dataModel";
+import {
+  Input,
+  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@bytecats/ui-kit";
 import { MultiStepForm, Field, FormGrid, FormSection } from "@/components/ui/form";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 type Client = Doc<"clients">;
 
@@ -14,6 +23,8 @@ interface ClientFormProps {
   onSuccess: () => void;
   onCancel?: () => void;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
   const createClient = useMutation(api.clients.create);
@@ -28,9 +39,20 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
   const [status, setStatus] = useState<"active" | "inactive">(client?.status ?? "active");
   const [notes, setNotes] = useState(client?.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string; company?: string }>({});
+
+  function validate(): boolean {
+    const next: typeof errors = {};
+    if (!name.trim()) next.name = "Name is required";
+    if (!email.trim()) next.email = "Email is required";
+    else if (!EMAIL_RE.test(email.trim())) next.email = "Enter a valid email";
+    if (!company.trim()) next.company = "Company is required";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
 
   async function handleSubmit() {
-    if (!name.trim() || !email.trim()) return;
+    if (!validate()) return;
     setSaving(true);
     try {
       const payload = {
@@ -45,10 +67,14 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
       };
       if (client) {
         await updateClient({ clientId: client._id, ...payload });
+        toastMutationSuccess("Client updated");
       } else {
         await createClient(payload);
+        toastMutationSuccess("Client created");
       }
       onSuccess();
+    } catch (error) {
+      toastMutationError(error, client ? "Failed to update client" : "Failed to create client");
     } finally {
       setSaving(false);
     }
@@ -61,11 +87,28 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
       fields: (
         <FormSection title="Contact Information">
           <FormGrid>
-            <Field label="Name" required>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" className="bg-white/5 border-white/10" />
+            <Field label="Name" required error={errors.name}>
+              <Input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+                }}
+                placeholder="John Doe"
+                className="bg-white/5 border-white/10"
+              />
             </Field>
-            <Field label="Email" required>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="john@company.com" className="bg-white/5 border-white/10" />
+            <Field label="Email" required error={errors.email}>
+              <Input
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                type="email"
+                placeholder="john@company.com"
+                className="bg-white/5 border-white/10"
+              />
             </Field>
             <Field label="Phone">
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className="bg-white/5 border-white/10" />
@@ -83,8 +126,16 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
       fields: (
         <FormSection title="Company Details">
           <FormGrid>
-            <Field label="Company">
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Corp" className="bg-white/5 border-white/10" />
+            <Field label="Company" required error={errors.company}>
+              <Input
+                value={company}
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  if (errors.company) setErrors((prev) => ({ ...prev, company: undefined }));
+                }}
+                placeholder="Acme Corp"
+                className="bg-white/5 border-white/10"
+              />
             </Field>
             <Field label="Industry">
               <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Technology" className="bg-white/5 border-white/10" />
@@ -108,11 +159,12 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
   ];
 
   return (
-    <DialogContent className="max-w-lg border-white/[0.06] bg-[#0c1222]">
-      <DialogHeader>
-        <DialogTitle className="text-white">{client ? "Edit Client" : "Add Client"}</DialogTitle>
-      </DialogHeader>
-      <MultiStepForm steps={steps} onSubmit={handleSubmit} onCancel={onCancel} submitting={saving} submitLabel={client ? "Update" : "Add Client"} />
-    </DialogContent>
+    <MultiStepForm
+      steps={steps}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      submitting={saving}
+      submitLabel={client ? "Update" : "Add Client"}
+    />
   );
 }

@@ -13,7 +13,9 @@ const securityHeaders = [
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.convex.cloud; frame-ancestors 'none';",
+      // Convex sync uses wss://*.convex.cloud; HTTP actions / site URL use *.convex.site.
+      // Browsers do not treat https: sources as covering wss: for WebSocket CSP checks.
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site; frame-ancestors 'none';",
   },
 ];
 

@@ -9,7 +9,7 @@ test.describe("settings avatars", () => {
     await navigateTo(page, "Settings");
     await expect(page).toHaveURL(/\/dashboard\/settings/);
 
-    await page.getByRole("button", { name: /Team & Access/i }).click();
+    await page.getByRole("button", { name: /Team & Access/i }).first().click();
     await expect(page.getByRole("button", { name: /Add User Access/i })).toBeVisible();
 
     const upload = page.getByRole("button", { name: /upload avatar/i });

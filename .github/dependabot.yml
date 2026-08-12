@@ -1,3 +1,7 @@
+# Dependabot version updates for therodfather/seridian.
+# Bun is the only JS package manager — use package-ecosystem: bun (not npm).
+# Weekly cadence; groups reduce PR spam; majors for TS / ESLint / AGP are ignored
+# so humans can plan those upgrades deliberately.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -8,23 +12,51 @@ updates:
     labels:
       - dependencies
       - ci
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
-  - package-ecosystem: npm
+  - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     labels:
       - dependencies
+    commit-message:
+      prefix: "chore"
+      include: "scope"
     groups:
       eslint:
         patterns:
           - "eslint*"
           - "@eslint/*"
           - "eslint-config-next"
+        update-types:
+          - "minor"
+          - "patch"
       types:
         patterns:
           - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Majors need a planned migration (TS 7, ESLint 10, Node types 26, …).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: gradle
     directory: /android-client
@@ -34,3 +66,19 @@ updates:
     labels:
       - dependencies
       - android
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      ktor:
+        patterns:
+          - "io.ktor:*"
+      kotlinx:
+        patterns:
+          - "org.jetbrains.kotlinx:*"
+    ignore:
+      # AGP 9 is a major Android toolchain jump — review separately.
+      - dependency-name: "com.android.library"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major"]

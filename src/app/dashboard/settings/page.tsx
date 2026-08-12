@@ -43,6 +43,7 @@ import {
 import { SyncDashboard } from "@/components/sync/SyncDashboard";
 import { SecretsVault } from "@/components/settings/SecretsVault";
 import { AuditLogViewer } from "@/components/settings/AuditLogViewer";
+import { AvatarUpload } from "@/components/settings/AvatarUpload";
 import { cn } from "@/lib/utils";
 
 type User = Doc<"users">;
@@ -58,10 +59,13 @@ function UserCard({ user, onEdit, onDelete }: { user: User; onEdit: (user: User)
     <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#080d1a]/80 p-4 transition-all hover:border-cyan-500/30 hover:bg-[#0c1222]">
       <div className="flex items-center gap-4">
         <div className="relative">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-sm font-bold text-cyan-300">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-          <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#070b14] ${statusColors[user.status]}`} aria-hidden="true" />
+          <AvatarUpload
+            pubkey={user.pubkey}
+            name={user.name}
+            avatarUrl={user.avatar ?? null}
+            size="md"
+          />
+          <span className={`pointer-events-none absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#070b14] ${statusColors[user.status]}`} aria-hidden="true" />
         </div>
         <div>
           <div className="flex items-center gap-2">

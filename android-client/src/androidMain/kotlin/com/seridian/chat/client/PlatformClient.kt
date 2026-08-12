@@ -15,11 +15,7 @@ actual fun generateTempId(): String = UUID.randomUUID().toString()
 fun createPlatformChatClient(
     scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job())
 ): ChatClient {
-    val httpClient = HttpClient(OkHttp) {
-        install(WebSockets)
-    }
-    return ChatClientImpl(
-        httpClient = httpClient,
+    return ConvexClient(
         scope = scope
     )
 }

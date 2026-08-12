@@ -76,13 +76,13 @@ class ChatViewModel(
         val user = _uiState.value.currentUser ?: return
 
         client.sendMessage(
-            channelId = channel.id,
+            channelId = channel._id,
             senderId = user.pubkey,
             senderName = user.name,
             content = content
         )
 
-        val messages = client.listMessages(channel.id)
+        val messages = client.listMessages(channel._id)
         _uiState.value = _uiState.value.copy(messages = messages.reversed())
     }
 

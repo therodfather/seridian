@@ -15,31 +15,34 @@ import {
   Bot,
   Brain,
 } from "lucide-react";
+import { ROUTES, type DashboardRoute } from "./routes";
 
 export type NavGroup = "core" | "business" | "knowledge" | "tools";
 
 export interface DashboardNavItem {
-  href: string;
+  href: DashboardRoute;
   label: string;
   icon: LucideIcon;
   group: NavGroup;
 }
 
+const d = ROUTES.dashboard;
+
 export const DASHBOARD_NAV: DashboardNavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: Home, group: "core" },
-  { href: "/dashboard/issues", label: "Issues", icon: CheckCircle, group: "core" },
-  { href: "/dashboard/clients", label: "Clients", icon: Users, group: "core" },
-  { href: "/dashboard/bookings", label: "Bookings", icon: Calendar, group: "business" },
-  { href: "/dashboard/sales", label: "Sales", icon: DollarSign, group: "business" },
-  { href: "/dashboard/proposals", label: "Proposals", icon: FileText, group: "business" },
-  { href: "/dashboard/wiki", label: "Wiki", icon: BookOpen, group: "knowledge" },
-  { href: "/dashboard/arena", label: "LLM Arena", icon: Bot, group: "knowledge" },
-  { href: "/dashboard/brain", label: "Second Brain", icon: Brain, group: "knowledge" },
-  { href: "/dashboard/templates", label: "Templates", icon: Mail, group: "tools" },
-  { href: "/dashboard/files", label: "Files", icon: Folder, group: "tools" },
-  { href: "/dashboard/sync", label: "Sync", icon: RefreshCw, group: "tools" },
-  { href: "/dashboard/chat", label: "Chat", icon: MessageSquare, group: "tools" },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings, group: "tools" },
+  { href: d.root, label: "Overview", icon: Home, group: "core" },
+  { href: d.issues, label: "Issues", icon: CheckCircle, group: "core" },
+  { href: d.clients, label: "Clients", icon: Users, group: "core" },
+  { href: d.bookings, label: "Bookings", icon: Calendar, group: "business" },
+  { href: d.sales, label: "Sales", icon: DollarSign, group: "business" },
+  { href: d.proposals, label: "Proposals", icon: FileText, group: "business" },
+  { href: d.wiki, label: "Wiki", icon: BookOpen, group: "knowledge" },
+  { href: d.arena, label: "LLM Arena", icon: Bot, group: "knowledge" },
+  { href: d.brain, label: "Second Brain", icon: Brain, group: "knowledge" },
+  { href: d.templates, label: "Templates", icon: Mail, group: "tools" },
+  { href: d.files, label: "Files", icon: Folder, group: "tools" },
+  { href: d.sync, label: "Sync", icon: RefreshCw, group: "tools" },
+  { href: d.chat, label: "Chat", icon: MessageSquare, group: "tools" },
+  { href: d.settings, label: "Settings", icon: Settings, group: "tools" },
 ];
 
 export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
@@ -67,20 +70,20 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
 };
 
 export const KNOWLEDGE_NAV_HREFS = [
-  "/dashboard/wiki",
-  "/dashboard/arena",
-  "/dashboard/brain",
-] as const;
+  d.wiki,
+  d.arena,
+  d.brain,
+] as const satisfies readonly DashboardRoute[];
 
 export function navSlug(href: string): string {
-  return href.replace("/dashboard", "").replace(/^\//, "") || "overview";
+  return href.replace(ROUTES.dashboard.root, "").replace(/^\//, "") || "overview";
 }
 
 export function entityHref(
   group: "clients" | "issues" | "proposals",
   id: string,
 ): string {
-  return `/dashboard/${group}/${id}`;
+  return `${ROUTES.dashboard.root}/${group}/${id}`;
 }
 
 export const NUMBER_KEY_NAV = DASHBOARD_NAV.slice(0, 9).map((item, index) => ({
@@ -92,5 +95,5 @@ export const NUMBER_KEY_NAV = DASHBOARD_NAV.slice(0, 9).map((item, index) => ({
 
 export function newItemHref(section: string): string {
   const match = DASHBOARD_NAV.find((item) => navSlug(item.href) === section);
-  return match?.href ?? "/dashboard";
+  return match?.href ?? ROUTES.dashboard.root;
 }

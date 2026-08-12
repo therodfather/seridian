@@ -304,7 +304,7 @@ export default function WebGLHero() {
     let reducedMotion = mql.matches;
 
     const acquired = acquireWebGL2(startCanvas);
-    let canvas = acquired.canvas;
+    const canvas = acquired.canvas;
     canvasRef.current = canvas;
 
     // fade in

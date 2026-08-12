@@ -1,62 +1,53 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@bytecats/ui-kit";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
-  Home,
-  CheckCircle,
-  Users,
-  Calendar,
-  DollarSign,
-  FileText,
-  Mail,
-  Folder,
-  RefreshCw,
-  MessageSquare,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  type LucideIcon,
-} from "lucide-react";
+  DASHBOARD_NAV,
+  NAV_GROUP_LABELS,
+  type DashboardNavItem,
+  type NavGroup,
+} from "@/lib/dashboardNav";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  group: "core" | "business" | "tools";
-}
+const ConstellationS = dynamic(
+  () => import("@/components/three/ConstellationS").then((m) => m.ConstellationS),
+  { ssr: false, loading: () => <span className="font-display text-sm font-bold text-seridian-400">S</span> },
+);
 
-const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: Home, group: "core" },
-  { href: "/dashboard/issues", label: "Issues", icon: CheckCircle, group: "core" },
-  { href: "/dashboard/clients", label: "Clients", icon: Users, group: "core" },
-  { href: "/dashboard/bookings", label: "Bookings", icon: Calendar, group: "business" },
-  { href: "/dashboard/sales", label: "Sales", icon: DollarSign, group: "business" },
-  { href: "/dashboard/proposals", label: "Proposals", icon: FileText, group: "business" },
-  { href: "/dashboard/templates", label: "Templates", icon: Mail, group: "tools" },
-  { href: "/dashboard/files", label: "Files", icon: Folder, group: "tools" },
-  { href: "/dashboard/sync", label: "Sync", icon: RefreshCw, group: "tools" },
-  { href: "/dashboard/chat", label: "Chat", icon: MessageSquare, group: "tools" },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings, group: "tools" },
-];
-
-const groupLabels = { core: "Core", business: "Business", tools: "Tools" } as const;
-
-function NavGroup({ group, items, pathname, collapsed }: { group: string; items: NavItem[]; pathname: string; collapsed: boolean }) {
+function NavGroupList({
+  group,
+  items,
+  pathname,
+  collapsed,
+}: {
+  group: NavGroup;
+  items: DashboardNavItem[];
+  pathname: string;
+  collapsed: boolean;
+}) {
   return (
     <div className="mb-3">
       {!collapsed && (
         <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-          {groupLabels[group as keyof typeof groupLabels]}
+          {NAV_GROUP_LABELS[group]}
         </div>
       )}
       <div className="space-y-0.5">
         {items.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
-            <NavLink key={item.href} item={item} isActive={isActive} collapsed={collapsed} />
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={isActive}
+              collapsed={collapsed}
+            />
           );
         })}
       </div>
@@ -64,7 +55,15 @@ function NavGroup({ group, items, pathname, collapsed }: { group: string; items:
   );
 }
 
-function NavLink({ item, isActive, collapsed }: { item: NavItem; isActive: boolean; collapsed: boolean }) {
+function NavLink({
+  item,
+  isActive,
+  collapsed,
+}: {
+  item: DashboardNavItem;
+  isActive: boolean;
+  collapsed: boolean;
+}) {
   const Icon = item.icon;
   return (
     <Link
@@ -93,12 +92,12 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
 
-  const grouped = navItems.reduce(
+  const grouped = DASHBOARD_NAV.reduce(
     (acc, item) => {
       (acc[item.group] ??= []).push(item);
       return acc;
     },
-    {} as Record<string, NavItem[]>,
+    {} as Record<NavGroup, DashboardNavItem[]>,
   );
 
   return (
@@ -109,17 +108,30 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       )}
     >
       <div className={cn("flex h-14 items-center border-b border-white/[0.06]", collapsed ? "justify-center px-2" : "px-4")}>
-        <Link href="/" className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-seridian-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14] rounded-lg">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-seridian-500/10">
-            <span className="font-display text-sm font-bold text-seridian-400">S</span>
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-seridian-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14] rounded-lg"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-seridian-500/10 overflow-hidden">
+            <ConstellationS size={28} />
           </span>
-          {!collapsed && <span className="font-display text-base font-semibold tracking-tight text-white">Seridian</span>}
+          {!collapsed && (
+            <span className="font-display text-base font-semibold tracking-tight text-white">
+              Seridian
+            </span>
+          )}
         </Link>
       </div>
 
       <nav role="navigation" aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
-        {Object.entries(grouped).map(([group, items]) => (
-          <NavGroup key={group} group={group} items={items} pathname={pathname} collapsed={collapsed} />
+        {(Object.keys(NAV_GROUP_LABELS) as NavGroup[]).map((group) => (
+          <NavGroupList
+            key={group}
+            group={group}
+            items={grouped[group] ?? []}
+            pathname={pathname}
+            collapsed={collapsed}
+          />
         ))}
       </nav>
 

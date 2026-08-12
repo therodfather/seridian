@@ -64,6 +64,38 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
+  e2e:
+    name: Playwright E2E (bun)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install deps (bun)
+        run: bun install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Build (Next.js)
+        run: bun run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_CONVEX_URL: "https://fine-flamingo-162.convex.cloud"
+      - name: Run Playwright
+        run: bun run test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_CONVEX_URL: "https://fine-flamingo-162.convex.cloud"
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+
   size-check:
     name: Bundle Size Check (bun)
     runs-on: ubuntu-latest
@@ -91,7 +123,7 @@ jobs:
   auto-merge-ready:
     name: Label PR Ready
     runs-on: ubuntu-latest
-    needs: ci
+    needs: [ci, e2e]
     if: github.event_name == 'pull_request' && success()
     steps:
       - uses: actions/github-script@v7

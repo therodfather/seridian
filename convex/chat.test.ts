@@ -431,4 +431,53 @@ describe("chat functions", () => {
     expect(messages[1].content).toBe("Second");
     expect(messages[2].content).toBe("Third");
   });
+
+  test("login succeeds with matching password", async () => {
+    await t.mutation(api.users.upsert, {
+      pubkey: "dee",
+      name: "Dee",
+      password: "secret",
+      status: "offline",
+    });
+
+    const result = await t.mutation(api.chat.login, {
+      pubkey: "dee",
+      password: "secret",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.user.pubkey).toBe("dee");
+      expect(result.user.name).toBe("Dee");
+    }
+  });
+
+  test("login fails for unknown user", async () => {
+    const result = await t.mutation(api.chat.login, {
+      pubkey: "missing",
+      password: "secret",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("User not found");
+    }
+  });
+
+  test("login fails with wrong password", async () => {
+    await t.mutation(api.users.upsert, {
+      pubkey: "dee",
+      name: "Dee",
+      password: "secret",
+      status: "offline",
+    });
+
+    const result = await t.mutation(api.chat.login, {
+      pubkey: "dee",
+      password: "wrong",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Invalid password");
+    }
+  });
 });

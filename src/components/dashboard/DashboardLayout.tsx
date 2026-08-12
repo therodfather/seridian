@@ -13,24 +13,11 @@ import { SearchCommand } from "@/components/ui/SearchCommand";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { StatusIndicator } from "./StatusIndicator";
 import { NotificationBell } from "./NotificationBell";
+import { DASHBOARD_ROUTE_NAMES } from "@/lib/dashboardNav";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
-
-const routeNames: Record<string, string> = {
-  overview: "Overview",
-  issues: "Issues",
-  clients: "Clients",
-  bookings: "Bookings",
-  sales: "Sales",
-  proposals: "Proposals",
-  templates: "Templates",
-  files: "Files",
-  chat: "Chat",
-  sync: "Sync",
-  settings: "Settings",
-};
 
 /** Number keys 1-9 map to these section slugs in order. */
 const sectionByNumber: Record<string, string> = {
@@ -72,7 +59,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const segments = pathname.split("/").filter(Boolean);
   const currentSection = segments[1] || "overview";
-  const pageName = routeNames[currentSection] || currentSection;
+  const pageName = DASHBOARD_ROUTE_NAMES[currentSection] || currentSection;
 
   const activeClients = clients?.filter((c) => c.status === "active").length ?? 0;
   const openIssues = issues?.filter((i) => i.status !== "done").length ?? 0;
@@ -119,7 +106,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         ...Object.entries(sectionByNumber).map(([key, section]) => ({
           key,
           action: () => handleNumberNav(key),
-          description: `Go to ${routeNames[section]}`,
+          description: `Go to ${DASHBOARD_ROUTE_NAMES[section]}`,
           category: "Navigation",
         })),
       ],

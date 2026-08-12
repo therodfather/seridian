@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import {
   DASHBOARD_NAV,
+  DASHBOARD_REDIRECT_ONLY_HREFS,
   DASHBOARD_ROUTE_NAMES,
   KNOWLEDGE_NAV_HREFS,
   NUMBER_KEY_NAV,
@@ -10,6 +11,7 @@ import {
   navSlug,
   newItemHref,
 } from "./dashboardNav";
+import { ROUTES, settingsTabHref } from "./routes";
 
 const APP_ROOT = join(process.cwd(), "src/app");
 const DASHBOARD_APP_ROOT = join(APP_ROOT, "dashboard");
@@ -53,12 +55,16 @@ describe("dashboard nav", () => {
     expect(labels).toContain("Second Brain");
   });
 
-  test("keeps existing core and tools entries", () => {
+  test("keeps existing core and tools entries without Sync sidebar tab", () => {
     const hrefs = DASHBOARD_NAV.map((item) => item.href);
+    const labels = DASHBOARD_NAV.map((item) => item.label);
     expect(hrefs).toContain("/dashboard");
     expect(hrefs).toContain("/dashboard/settings");
-    expect(hrefs).toContain("/dashboard/sync");
     expect(hrefs).toContain("/dashboard/chat");
+    expect(hrefs).not.toContain(ROUTES.dashboard.sync);
+    expect(labels).not.toContain("Sync");
+    expect(DASHBOARD_REDIRECT_ONLY_HREFS).toContain(ROUTES.dashboard.sync);
+    expect(settingsTabHref("sync")).toBe("/dashboard/settings?tab=sync");
   });
 
   test("route names cover every nav slug", () => {
@@ -122,10 +128,15 @@ describe("dashboard nav", () => {
     }
   });
 
-  test("sidebar nav covers every static dashboard page", () => {
+  test("sidebar nav covers every static dashboard page except redirects", () => {
     const navHrefs = new Set<string>(DASHBOARD_NAV.map((item) => item.href));
+    const redirectOnly = new Set<string>(DASHBOARD_REDIRECT_ONLY_HREFS);
     for (const href of collectDashboardPageHrefs()) {
+      if (redirectOnly.has(href)) continue;
       expect(navHrefs.has(href), `missing nav entry for ${href}`).toBe(true);
+    }
+    for (const href of redirectOnly) {
+      expect(existsSync(pagePathForHref(href)), href).toBe(true);
     }
   });
 

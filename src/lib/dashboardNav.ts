@@ -8,7 +8,6 @@ import {
   FileText,
   Mail,
   Folder,
-  RefreshCw,
   MessageSquare,
   Settings,
   BookOpen,
@@ -28,6 +27,7 @@ export interface DashboardNavItem {
 
 const d = ROUTES.dashboard;
 
+/** Sync lives under Settings → Integrations & Sync (not a sidebar tab). */
 export const DASHBOARD_NAV: DashboardNavItem[] = [
   { href: d.root, label: "Overview", icon: Home, group: "core" },
   { href: d.issues, label: "Issues", icon: CheckCircle, group: "core" },
@@ -40,7 +40,6 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
   { href: d.brain, label: "Second Brain", icon: Brain, group: "knowledge" },
   { href: d.templates, label: "Templates", icon: Mail, group: "tools" },
   { href: d.files, label: "Files", icon: Folder, group: "tools" },
-  { href: d.sync, label: "Sync", icon: RefreshCw, group: "tools" },
   { href: d.chat, label: "Chat", icon: MessageSquare, group: "tools" },
   { href: d.settings, label: "Settings", icon: Settings, group: "tools" },
 ];
@@ -65,9 +64,11 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   templates: "Templates",
   files: "Files",
   chat: "Chat",
-  sync: "Sync",
   settings: "Settings",
 };
+
+/** Redirect-only dashboard paths that must not appear in the sidebar. */
+export const DASHBOARD_REDIRECT_ONLY_HREFS = [d.sync] as const;
 
 export const KNOWLEDGE_NAV_HREFS = [
   d.wiki,

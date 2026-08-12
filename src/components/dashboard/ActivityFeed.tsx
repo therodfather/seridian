@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { createElement, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -151,7 +151,7 @@ function ActivityItem({ activity }: { activity: Activity }) {
         className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs ${getActivityColor(activity.type)}`}
         aria-hidden="true"
       >
-        {getActivityIcon(activity.type)}
+        {createElement(getActivityIcon(activity.type), { className: "w-4 h-4" })}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-slate-200 truncate">

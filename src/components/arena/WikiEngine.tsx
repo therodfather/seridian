@@ -458,7 +458,7 @@ export function WikiEngine({ bankId }: WikiEngineProps) {
   }, [addLog]);
 
   return (
-    <div className="bg-[#070b14] rounded-xl border border-white/[0.08] overflow-hidden">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto bg-[#070b14]">
       {/* Header */}
       <div className="p-4 border-b border-white/[0.08]">
         <div className="flex items-center justify-between">

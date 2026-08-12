@@ -66,8 +66,11 @@ export default function ArenaDashboardPage() {
   }, [banks, creatingBank, bankId, bankError]);
 
   return (
-    <div className="flex min-h-0 flex-col gap-2">
-      <div className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] bg-[#070b14]/95 px-1 py-2 backdrop-blur-sm">
+    <div
+      data-testid="arena-page"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] bg-[#070b14]/95 px-3 py-2 lg:px-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
             <Bot className="h-4 w-4" />
@@ -100,7 +103,7 @@ export default function ArenaDashboardPage() {
         </div>
       </div>
 
-      <div className="flex min-h-[28rem] flex-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#070b14] h-[calc(100vh-9.5rem)]">
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#070b14]">
         {activeTab === "arena" ? (
           <LLMArena />
         ) : bankId ? (

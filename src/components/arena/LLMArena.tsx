@@ -266,11 +266,14 @@ export function LLMArena() {
             : "Idle";
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-col md:flex-row">
+    <div
+      data-testid="arena-root"
+      className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden md:flex-row"
+    >
       {/* Model Manager — top strip on mobile, left rail on desktop */}
       <aside
         className={cn(
-          "flex shrink-0 flex-col border-white/[0.08] bg-[#0c1222]",
+          "flex min-h-0 shrink-0 flex-col border-white/[0.08] bg-[#0c1222]",
           "border-b md:h-full md:border-b-0 md:border-r",
           modelsOpen
             ? "max-h-[42%] md:max-h-none md:w-72 lg:w-80"
@@ -543,7 +546,10 @@ export function LLMArena() {
         </div>
 
         {/* Composer */}
-        <div className="shrink-0 border-t border-white/[0.08] bg-[#0c1222]/40 p-2.5">
+        <div
+          data-testid="arena-composer"
+          className="shrink-0 border-t border-white/[0.08] bg-[#0c1222]/40 p-2.5"
+        >
           <div className="flex gap-1.5">
             <button
               onClick={handleClear}

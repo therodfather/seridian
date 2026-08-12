@@ -38,6 +38,7 @@
     "odf-kit": "^0.14.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "stripe": "^22.5.0",
     "three": "^0.185.1"
   },
   "devDependencies": {

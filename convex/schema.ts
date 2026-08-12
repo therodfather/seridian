@@ -137,13 +137,46 @@ export default defineSchema({
 
   secrets: defineTable({
     name: v.string(),
+    /** Masked preview only — never return ciphertext from public queries. */
     maskedValue: v.string(),
+    /**
+     * Secret material for server-side use (actions via internalQuery).
+     * Relies on Convex encryption at rest; never expose to clients.
+     * Optional for legacy rows that only stored masks.
+     */
+    ciphertext: v.optional(v.string()),
     description: v.optional(v.string()),
     category: v.string(),
     updatedBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_name", ["name"]),
+
+  /**
+   * Admin-configured third-party integrations (Linear, GitHub bookmarks, etc.).
+   * Secrets live in `secrets`; this table holds enablement + non-secret IDs.
+   */
+  integrationConfigs: defineTable({
+    provider: v.union(
+      v.literal("linear"),
+      v.literal("github"),
+      v.literal("netlify"),
+    ),
+    enabled: v.boolean(),
+    /** Honest setup state — not a live OAuth health check. */
+    status: v.union(
+      v.literal("not_configured"),
+      v.literal("configured"),
+      v.literal("connected"),
+    ),
+    teamId: v.optional(v.string()),
+    projectId: v.optional(v.string()),
+    /** Points at secrets.name when a vault entry backs this integration. */
+    secretName: v.optional(v.string()),
+    configuredBy: v.string(),
+    configuredAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_provider", ["provider"]),
 
   caseStudies: defineTable({
     title: v.string(),

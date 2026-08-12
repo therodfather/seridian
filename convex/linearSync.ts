@@ -322,12 +322,38 @@ async function fetchLinearUsers(apiKey: string): Promise<LinearUserNode[]> {
   return paginateAll<LinearUserNode>(apiKey, USERS_QUERY, "users");
 }
 
-function getApiKey(): string {
-  const apiKey = process.env.LINEAR_API_KEY;
-  if (!apiKey) {
-    throw new Error("LINEAR_API_KEY is not configured");
-  }
-  return apiKey;
+/**
+ * Prefer Convex vault (Settings → Integrations setup), then env fallback.
+ * Env path (`convex env set LINEAR_API_KEY`) is deprecated for new setups.
+ */
+async function resolveApiKey(ctx: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  runQuery: (queryRef: any, args: any) => Promise<any>;
+}): Promise<string> {
+  const fromVault: string | null = await ctx.runQuery(
+    internal.secrets.getSecretValue,
+    { name: "LINEAR_API_KEY" },
+  );
+  if (fromVault) return fromVault;
+
+  const fromEnv = process.env.LINEAR_API_KEY;
+  if (fromEnv) return fromEnv;
+
+  throw new Error(
+    "LINEAR_API_KEY is not configured. Complete Settings → Integrations setup, or use deprecated fallback: bunx convex env set LINEAR_API_KEY",
+  );
+}
+
+async function resolveLinearTeamId(
+  ctx: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    runQuery: (queryRef: any, args: any) => Promise<any>;
+  },
+  override?: string,
+): Promise<string | undefined> {
+  if (override) return override;
+  const config = await ctx.runQuery(internal.integrations.getLinearConfig, {});
+  return config?.teamId as string | undefined;
 }
 
 const issuePayloadValidator = v.object({
@@ -631,8 +657,9 @@ export const syncLinearIssues = action({
     teamId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const apiKey = getApiKey();
-    const issues = await fetchLinearIssues(apiKey, args.teamId);
+    const apiKey = await resolveApiKey(ctx);
+    const teamId = await resolveLinearTeamId(ctx, args.teamId);
+    const issues = await fetchLinearIssues(apiKey, teamId);
     const result: { created: number; updated: number; total: number } =
       await ctx.runMutation(internal.linearSync.upsertIssues, { issues });
     await ctx.runMutation(internal.linearSync.updateSyncMeta, {
@@ -646,7 +673,7 @@ export const syncLinearIssues = action({
 export const syncLinearTeams = action({
   args: {},
   handler: async (ctx) => {
-    const apiKey = getApiKey();
+    const apiKey = await resolveApiKey(ctx);
     const teams = await fetchLinearTeams(apiKey);
     const mapped = teams.map((t) => ({
       linearId: t.id,
@@ -668,7 +695,7 @@ export const syncLinearTeams = action({
 export const syncLinearProjects = action({
   args: {},
   handler: async (ctx) => {
-    const apiKey = getApiKey();
+    const apiKey = await resolveApiKey(ctx);
     const projects = await fetchLinearProjects(apiKey);
     const mapped = projects.map((p) => ({
       linearId: p.id,
@@ -691,7 +718,7 @@ export const syncLinearProjects = action({
 export const syncLinearLabels = action({
   args: {},
   handler: async (ctx) => {
-    const apiKey = getApiKey();
+    const apiKey = await resolveApiKey(ctx);
     const labels = await fetchLinearLabels(apiKey);
     const mapped = labels.map((l) => ({
       linearId: l.id,
@@ -713,7 +740,7 @@ export const syncLinearLabels = action({
 export const syncLinearUsers = action({
   args: {},
   handler: async (ctx) => {
-    const apiKey = getApiKey();
+    const apiKey = await resolveApiKey(ctx);
     const users = await fetchLinearUsers(apiKey);
     const mapped = users.map((u) => ({
       linearId: u.id,

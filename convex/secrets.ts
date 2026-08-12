@@ -1,13 +1,6 @@
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
-const ADMIN_HANDLES = ["dee", "d", "rod", "admin", "fource", "therodfather"];
-
-function checkAdminPermission(currentUser?: string) {
-  if (!currentUser) return false;
-  const normalized = currentUser.toLowerCase().trim();
-  return ADMIN_HANDLES.some((h) => normalized.includes(h));
-}
+import { requireAdmin } from "./lib/admin";
 
 function maskSecret(val: string): string {
   if (val.length <= 8) return "••••••••";
@@ -16,7 +9,19 @@ function maskSecret(val: string): string {
 
 export const listSecrets = query({
   args: { currentUserId: v.optional(v.string()) },
-  handler: async (ctx, args) => {
+  returns: v.array(
+    v.object({
+      _id: v.id("secrets"),
+      name: v.string(),
+      maskedValue: v.string(),
+      description: v.optional(v.string()),
+      category: v.string(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      hasCiphertext: v.boolean(),
+    }),
+  ),
+  handler: async (ctx) => {
     const secrets = await ctx.db.query("secrets").take(500);
     return secrets.map((s) => ({
       _id: s._id,
@@ -26,7 +31,37 @@ export const listSecrets = query({
       category: s.category,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
+      hasCiphertext: Boolean(s.ciphertext),
     }));
+  },
+});
+
+/** Public: whether a named secret has recoverable ciphertext (no value leaked). */
+export const hasSecret = query({
+  args: { name: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+    return Boolean(existing?.ciphertext);
+  },
+});
+
+/**
+ * Server-only: return secret material for actions (e.g. Linear sync).
+ * Never call from the client.
+ */
+export const getSecretValue = internalQuery({
+  args: { name: v.string() },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("secrets")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+    return existing?.ciphertext ?? null;
   },
 });
 
@@ -38,33 +73,41 @@ export const setSecret = mutation({
     category: v.string(),
     currentUserId: v.string(),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
-    if (!checkAdminPermission(args.currentUserId)) {
-      throw new Error("Unauthorized");
+    requireAdmin(args.currentUserId);
+
+    const trimmed = args.secretValue.trim();
+    if (!trimmed) {
+      throw new Error("Secret value is required");
     }
 
-    const masked = maskSecret(args.secretValue.trim());
+    const masked = maskSecret(trimmed);
     const existing = await ctx.db
       .query("secrets")
       .withIndex("by_name", (q) => q.eq("name", args.name))
       .first();
 
+    const now = Date.now();
     if (existing) {
       await ctx.db.patch(existing._id, {
         maskedValue: masked,
+        ciphertext: trimmed,
         description: args.description,
         category: args.category,
-        updatedAt: Date.now(),
+        updatedBy: args.currentUserId,
+        updatedAt: now,
       });
     } else {
       await ctx.db.insert("secrets", {
         name: args.name,
         maskedValue: masked,
+        ciphertext: trimmed,
         description: args.description,
         category: args.category,
         updatedBy: args.currentUserId,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        createdAt: now,
+        updatedAt: now,
       });
     }
 
@@ -73,7 +116,7 @@ export const setSecret = mutation({
       actor: args.currentUserId || "Admin",
       details: `${existing ? "Updated" : "Created"} secret vault entry ${args.name}`,
       category: "secret",
-      timestamp: Date.now(),
+      timestamp: now,
       metadata: JSON.stringify({ secretName: args.name, category: args.category }),
     });
 
@@ -86,10 +129,9 @@ export const deleteSecret = mutation({
     name: v.string(),
     currentUserId: v.string(),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
-    if (!checkAdminPermission(args.currentUserId)) {
-      throw new Error("Unauthorized");
-    }
+    requireAdmin(args.currentUserId);
 
     const existing = await ctx.db
       .query("secrets")

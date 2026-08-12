@@ -44,16 +44,17 @@
 - Theming: kit uses Astryx tokens + CSS `light-dark()` (no `.dark` class, respects `prefers-color-scheme`). Two kit themes `neutral`/`stone` via `data-ui-theme`. `globals.css` `:root` overrides `--astryx-color-accent` → `#06b6d4` (Seridian cyan) and dark surfaces → `#070b14`/`#172033`/`#0c1222`. Keep `@theme` Seridian palette + utilities (`.gradient-text`, `.grid-bg`, `.glow-orb`, `.card-glow`). `body` uses `bg-background text-foreground` from kit.
 
 ## Env / Linear & Convex integration
-- `.env.example` & `.env.local`: `LINEAR_API_KEY` for syncing Linear data (teams, projects, labels, users, issues). Do not commit `.env.local` or secret keys.
-- **Convex environment variables**: Must be configured in Convex deployment separately from local `.env.local` or Netlify env vars.
-  - Set key: `bunx convex env set LINEAR_API_KEY "lin_api_..."`
+- `.env.example` & `.env.local`: legacy local hints only. **Do not rely on Netlify env vars for Linear.**
+- **Preferred (admin UI):** Settings → Integrations & Sync → **Start setup** → enable Linear → paste API key (and optional team/project IDs). Key is stored in Convex `secrets.ciphertext` + `integrationConfigs`; sync reads the vault first.
+- **Deprecated fallback:** `bunx convex env set LINEAR_API_KEY "lin_api_..."` still works if no vault ciphertext exists. Plan to remove after all environments complete UI setup.
+- **Convex environment variables** (other keys): Must be configured in Convex deployment separately from local `.env.local` or Netlify env vars.
   - Run sync action: `bunx convex run linearSync:syncAllLinear`
 - **Netlify environment & linking**:
   - Production site: **https://seridian.netlify.app** (Netlify project `seridian`, repo `therodfather/seridian`)
   - Site link (if you have access): `bunx netlify link --name seridian`
   - Fork preview site `seridian-4ce` tracks `4cecoder/seridian` — not canonical prod
-  - Set env var: `bunx netlify env:set LINEAR_API_KEY "lin_api_..."`
   - Check env list: `bunx netlify env:list`
+  - Avoid setting `LINEAR_API_KEY` on Netlify going forward (not used by Convex actions).
 
 ## Branches
 - Branch feature work from `origin/main`. Check `git branch -a` / use a dedicated worktree before creating new work.

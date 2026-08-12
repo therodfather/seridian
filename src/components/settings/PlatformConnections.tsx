@@ -1,7 +1,9 @@
 "use client";
 
+import { Component, type ReactNode } from "react";
 import { ExternalLink, GitBranch, Globe } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
+import { IntegrationsSetupWizard } from "./IntegrationsSetupWizard";
 import {
   GITHUB_ACTIONS,
   GITHUB_REPO,
@@ -78,14 +80,45 @@ function ConnectionCard({
   );
 }
 
+class WizardBoundary extends Component<
+  { children: ReactNode },
+  { error: string | null }
+> {
+  state = { error: null as string | null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return {
+      error: error instanceof Error ? error.message : "Integrations setup unavailable",
+    };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-300"
+        >
+          Setup wizard could not load ({this.state.error}). Link cards above still work;
+          deploy the latest Convex functions if this persists.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /**
- * One place for the tools that actually run Seridian: GitHub (source of truth)
- * and Netlify (production). Linear stays available under Sync but is no longer
- * presented as primary.
+ * Platform links always render (e2e-stable). Admin multi-step Linear setup is
+ * Convex-backed and isolated so query/schema lag cannot blank the tab.
  */
-export function PlatformConnections() {
+export function PlatformConnections({
+  currentUserId = "admin",
+}: {
+  currentUserId?: string;
+}) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <h3 className="text-sm font-bold text-white flex items-center gap-2">
           <Globe className="h-4 w-4 text-cyan-400" />
@@ -120,10 +153,9 @@ export function PlatformConnections() {
         />
       </div>
 
-      <p className="text-[11px] text-slate-600">
-        Linear sync remains available below for the trial migration period. Prefer
-        GitHub issues for new work.
-      </p>
+      <WizardBoundary>
+        <IntegrationsSetupWizard currentUserId={currentUserId} />
+      </WizardBoundary>
     </div>
   );
 }

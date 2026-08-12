@@ -526,7 +526,7 @@ function SettingsContent() {
           {activeTab === "sync" && (
             <div className="space-y-4">
               <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6">
-                <PlatformConnections />
+                <PlatformConnections currentUserId={authUser?.pubkey ?? "admin"} />
               </div>
               <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6 space-y-4">
                 <div>

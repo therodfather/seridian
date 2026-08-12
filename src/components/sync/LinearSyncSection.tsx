@@ -76,7 +76,8 @@ export function LinearSyncSection({ onSyncComplete }: LinearSyncSectionProps) {
         <div className="rounded-xl border border-dashed border-white/[0.08] px-4 py-8 text-center">
           <p className="text-xs text-slate-400">No Linear data synced yet.</p>
           <p className="text-[11px] text-slate-600 mt-1">
-            Run Sync Linear if a LINEAR_API_KEY is configured in Convex, or use GitHub issues instead.
+            Run Sync Linear after completing Integrations setup (or if a deprecated
+            LINEAR_API_KEY env fallback is still set). Prefer GitHub issues for new work.
           </p>
         </div>
       )}

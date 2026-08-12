@@ -7,7 +7,7 @@ const GITHUB_REPO = "https://github.com/therodfather/seridian";
 const GITHUB_ACTIONS = `${GITHUB_REPO}/actions`;
 const NETLIFY_SITE = "https://app.netlify.com/projects/seridian";
 const NETLIFY_DEPLOYS = `${NETLIFY_SITE}/deploys`;
-const PRODUCTION_URL = "https://seridian.com";
+const PRODUCTION_URL = "https://seridian.netlify.app";
 
 interface ConnectionCardProps {
   title: string;

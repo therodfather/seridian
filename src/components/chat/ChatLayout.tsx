@@ -93,10 +93,10 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
         : MessageSquare;
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#070b14]">
+    <div className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-[#070b14]">
       <div
         className={cn(
-          "flex h-full flex-col border-r border-white/[0.08] bg-[#0c1222] transition-all duration-200 shrink-0",
+          "flex h-full min-h-0 flex-col border-r border-white/[0.08] bg-[#0c1222] transition-all duration-200 shrink-0",
           "w-full md:w-[240px] md:min-w-[240px]",
           mobilePanel !== "channels" && "hidden md:flex"
         )}
@@ -111,14 +111,14 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
 
       <div
         className={cn(
-          "flex h-full flex-1 flex-col min-w-0 bg-[#070b14]",
+          "flex h-full min-h-0 flex-1 flex-col min-w-0 bg-[#070b14]",
           mobilePanel !== "messages" && "hidden md:flex"
         )}
       >
         {messagingPaused && (
           <div
             className={cn(
-              "flex items-center justify-between gap-3 border-b px-4 py-2 text-xs",
+              "flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2 text-xs",
               connectionStatus === "reconnecting"
                 ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
                 : "border-red-500/30 bg-red-500/10 text-red-200",
@@ -148,7 +148,7 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
           </div>
         ) : activeChannelId ? (
           <>
-            <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#080d1a] px-4 py-2.5">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#080d1a] px-4 py-2.5">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
@@ -255,7 +255,7 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
       )}
 
       {showUserPanel && (
-        <div className="hidden md:flex h-full w-[240px] min-w-[240px] flex-col border-l border-white/[0.08] bg-[#0c1222]">
+        <div className="hidden md:flex h-full min-h-0 w-[240px] min-w-[240px] flex-col border-l border-white/[0.08] bg-[#0c1222]">
           <UserPanel currentUserId={currentUserId} />
         </div>
       )}

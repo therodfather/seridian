@@ -209,7 +209,10 @@ export function MessageInput({
   }
 
   return (
-    <div className="relative border-t border-white/[0.08] bg-[#090d16] p-3 space-y-2">
+    <div
+      className="relative shrink-0 border-t border-white/[0.08] bg-[#090d16] p-3 space-y-2"
+      data-testid="chat-composer"
+    >
       {!hasSession && (
         <div
           className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-200"

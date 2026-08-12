@@ -28,11 +28,17 @@ test.describe("LLM Arena model manager", () => {
       const main = document.querySelector("#main-content");
       if (!root || !composerEl || !footer || !main) return null;
       const rootRect = root.getBoundingClientRect();
+      const composerRect = composerEl.getBoundingClientRect();
       const mainRect = main.getBoundingClientRect();
       return {
-        gap: footer.getBoundingClientRect().top - composerEl.getBoundingClientRect().bottom,
+        gap: footer.getBoundingClientRect().top - composerRect.bottom,
         rootHeight: rootRect.height,
         mainHeight: mainRect.height,
+        composerFromRootBottom: rootRect.bottom - composerRect.bottom,
+        composerInBottomHalf: composerRect.top > rootRect.top + rootRect.height * 0.5,
+        overlayCount: document.querySelectorAll(
+          '[data-testid="arena-root"] .absolute.inset-0.z-10',
+        ).length,
       };
     });
 
@@ -42,5 +48,11 @@ test.describe("LLM Arena model manager", () => {
     expect(metrics!.gap).toBeLessThan(8);
     // Comparison pane should consume the main column, not a nested calc-height card.
     expect(metrics!.rootHeight).toBeGreaterThan(metrics!.mainHeight * 0.6);
+    // Composer sits at the bottom of the arena column, not vertically centered.
+    expect(metrics!.composerFromRootBottom).toBeGreaterThanOrEqual(-1);
+    expect(metrics!.composerFromRootBottom).toBeLessThan(8);
+    expect(metrics!.composerInBottomHalf).toBe(true);
+    expect(metrics!.overlayCount).toBe(0);
+    await expect(page.getByTestId("arena-error-banner")).toHaveCount(0);
   });
 });

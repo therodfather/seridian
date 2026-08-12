@@ -103,7 +103,7 @@ export default function ArenaDashboardPage() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#070b14]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#070b14]">
         {activeTab === "arena" ? (
           <LLMArena />
         ) : bankId ? (

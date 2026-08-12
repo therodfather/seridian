@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   ARENA_MODELS,
   extractGeneratedText,
+  formatArenaLoadError,
   getArenaModel,
   isOnnxCompatible,
 } from "./arenaModels";
@@ -27,6 +28,21 @@ describe("ARENA_MODELS", () => {
       "onnx-community/Qwen3-0.6B-ONNX",
     );
     expect(getArenaModel("missing")).toBeUndefined();
+  });
+
+  test("formatArenaLoadError maps WebKit NetworkError to a usable banner", () => {
+    expect(
+      formatArenaLoadError(
+        new TypeError("NetworkError when attempting to fetch resource"),
+      ),
+    ).toMatch(/Hugging Face/);
+    expect(formatArenaLoadError(new TypeError("Failed to fetch"))).toMatch(
+      /Hugging Face/,
+    );
+    expect(formatArenaLoadError(new Error("model not found"))).toBe(
+      "model not found",
+    );
+    expect(formatArenaLoadError(undefined)).toBe("Failed to load model");
   });
 
   test("extractGeneratedText tolerates missing or odd pipeline output", () => {

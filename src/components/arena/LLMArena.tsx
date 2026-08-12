@@ -19,6 +19,7 @@ import { formatBytes } from "@/lib/format";
 import {
   ARENA_MODELS,
   extractGeneratedText,
+  formatArenaLoadError,
   type ArenaModel,
 } from "@/lib/arenaModels";
 import { ModelManager, type ModelState } from "@/components/arena/ModelManager";
@@ -180,10 +181,10 @@ export function LLMArena() {
         if (nav.deviceMemory) {
           setMemoryUsage(`${Math.round(nav.deviceMemory)}GB device`);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         updateModelStatus(model.modelId, {
           status: "error",
-          error: err.message || "Failed to load model",
+          error: formatArenaLoadError(err),
         });
       }
     },
@@ -299,7 +300,7 @@ export function LLMArena() {
                   <span className="px-0.5 text-[10px] md:hidden">Hide</span>
                 </button>
               }
-              onModelStatusChange={(modelId, state) => {
+              onModelStatusChange={(modelId, state, error) => {
                 updateModelStatus(modelId, {
                   status:
                     state === "cached"
@@ -313,6 +314,7 @@ export function LLMArena() {
                             : state === "loading"
                               ? "loading"
                               : "idle",
+                  error: state === "error" ? (error ?? "Failed to load model") : null,
                 });
               }}
             />
@@ -342,21 +344,8 @@ export function LLMArena() {
         )}
       </aside>
 
-      {/* Main chat area */}
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        {ARENA_MODELS.length === 0 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center">
-            <div className="p-4 text-center">
-              <AlertCircle className="mx-auto mb-2 h-7 w-7 text-slate-500" />
-              <h3 className="mb-0.5 font-semibold text-white">No models available</h3>
-              <p className="text-sm text-slate-400">
-                The local model catalog is empty. Add models to start chatting.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Compact chat toolbar */}
+      {/* Main chat column: toolbar shrink-0, messages flex-1, composer shrink-0 at bottom */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/[0.08] bg-[#0c1222]/60 px-3 py-1.5">
           <div className="flex min-w-0 items-center gap-2">
             <Cpu className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
@@ -400,39 +389,59 @@ export function LLMArena() {
           </div>
         </div>
 
-        {/* Progress overlay */}
+        {ARENA_MODELS.length === 0 && (
+          <div
+            data-testid="arena-empty-catalog-banner"
+            className="flex shrink-0 items-start gap-2 border-b border-white/[0.08] bg-white/[0.03] px-3 py-2"
+            role="status"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <p className="text-xs text-slate-400">
+              The local model catalog is empty. Add models to start chatting.
+            </p>
+          </div>
+        )}
+
         {selectedModel &&
           (currentProgress.status === "downloading" ||
             currentProgress.status === "loading") && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300">
-            <div className="mx-4 w-full max-w-sm rounded-xl border border-cyan-500/30 bg-[#0c1222] p-5 shadow-2xl shadow-cyan-500/10">
-              {currentProgress.status === "loading" &&
-              currentProgress.percent >= 100 ? (
-                <CheckCircle2 className="mx-auto mb-3 h-7 w-7 text-green-400" />
-              ) : (
-                <Loader2 className="mx-auto mb-3 h-7 w-7 animate-spin text-cyan-400" />
-              )}
-              <h3 className="mb-0.5 text-center font-semibold text-white">
-                {selectedModel?.name ?? "Model"}
-              </h3>
-              <p className="mb-3 text-center text-sm text-slate-400">
-                {currentProgress.status === "downloading"
-                  ? "Downloading model..."
-                  : "Initializing model..."}
-              </p>
-              <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              data-testid="arena-progress-banner"
+              className="shrink-0 border-b border-cyan-500/20 bg-cyan-500/10 px-3 py-2"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  {currentProgress.status === "loading" &&
+                  currentProgress.percent >= 100 ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                  ) : (
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-cyan-400" />
+                  )}
+                  <p className="truncate text-xs text-cyan-100">
+                    {currentProgress.status === "downloading"
+                      ? `Downloading ${selectedModel.name}…`
+                      : `Initializing ${selectedModel.name}…`}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs font-semibold tabular-nums text-cyan-300">
+                  {Math.round(currentProgress.percent)}%
+                </span>
+              </div>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500 ease-out",
                     currentProgress.status === "loading" &&
                       currentProgress.percent >= 100
                       ? "bg-green-500"
-                      : "bg-cyan-500"
+                      : "bg-cyan-500",
                   )}
                   style={{ width: `${currentProgress.percent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-slate-500">
+              <div className="mt-1 flex justify-between text-[10px] text-slate-500">
                 <span>
                   {formatBytes(currentProgress.loaded)} /{" "}
                   {formatBytes(currentProgress.total)}
@@ -441,111 +450,97 @@ export function LLMArena() {
                   {currentProgress.status === "downloading"
                     ? `${speed.toFixed(1)} MB/s · ${eta} remaining`
                     : currentProgress.percent >= 100
-                      ? "Almost ready..."
-                      : "Preparing..."}
-                </span>
-              </div>
-              <div className="mt-2 text-center">
-                <span className="text-xl font-bold text-cyan-400">
-                  {Math.round(currentProgress.percent)}%
+                      ? "Almost ready…"
+                      : "Preparing…"}
                 </span>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error overlay */}
         {selectedModel && currentProgress.status === "error" && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300">
-            <div className="mx-4 w-full max-w-sm rounded-xl border border-red-500/30 bg-[#0c1222] p-5 shadow-2xl shadow-red-500/10">
-              <AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-400" />
-              <h3 className="mb-0.5 text-center font-semibold text-white">
-                Failed to Load
-              </h3>
-              <p className="mb-3 text-center text-sm text-slate-400">
+          <div
+            data-testid="arena-error-banner"
+            className="flex shrink-0 items-start gap-2 border-b border-red-500/20 bg-red-500/10 px-3 py-2"
+            role="alert"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-red-200">Failed to load model</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-red-200/80">
                 {currentProgress.error || "An error occurred while loading the model."}
               </p>
-              <button
-                onClick={() => selectedModel && loadModel(selectedModel)}
-                className="w-full rounded-lg border border-red-500/30 bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30"
-              >
-                Retry
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={() => selectedModel && void loadModel(selectedModel)}
+              className="shrink-0 rounded-md border border-red-500/30 bg-red-500/20 px-2 py-1 text-[11px] font-medium text-red-200 transition-colors hover:bg-red-500/30"
+            >
+              Retry
+            </button>
           </div>
         )}
 
-        {/* Messages */}
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-          {messages.length === 0 && currentProgress.status === "idle" && (
-            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-              <Bot className="mb-2 h-9 w-9 text-slate-600" />
-              <h2 className="mb-1 text-base font-semibold text-white">
-                LLM Arena
-              </h2>
-              <p className="max-w-md text-sm text-slate-400">
-                Download a model in the Model Manager, then click Load to start
-                chatting. Models stay local in your browser.
-              </p>
-            </div>
-          )}
-          {messages.length === 0 &&
-            currentProgress.status !== "ready" &&
-            currentProgress.status !== "idle" &&
-            currentProgress.status !== "error" && (
-            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-              <Bot className="mb-2 h-9 w-9 text-slate-600" />
-              <h2 className="mb-1 text-base font-semibold text-white">
-                LLM Arena
-              </h2>
-              <p className="max-w-md text-sm text-slate-400">
-                Preparing the selected model…
-              </p>
-            </div>
-          )}
-          {messages.length === 0 && currentProgress.status === "ready" && (
-            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-              <Bot className="mb-2 h-9 w-9 text-cyan-400" />
-              <h2 className="mb-1 text-base font-semibold text-white">
-                {selectedModel?.name ?? "Model"} Ready
-              </h2>
-              <p className="max-w-md text-sm text-slate-400">
-                Start a conversation below.
-              </p>
-            </div>
-          )}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                "flex gap-2",
-                msg.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              <div
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
+          {messages.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+              <Bot
                 className={cn(
-                  "max-w-[80%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm md:max-w-[70%]",
-                  msg.role === "user"
-                    ? "bg-cyan-500/20 text-cyan-100"
-                    : "bg-white/[0.05] text-slate-200"
+                  "mb-2 h-9 w-9",
+                  currentProgress.status === "ready"
+                    ? "text-cyan-400"
+                    : "text-slate-600",
                 )}
-              >
-                {msg.content ||
-                  (loading && msg.role === "assistant" ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Thinking...
-                    </span>
-                  ) : (
-                    ""
-                  ))}
-              </div>
+              />
+              <h2 className="mb-1 text-base font-semibold text-white">
+                {currentProgress.status === "ready"
+                  ? `${selectedModel?.name ?? "Model"} Ready`
+                  : "LLM Arena"}
+              </h2>
+              <p className="max-w-md text-sm text-slate-400">
+                {currentProgress.status === "ready"
+                  ? "Start a conversation below."
+                  : currentProgress.status === "error"
+                    ? "Fix the load error above, or pick another model."
+                    : currentProgress.status === "idle"
+                      ? "Download a model in the Model Manager, then click Load to start chatting. Models stay local in your browser."
+                      : "Preparing the selected model…"}
+              </p>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
+          ) : (
+            <div className="space-y-3">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "flex gap-2",
+                    msg.role === "user" ? "justify-end" : "justify-start",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[80%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm md:max-w-[70%]",
+                      msg.role === "user"
+                        ? "bg-cyan-500/20 text-cyan-100"
+                        : "bg-white/[0.05] text-slate-200",
+                    )}
+                  >
+                    {msg.content ||
+                      (loading && msg.role === "assistant" ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Thinking...
+                        </span>
+                      ) : (
+                        ""
+                      ))}
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
 
-        {/* Composer */}
         <div
           data-testid="arena-composer"
           className="shrink-0 border-t border-white/[0.08] bg-[#0c1222]/40 p-2.5"

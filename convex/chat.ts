@@ -77,15 +77,25 @@ export const createChannel = mutation({
     participants: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const allParticipants = args.participants.includes(args.createdBy)
+    const name = args.name.trim();
+    if (!name) {
+      throw new Error("Channel name cannot be empty");
+    }
+    const createdBy = args.createdBy.trim();
+    if (!createdBy) {
+      throw new Error("Authenticated creator is required");
+    }
+    const allParticipants = args.participants.includes(createdBy)
       ? args.participants
-      : [...args.participants, args.createdBy];
-    const uniqueParticipants = [...new Set(allParticipants)];
+      : [...args.participants, createdBy];
+    const uniqueParticipants = [
+      ...new Set(allParticipants.map((p) => p.trim()).filter(Boolean)),
+    ];
     return await ctx.db.insert("channels", {
-      name: args.name,
-      description: args.description,
+      name,
+      description: args.description?.trim() || undefined,
       type: args.type,
-      createdBy: args.createdBy,
+      createdBy,
       participants: uniqueParticipants,
       createdAt: Date.now(),
     });
@@ -102,12 +112,25 @@ export const sendMessage = mutation({
     replyTo: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
+    const content = args.content.trim();
+    if (!content) {
+      throw new Error("Message content cannot be empty");
+    }
+    const senderId = args.senderId.trim();
+    const senderName = args.senderName.trim();
+    if (!senderId || !senderName) {
+      throw new Error("Authenticated sender is required");
+    }
+    const channel = await ctx.db.get(args.channelId);
+    if (!channel) {
+      throw new Error("Channel not found");
+    }
     const now = Date.now();
     const messageId = await ctx.db.insert("messages", {
       channelId: args.channelId,
-      senderId: args.senderId,
-      senderName: args.senderName,
-      content: args.content,
+      senderId,
+      senderName,
+      content,
       type: args.type,
       replyTo: args.replyTo,
       createdAt: now,

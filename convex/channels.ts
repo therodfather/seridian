@@ -17,12 +17,28 @@ export const create = mutation({
     participants: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    const name = args.name.trim();
+    if (!name) {
+      throw new Error("Channel name cannot be empty");
+    }
+    const createdBy = args.createdBy.trim();
+    if (!createdBy) {
+      throw new Error("Authenticated creator is required");
+    }
+
+    const allParticipants = args.participants.includes(createdBy)
+      ? args.participants
+      : [...args.participants, createdBy];
+    const uniqueParticipants = [
+      ...new Set(allParticipants.map((p) => p.trim()).filter(Boolean)),
+    ];
+
     const channelId = await ctx.db.insert("channels", {
-      name: args.name,
-      description: args.description,
+      name,
+      description: args.description?.trim() || undefined,
       type: args.type,
-      createdBy: args.createdBy,
-      participants: args.participants,
+      createdBy,
+      participants: uniqueParticipants,
       createdAt: Date.now(),
     });
     return channelId;

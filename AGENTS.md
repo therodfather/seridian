@@ -44,7 +44,9 @@
   - Set key: `bunx convex env set LINEAR_API_KEY "lin_api_..."`
   - Run sync action: `bunx convex run linearSync:syncAllLinear`
 - **Netlify environment & linking**:
-  - Site link: `bunx netlify link --name seridian-4ce`
+  - Production site: **https://seridian.netlify.app** (Netlify project `seridian`, repo `therodfather/seridian`)
+  - Site link (if you have access): `bunx netlify link --name seridian`
+  - Fork preview site `seridian-4ce` tracks `4cecoder/seridian` — not canonical prod
   - Set env var: `bunx netlify env:set LINEAR_API_KEY "lin_api_..."`
   - Check env list: `bunx netlify env:list`
 

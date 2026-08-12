@@ -8,7 +8,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   GitBranch,
   Globe,
   KeyRound,
@@ -18,12 +17,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  GITHUB_ACTIONS,
-  GITHUB_REPO,
-  NETLIFY_DEPLOYS,
-  PRODUCTION_URL,
-} from "./platformLinks";
 
 type Provider = "github" | "netlify" | "linear";
 type SetupStep = 1 | 2 | 3;
@@ -182,13 +175,13 @@ export function IntegrationsSetupWizard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Globe className="h-4 w-4 text-cyan-400" />
-            Platform connections
+            <ShieldCheck className="h-4 w-4 text-cyan-400" />
+            Admin setup
           </h3>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            Admin multi-step setup. GitHub and Netlify stay as project links.
-            Linear stores its API key in the Convex secrets vault — prefer the
-            wizard over Netlify or `convex env set` (deprecated fallback).
+            Multi-step enablement for integrations. Linear stores its API key in the
+            Convex secrets vault — prefer this wizard over Netlify or{" "}
+            <code className="text-slate-500">convex env set</code> (deprecated fallback).
           </p>
         </div>
         <Button
@@ -235,46 +228,6 @@ export function IntegrationsSetupWizard({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed">{meta.blurb}</p>
-              {row.provider === "github" && (
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={GITHUB_REPO}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300"
-                  >
-                    Open repository <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <a
-                    href={GITHUB_ACTIONS}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-300"
-                  >
-                    CI / Actions <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              )}
-              {row.provider === "netlify" && (
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={NETLIFY_DEPLOYS}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300"
-                  >
-                    Open deploys <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <a
-                    href={PRODUCTION_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-300"
-                  >
-                    View site <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              )}
               {row.provider === "linear" && row.status !== "connected" && (
                 <Button
                   size="sm"

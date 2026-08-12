@@ -34,14 +34,23 @@
 - `src/lib/utils.ts` re-exports `cn` from the kit — do not duplicate `clsx`/`tailwind-merge` logic.
 - Theming: kit uses Astryx tokens + CSS `light-dark()` (no `.dark` class, respects `prefers-color-scheme`). Two kit themes `neutral`/`stone` via `data-ui-theme`. `globals.css` `:root` overrides `--astryx-color-accent` → `#06b6d4` (Seridian cyan) and dark surfaces → `#070b14`/`#172033`/`#0c1222`. Keep `@theme` Seridian palette + utilities (`.gradient-text`, `.grid-bg`, `.glow-orb`, `.card-glow`). `body` uses `bg-background text-foreground` from kit.
 
-## Env / Linear integration (planned)
-- `.env.example`: `LINEAR_API_KEY` (or fallback `LINEAR_ACCESS_TOKEN`), `LINEAR_TEAM_ID=SER`, optional `LINEAR_PROJECT_ID` / `LINEAR_LABEL_IDS`. Not yet wired — future `feature/linear-sync` branch. Do not commit `.env`.
+## Env / Linear & Convex integration
+- `.env.example` & `.env.local`: `LINEAR_API_KEY` for syncing Linear data (teams, projects, labels, users, issues). Do not commit `.env.local` or secret keys.
+- **Convex environment variables**: Must be configured in Convex deployment separately from local `.env.local` or Netlify env vars.
+  - Set key: `bunx convex env set LINEAR_API_KEY "lin_api_..."`
+  - Run sync action: `bunx convex run linearSync:syncAllLinear`
+- **Netlify environment & linking**:
+  - Site link: `bunx netlify link --name seridian-4ce`
+  - Set env var: `bunx netlify env:set LINEAR_API_KEY "lin_api_..."`
+  - Check env list: `bunx netlify env:list`
 
 ## Branches
 - Active feature branches off `main`: `feature/ui-kit`, `feature/webgl`, `feature/fonts`, `feature/shadcn`, `feature/linear-sync`, `chore/next-16` (this branch — Next 15→16 bump). Check `git branch -a` before creating new work.
 
-## Gotchas
+## Gotchas & Quirks
 - `next lint` was removed in Next 16 — see Commands/lint note above; do not paper over by switching CI to `bunx eslint` without fixing compat.
+- **Linear GraphQL API Schema Quirk**: In `projects` query (`SyncLinearProjects`), querying `teamId` directly on `Project` nodes causes HTTP 400. Do not request `teamId` directly on `projects` GraphQL nodes in `convex/linearSync.ts`.
+- **Convex Env vs Netlify/Local Env**: Setting env vars in Netlify CLI or `.env.local` does NOT populate Convex serverless runtime env vars. You must set Convex env vars using `bunx convex env set <KEY> <VALUE>`.
 - Do not add `npm`-generated lockfiles or run `npm install` — it drifts from `bun.lock`.
 - Do not move or rebuild `vendor/ui-kit/dist/` — Netlify/CI need the committed artifacts.
 - Tailwind v4 uses `@import "tailwindcss"` + `@theme` in `globals.css`, not `tailwind.config.*`.

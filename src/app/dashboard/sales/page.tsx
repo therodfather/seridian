@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
@@ -15,7 +15,7 @@ import {
 import { PipelineBoard } from "@/components/sales/PipelineBoard";
 import { DealDetail } from "@/components/sales/DealDetail";
 import { DealForm } from "@/components/sales/DealForm";
-import { LoginScreen } from "@/components/auth/LoginScreen";
+import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -29,62 +29,23 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function getStoredUser() {
-  if (typeof window === "undefined") return null;
-  const stored = localStorage.getItem("seridian_user");
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
 export default function SalesPage() {
-  /* -- Auth -- */
-  const [user, setUser] = useState<{ pubkey: string; name: string } | null>(
-    null,
+  return (
+    <DashboardGuard>
+      <SalesPageContent />
+    </DashboardGuard>
   );
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setUser(getStoredUser());
-    setLoading(false);
-  }, []);
-
-  function handleLogin(pubkey: string, name: string) {
-    localStorage.setItem("seridian_user", JSON.stringify({ pubkey, name }));
-    setUser({ pubkey, name });
-  }
-
-  function handleLogout() {
-    localStorage.removeItem("seridian_user");
-    setUser(null);
-  }
-
-  if (loading) return null;
-  if (!user) return <LoginScreen onLogin={handleLogin} />;
-
-  return <SalesPageContent user={user} onLogout={handleLogout} />;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Main content (after auth)                                          */
 /* ------------------------------------------------------------------ */
 
-function SalesPageContent({
-  user,
-  onLogout,
-}: {
-  user: { pubkey: string; name: string };
-  onLogout: () => void;
-}) {
+function SalesPageContent() {
   /* -- Convex data -- */
   const deals = useQuery(api.deals.list, {});
   const clients = useQuery(api.clients.list, {});
@@ -151,7 +112,6 @@ function SalesPageContent({
   if (viewingDealId) {
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader user={user} onLogout={onLogout} />
         <DealDetail
           dealId={viewingDealId}
           onBack={() => setViewingDealId(null)}
@@ -182,8 +142,6 @@ function SalesPageContent({
   /* -- Board view -- */
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader user={user} onLogout={onLogout} />
-
       {/* Stats bar */}
       <StatsBar stats={stats} />
 
@@ -214,41 +172,6 @@ function SalesPageContent({
           )}
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Page header                                                        */
-/* ------------------------------------------------------------------ */
-
-function PageHeader({
-  user,
-  onLogout,
-}: {
-  user: { pubkey: string; name: string };
-  onLogout: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-lg font-semibold text-white">Sales Pipeline</h1>
-        <p className="text-xs text-slate-500">
-          Manage deals and track conversion through each stage.
-        </p>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-2 sm:flex">
-          <span className="text-sm font-medium text-white">{user.name}</span>
-          <span className="text-xs text-slate-500">({user.pubkey})</span>
-        </div>
-        <button
-          onClick={onLogout}
-          className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          Sign out
-        </button>
-      </div>
     </div>
   );
 }

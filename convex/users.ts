@@ -96,6 +96,14 @@ export const remove = mutation({
   },
 });
 
+export const remove = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.userId);
+    return args.userId;
+  },
+});
+
 export const get = query({
   args: { pubkey: v.string() },
   handler: async (ctx, args) => {

@@ -46,6 +46,24 @@ export function isOnnxCompatible(model: ArenaModel): boolean {
   return /onnx/i.test(model.modelId) || model.modelId.startsWith("HuggingFaceTB/");
 }
 
+/**
+ * Map Transformers.js / fetch failures into a short UI string.
+ * WebKit reports CSP and CORS connect-src blocks as
+ * "NetworkError when attempting to fetch resource".
+ */
+export function formatArenaLoadError(err: unknown): string {
+  const message =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+        ? err
+        : "";
+  if (/networkerror|failed to fetch|load failed|network request failed/i.test(message)) {
+    return "Couldn't reach Hugging Face to download the model (blocked network or Content-Security-Policy). Check your connection and retry.";
+  }
+  return message.trim() || "Failed to load model";
+}
+
 /** Safe extract of model text from Transformers.js pipeline output. */
 export function extractGeneratedText(output: unknown): string {
   if (!output) return "";

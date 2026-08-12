@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBytes } from "@/lib/format";
-import { ARENA_MODELS, type ArenaModel } from "@/lib/arenaModels";
+import { ARENA_MODELS, formatArenaLoadError, type ArenaModel } from "@/lib/arenaModels";
 import {
   isModelMarkedCached,
   markModelCached,
@@ -35,7 +35,7 @@ interface ModelManagerProps {
   onSelectModel: (model: ArenaModel) => void;
   selectedModelId?: string;
   modelStatuses: Record<string, ModelState>;
-  onModelStatusChange?: (modelId: string, state: ModelState) => void;
+  onModelStatusChange?: (modelId: string, state: ModelState, error?: string) => void;
   /** Drop outer card chrome when nested in Arena sidebar/panel. */
   embedded?: boolean;
   /** Optional control rendered in the sticky header (e.g. collapse). */
@@ -180,7 +180,7 @@ export function ModelManager({
       } catch (err) {
         console.error("Download failed:", err);
         if (onModelStatusChange) {
-          onModelStatusChange(model.modelId, "error");
+          onModelStatusChange(model.modelId, "error", formatArenaLoadError(err));
         }
       }
     },

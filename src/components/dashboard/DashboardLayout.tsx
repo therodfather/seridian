@@ -39,10 +39,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const segments = pathname.split("/").filter(Boolean);
   const currentSection = segments[1] || "overview";
   const pageName = DASHBOARD_ROUTE_NAMES[currentSection] || currentSection;
-  // Chat needs a full-bleed flex column above the status bar — the shared
-  // max-w-6xl + padding wrapper breaks flex-1 / min-h-0 height propagation.
-  const isChatRoute =
-    pathname === "/dashboard/chat" || pathname.startsWith("/dashboard/chat/");
+  // Chat and Arena need a full-bleed flex column above the status bar — the
+  // shared max-w-6xl + padding wrapper breaks flex-1 / min-h-0 height.
+  const isFullBleedRoute =
+    pathname === "/dashboard/chat" ||
+    pathname.startsWith("/dashboard/chat/") ||
+    pathname === "/dashboard/arena" ||
+    pathname.startsWith("/dashboard/arena/");
 
   const activeClients = clients?.filter((c) => c.status === "active").length ?? 0;
   const openIssues = issues?.filter((i) => i.status !== "done").length ?? 0;
@@ -116,7 +119,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           id="main-content"
           className={cn(
             "flex min-h-0 flex-1 flex-col transition-all duration-300 ease-in-out",
-            isChatRoute ? "overflow-hidden" : "overflow-y-auto",
+            isFullBleedRoute ? "overflow-hidden" : "overflow-y-auto",
             sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
           )}
         >
@@ -137,7 +140,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <span className="ml-3 text-sm font-medium text-white">{pageName}</span>
           </div>
 
-          {isChatRoute ? (
+          {isFullBleedRoute ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               {children}
             </div>

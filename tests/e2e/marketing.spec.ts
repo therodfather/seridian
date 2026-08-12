@@ -80,13 +80,14 @@ test.describe("marketing site", { tag: "@smoke" }, () => {
     await expect(
       page.getByRole("heading", { name: /Clear scope/i }),
     ).toBeVisible();
-    await expect(page.locator("#health-check")).toBeVisible();
+    const healthCheck = page.locator("#health-check");
+    await expect(healthCheck).toBeVisible();
     await expect(page.locator("#mvp-sprint")).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /request \$999 invoice|buy health check/i }),
+      healthCheck.getByRole("link", { name: /request \$999 invoice|buy health check/i }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /request 50% deposit/i }).first(),
+      page.locator("#mvp-sprint").getByRole("link", { name: /request 50% deposit/i }),
     ).toBeVisible();
   });
 });

@@ -30,4 +30,43 @@ describe("users", () => {
     expect(user).not.toHaveProperty("password");
     expect(user?.pubkey).toBe("dee");
   });
+
+  test("generateAvatarUploadUrl returns an upload URL", async () => {
+    const url = await t.mutation(api.users.generateAvatarUploadUrl, {});
+    expect(typeof url).toBe("string");
+    expect(url.length).toBeGreaterThan(0);
+  });
+
+  test("updateAvatar returns null for an unknown user", async () => {
+    const storageId = await t.run(async (ctx) => {
+      return await ctx.storage.store(new Blob(["avatar-bytes"]));
+    });
+    const result = await t.mutation(api.users.updateAvatar, {
+      pubkey: "missing",
+      avatarStorageId: storageId,
+    });
+    expect(result).toBeNull();
+  });
+
+  test("removeAvatar returns null for an unknown user", async () => {
+    const result = await t.mutation(api.users.removeAvatar, {
+      pubkey: "missing",
+    });
+    expect(result).toBeNull();
+  });
+
+  test("removeAvatar clears an existing avatar field", async () => {
+    await t.mutation(api.users.upsert, {
+      pubkey: "dee",
+      name: "Dee",
+      avatar: "https://example.com/dee.png",
+      status: "offline",
+    });
+
+    const userId = await t.mutation(api.users.removeAvatar, { pubkey: "dee" });
+    expect(userId).toBeDefined();
+
+    const user = await t.query(api.users.get, { pubkey: "dee" });
+    expect(user?.avatar).toBeUndefined();
+  });
 });

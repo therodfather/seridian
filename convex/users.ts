@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 export const list = query({
   args: {},
@@ -109,5 +110,63 @@ export const get = query({
     if (!user) return null;
     const { password: _password, ...safeUser } = user;
     return safeUser;
+  },
+});
+
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const updateAvatar = mutation({
+  args: {
+    pubkey: v.string(),
+    avatarStorageId: v.id("_storage"),
+  },
+  returns: v.union(
+    v.object({
+      userId: v.id("users"),
+      url: v.union(v.string(), v.null()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_pubkey", (q) => q.eq("pubkey", args.pubkey))
+      .first();
+    if (!existing) return null;
+
+    await ctx.db.patch(existing._id, {
+      avatar: args.avatarStorageId,
+    });
+    const url = await ctx.storage.getUrl(args.avatarStorageId);
+    return { userId: existing._id, url };
+  },
+});
+
+export const removeAvatar = mutation({
+  args: { pubkey: v.string() },
+  returns: v.union(v.id("users"), v.null()),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_pubkey", (q) => q.eq("pubkey", args.pubkey))
+      .first();
+    if (!existing) return null;
+
+    if (existing.avatar) {
+      try {
+        await ctx.storage.delete(existing.avatar as Id<"_storage">);
+      } catch {
+        // Legacy rows may store a URL instead of a storage id.
+      }
+    }
+
+    await ctx.db.patch(existing._id, { avatar: undefined });
+    return existing._id;
   },
 });

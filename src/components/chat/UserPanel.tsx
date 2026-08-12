@@ -4,18 +4,13 @@ import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc } from "convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 type User = Doc<"users">;
 
 interface UserPanelProps {
   currentUserId?: string;
 }
-
-const STATUS_COLORS: Record<User["status"], string> = {
-  online: "bg-green-400",
-  away: "bg-amber-400",
-  offline: "bg-slate-600",
-};
 
 function UserRow({ user, isCurrent }: { user: User; isCurrent: boolean }) {
   return (
@@ -27,17 +22,7 @@ function UserRow({ user, isCurrent }: { user: User; isCurrent: boolean }) {
           : "text-slate-400 hover:bg-white/[0.03] hover:text-slate-200"
       )}
     >
-      <div className="relative shrink-0">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-seridian-500/10 text-xs font-semibold text-seridian-400">
-          {user.name.charAt(0).toUpperCase()}
-        </div>
-        <div
-          className={cn(
-            "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0c1222]",
-            STATUS_COLORS[user.status]
-          )}
-        />
-      </div>
+      <UserAvatar name={user.name} avatarUrl={user.avatar} size="sm" status={user.status} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{user.name}</div>
         <div className="text-[11px] capitalize text-slate-600">

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 export const listChannels = query({
   args: { pubkey: v.string() },
@@ -42,8 +43,15 @@ export const getUsers = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("users").take(500);
-    // Filter out password field from results for security
-    return users.map(({ password, ...rest }) => rest);
+    return Promise.all(
+      users.map(async ({ password: _password, ...rest }) => {
+        if (rest.avatar && !rest.avatar.startsWith("http") && !rest.avatar.startsWith("blob:")) {
+          const url = await ctx.storage.getUrl(rest.avatar as Id<"_storage">);
+          return { ...rest, avatar: url ?? rest.avatar };
+        }
+        return rest;
+      }),
+    );
   },
 });
 

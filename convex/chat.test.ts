@@ -86,6 +86,25 @@ describe("chat functions", () => {
     });
   });
 
+  test("sendMessage rejects empty content", async () => {
+    const channelId = await t.mutation(api.chat.createChannel, {
+      name: "test",
+      type: "public",
+      createdBy: "user1",
+      participants: ["user1"],
+    });
+
+    await expect(
+      t.mutation(api.chat.sendMessage, {
+        channelId,
+        senderId: "user1",
+        senderName: "Test User",
+        content: "   ",
+        type: "text",
+      }),
+    ).rejects.toThrow("Message content cannot be empty");
+  });
+
   test("sendMessage updates channel lastMessageAt", async () => {
     const channelId = await t.mutation(api.chat.createChannel, {
       name: "test",

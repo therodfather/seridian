@@ -14,6 +14,7 @@ interface ThreadDrawerProps {
   onClose: () => void;
   currentUserId?: string;
   currentUserName?: string;
+  messagingPaused?: boolean;
 }
 
 function formatTime(timestamp: number) {
@@ -63,12 +64,14 @@ export function ThreadDrawer({
   onClose,
   currentUserId,
   currentUserName,
+  messagingPaused = false,
 }: ThreadDrawerProps) {
   const allMessages = useQuery(api.messages.listAll, {});
 
   if (!parentMessage) return null;
 
   const agentMeta = getAgentInfo(parentMessage.senderName, parentMessage.senderId);
+  const repliesLoading = allMessages === undefined;
 
   // Filter replies to parent message
   const replies =
@@ -143,7 +146,11 @@ export function ThreadDrawer({
         </div>
 
         {/* Replies List */}
-        {replies.length === 0 ? (
+        {repliesLoading ? (
+          <div className="py-8 text-center text-xs text-slate-500">
+            Loading replies…
+          </div>
+        ) : replies.length === 0 ? (
           <div className="py-8 text-center text-xs text-slate-500 italic">
             No replies yet. Send a reply below to start the thread.
           </div>
@@ -203,6 +210,7 @@ export function ThreadDrawer({
           currentUserId={currentUserId}
           currentUserName={currentUserName}
           placeholder="Reply in thread..."
+          disabled={messagingPaused}
         />
       </div>
     </div>

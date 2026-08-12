@@ -19,31 +19,43 @@ export function ChannelForm({ open, onOpenChange, currentUserId, onSuccess }: Ch
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"public" | "private">("public");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const createChannel = useMutation(api.channels.create);
 
   async function handleSubmit() {
     if (!name.trim() || saving) return;
+
+    const creator = currentUserId?.trim();
+    if (!creator) {
+      setError("Sign in required to create a channel.");
+      return;
+    }
+
     setSaving(true);
+    setError(null);
     try {
       const channelId = await createChannel({
         name: name.trim(),
         description: description.trim() || undefined,
         type,
-        createdBy: currentUserId ?? "anonymous",
-        participants: [],
+        createdBy: creator,
+        participants: [creator],
       });
       setName("");
       setDescription("");
       setType("public");
       onSuccess(channelId);
-    } catch {
-      // Silently fail
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create channel. Try again.",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   function handleCancel() {
+    setError(null);
     onOpenChange(false);
   }
 
@@ -125,6 +137,18 @@ export function ChannelForm({ open, onOpenChange, currentUserId, onSuccess }: Ch
             &times;
           </button>
         </div>
+
+        {!currentUserId?.trim() && (
+          <p className="mb-3 text-xs text-amber-300" role="status">
+            Sign in required to create a channel.
+          </p>
+        )}
+
+        {error && (
+          <p className="mb-3 text-xs text-red-400" role="alert">
+            {error}
+          </p>
+        )}
 
         <MultiStepForm
           steps={steps}

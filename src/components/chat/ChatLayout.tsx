@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexConnectionState } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
@@ -16,27 +16,39 @@ import {
   Lock,
   MessageSquare,
   Search,
-  Users,
   Sparkles,
-  Zap,
-  BarChart3,
   Bot,
-  Filter,
   PanelRightClose,
   PanelRightOpen,
-  ArrowLeft
+  ArrowLeft,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 
 type Message = Doc<"messages">;
-type Channel = Doc<"channels">;
 
 interface ChatLayoutProps {
   currentUserId?: string;
   currentUserName?: string;
 }
 
+function useChatConnectionStatus(): "connected" | "reconnecting" | "disconnected" {
+  let state: ReturnType<typeof useConvexConnectionState> | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    state = useConvexConnectionState();
+  } catch {
+    return "disconnected";
+  }
+
+  if (state?.isWebSocketConnected) return "connected";
+  if (state?.hasEverConnected) return "reconnecting";
+  return "disconnected";
+}
+
 export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) {
   const channels = useQuery(api.channels.list, {});
+  const connectionStatus = useChatConnectionStatus();
   const [activeChannelId, setActiveChannelId] = useState<Id<"channels"> | undefined>();
   const [mobilePanel, setMobilePanel] = useState<"channels" | "messages">("channels");
   const [channelFormOpen, setChannelFormOpen] = useState(false);
@@ -45,10 +57,23 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
   const [searchQuery, setSearchQuery] = useState("");
   const [agentFilter, setAgentFilter] = useState<"all" | "agents">("all");
 
-  // Set default active channel to the first available channel
+  const channelsLoading = channels === undefined;
+  const messagingPaused = connectionStatus !== "connected";
+
   useEffect(() => {
     if (!activeChannelId && channels && channels.length > 0) {
       setActiveChannelId(channels[0]._id);
+    }
+  }, [channels, activeChannelId]);
+
+  useEffect(() => {
+    if (
+      activeChannelId &&
+      channels &&
+      !channels.some((c) => c._id === activeChannelId)
+    ) {
+      setActiveChannelId(channels[0]?._id);
+      setThreadParentMessage(null);
     }
   }, [channels, activeChannelId]);
 
@@ -69,7 +94,6 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#070b14]">
-      {/* Left Sidebar — Channels & AI Bots */}
       <div
         className={cn(
           "flex h-full flex-col border-r border-white/[0.08] bg-[#0c1222] transition-all duration-200 shrink-0",
@@ -85,16 +109,45 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
         />
       </div>
 
-      {/* Main Container — Chat Header, Message List, Input */}
       <div
         className={cn(
           "flex h-full flex-1 flex-col min-w-0 bg-[#070b14]",
           mobilePanel !== "messages" && "hidden md:flex"
         )}
       >
-        {activeChannelId ? (
+        {messagingPaused && (
+          <div
+            className={cn(
+              "flex items-center justify-between gap-3 border-b px-4 py-2 text-xs",
+              connectionStatus === "reconnecting"
+                ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                : "border-red-500/30 bg-red-500/10 text-red-200",
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              {connectionStatus === "reconnecting" ? (
+                <RefreshCw className="h-3.5 w-3.5 shrink-0 animate-spin" />
+              ) : (
+                <WifiOff className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <span className="truncate">
+                {connectionStatus === "reconnecting"
+                  ? "Reconnecting to chat…"
+                  : "Chat disconnected. Check your connection — messages pause until Convex reconnects."}
+              </span>
+            </span>
+          </div>
+        )}
+
+        {channelsLoading ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
+            <p className="text-sm text-slate-400">Loading channels…</p>
+          </div>
+        ) : activeChannelId ? (
           <>
-            {/* Enterprise Header Bar */}
             <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#080d1a] px-4 py-2.5">
               <div className="flex items-center gap-3 min-w-0">
                 <button
@@ -124,9 +177,7 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
                 </div>
               </div>
 
-              {/* Controls: Search, Agent Filter Toggle, User Panel Toggle */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* Search Bar */}
                 <div className="hidden sm:flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-[#0d1424] px-2.5 py-1 text-xs text-slate-300 focus-within:border-cyan-500/40">
                   <Search className="h-3.5 w-3.5 text-slate-500" />
                   <input
@@ -138,7 +189,6 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
                   />
                 </div>
 
-                {/* Agent Filter Button */}
                 <button
                   type="button"
                   onClick={() => setAgentFilter(agentFilter === "all" ? "agents" : "all")}
@@ -156,7 +206,6 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
                   </span>
                 </button>
 
-                {/* User Panel Toggle Button */}
                 <button
                   type="button"
                   onClick={() => setShowUserPanel(!showUserPanel)}
@@ -172,7 +221,6 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
               </div>
             </div>
 
-            {/* Message List */}
             <MessageList
               channelId={activeChannelId}
               currentUserId={currentUserId}
@@ -181,11 +229,11 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
               agentFilter={agentFilter}
             />
 
-            {/* Message Input */}
             <MessageInput
               channelId={activeChannelId}
               currentUserId={currentUserId}
               currentUserName={currentUserName}
+              disabled={messagingPaused}
             />
           </>
         ) : (
@@ -196,24 +244,22 @@ export function ChatLayout({ currentUserId, currentUserName }: ChatLayoutProps) 
         )}
       </div>
 
-      {/* Slide-over Thread Drawer */}
       {threadParentMessage && (
         <ThreadDrawer
           parentMessage={threadParentMessage}
           onClose={() => setThreadParentMessage(null)}
           currentUserId={currentUserId}
           currentUserName={currentUserName}
+          messagingPaused={messagingPaused}
         />
       )}
 
-      {/* Sidebar — Users Panel (desktop) */}
       {showUserPanel && (
         <div className="hidden md:flex h-full w-[240px] min-w-[240px] flex-col border-l border-white/[0.08] bg-[#0c1222]">
           <UserPanel currentUserId={currentUserId} />
         </div>
       )}
 
-      {/* Channel creation modal */}
       <ChannelForm
         open={channelFormOpen}
         onOpenChange={setChannelFormOpen}

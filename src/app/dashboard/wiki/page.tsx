@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
 import { Button, Skeleton } from "@bytecats/ui-kit";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus, AlertCircle } from "lucide-react";
 import { WikiSidebar } from "@/components/wiki/WikiSidebar";
 import { WikiPage } from "@/components/wiki/WikiPage";
 import { FloatingPagesBackground } from "@/components/three/backgrounds";
@@ -17,6 +17,7 @@ export default function WikiDashboardPage() {
   const [selectedBankId, setSelectedBankId] = useState<Id<"memoryBanks"> | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<Id<"wikiPages"> | null>(null);
   const [creatingBank, setCreatingBank] = useState(false);
+  const [bankError, setBankError] = useState<string | null>(null);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState("");
@@ -24,11 +25,12 @@ export default function WikiDashboardPage() {
   const [newPageTags, setNewPageTags] = useState("");
   const [creatingPage, setCreatingPage] = useState(false);
 
-  useEffect(() => {
-    if (banks === undefined) return;
-    if (banks.length === 0 && !creatingBank) {
-      setCreatingBank(true);
-      createBank({
+  const ensureBank = async () => {
+    if (creatingBank) return;
+    setCreatingBank(true);
+    setBankError(null);
+    try {
+      const bankId = await createBank({
         name: "Seridian Wiki",
         mission: "Central knowledge base for Seridian Digital operations, processes, and documentation.",
         directives: [
@@ -42,16 +44,26 @@ export default function WikiDashboardPage() {
           empathy: 0.5,
         },
         createdBy: "system",
-      }).then((bankId) => {
-        setSelectedBankId(bankId);
-        setCreatingBank(false);
-      }).catch(() => {
-        setCreatingBank(false);
       });
+      setSelectedBankId(bankId);
+    } catch (error) {
+      setBankError(
+        error instanceof Error ? error.message : "Failed to set up wiki",
+      );
+    } finally {
+      setCreatingBank(false);
+    }
+  };
+
+  useEffect(() => {
+    if (banks === undefined) return;
+    if (banks.length === 0 && !creatingBank && !selectedBankId && !bankError) {
+      void ensureBank();
     } else if (banks.length > 0 && !selectedBankId) {
       setSelectedBankId(banks[0]._id);
     }
-  }, [banks, creatingBank, selectedBankId, createBank]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot bank bootstrap
+  }, [banks, creatingBank, selectedBankId, bankError]);
 
   const handleCreatePage = async () => {
     if (!selectedBankId || !newPageTitle.trim() || creatingPage) return;
@@ -108,10 +120,24 @@ export default function WikiDashboardPage() {
         <div className="flex h-[calc(100vh-12rem)] rounded-xl border border-white/[0.08] overflow-hidden bg-[#070b14]">
           {!selectedBankId ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <p className="text-sm text-slate-400">Setting up wiki...</p>
-              </div>
+              {bankError ? (
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                  <AlertCircle className="h-8 w-8 text-red-400" />
+                  <p className="text-sm text-slate-400 max-w-sm">{bankError}</p>
+                  <Button
+                    onClick={() => void ensureBank()}
+                    disabled={creatingBank}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-white text-sm"
+                  >
+                    {creatingBank ? "Retrying…" : "Retry setup"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <p className="text-sm text-slate-400">Setting up wiki...</p>
+                </div>
+              )}
             </div>
           ) : (
             <>

@@ -330,7 +330,7 @@ export function ModelManager({
       },
     };
 
-    const badge = badges[state];
+    const badge = badges[state] ?? badges.idle;
     return (
       <span
         className={cn(
@@ -366,7 +366,15 @@ export function ModelManager({
       </div>
 
       <div className="divide-y divide-white/[0.06]">
-        {ARENA_MODELS.map((model) => {
+        {ARENA_MODELS.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <AlertCircle className="h-6 w-6 text-slate-600 mx-auto mb-2" />
+            <p className="text-xs text-slate-500">
+              No models in the catalog. Nothing to download yet.
+            </p>
+          </div>
+        ) : (
+          ARENA_MODELS.map((model) => {
           const state = getDisplayState(model.modelId);
           const isExpanded = expandedModel === model.modelId;
           const progress = downloadProgress[model.modelId];
@@ -474,7 +482,8 @@ export function ModelManager({
               )}
             </div>
           );
-        })}
+        })
+        )}
       </div>
     </div>
   );

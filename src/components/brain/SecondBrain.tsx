@@ -11,12 +11,11 @@ import {
   Save,
   Loader2,
   Check,
-  Trash2,
-  Eye,
-  Edit3,
   Lightbulb,
+  Network,
 } from "lucide-react";
 import { MentalModels } from "./MentalModels";
+import { EntityGraph } from "./EntityGraph";
 
 interface SecondBrainProps {
   userId: string;
@@ -61,7 +60,10 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
   const [isRetaining, setIsRetaining] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"all" | "mental_models">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "mental_models" | "graph">(
+    "all",
+  );
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const banks = useQuery(api.memory.listBanks);
   const memories = useQuery(
@@ -94,6 +96,7 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
 
   const handleCreateBank = async () => {
     setIsCreatingBank(true);
+    setCreateError(null);
     try {
       const id = await createBank({
         name: bankName,
@@ -103,6 +106,10 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
         createdBy: userId,
       });
       setBankId(id);
+    } catch (error) {
+      setCreateError(
+        error instanceof Error ? error.message : "Failed to create brain",
+      );
     } finally {
       setIsCreatingBank(false);
     }
@@ -120,30 +127,33 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
       });
       setNewMemoryContent("");
       setShowAddForm(false);
+    } catch (error) {
+      console.error("Failed to retain memory:", error);
     } finally {
       setIsRetaining(false);
     }
   };
 
   const displayMemories = useMemo(() => {
-    if (searchQuery.trim() && searchResults) return searchResults;
-    if (!memories) return [];
-    if (filterType) return memories.filter((m) => m.type === filterType);
+    if (searchQuery.trim() && Array.isArray(searchResults)) return searchResults;
+    if (!Array.isArray(memories)) return [];
+    if (filterType) return memories.filter((m) => m?.type === filterType);
     return memories;
   }, [searchResults, memories, searchQuery, filterType]);
 
   const memoryStats = useMemo(() => {
-    if (!memories) return { total: 0, byType: {} };
+    if (!Array.isArray(memories)) return { total: 0, byType: {} as Record<string, number> };
     const byType: Record<string, number> = {};
     for (const m of memories) {
+      if (!m?.type) continue;
       byType[m.type] = (byType[m.type] || 0) + 1;
     }
     return { total: memories.length, byType };
   }, [memories]);
 
   const consolidatedCount = useMemo(() => {
-    if (!memories) return 0;
-    return memories.filter((m) => m.consolidatedAt).length;
+    if (!Array.isArray(memories)) return 0;
+    return memories.filter((m) => m?.consolidatedAt).length;
   }, [memories]);
 
   if (!banks) {
@@ -169,6 +179,9 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
             mental models.
           </p>
         </div>
+        {createError && (
+          <p className="text-red-400 text-xs text-center max-w-xs">{createError}</p>
+        )}
         <Button
           onClick={handleCreateBank}
           disabled={isCreatingBank}
@@ -179,7 +192,7 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
           ) : (
             <Brain className="w-4 h-4 mr-2 inline" />
           )}
-          Create Brain
+          {createError ? "Retry" : "Create Brain"}
         </Button>
       </div>
     );
@@ -235,11 +248,24 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
             <Lightbulb className="w-3.5 h-3.5" />
             Mental Models
           </button>
+          <button
+            onClick={() => setActiveTab("graph")}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
+              activeTab === "graph"
+                ? "bg-cyan-400/10 text-cyan-400"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            Graph
+          </button>
         </div>
       </div>
 
       {activeTab === "mental_models" ? (
         <MentalModels bankId={bankId} />
+      ) : activeTab === "graph" ? (
+        <EntityGraph bankId={bankId} />
       ) : (
         <>
           {showAddForm && (
@@ -357,26 +383,33 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
               </div>
             ) : (
               <div className="p-2">
-                {displayMemories.map((memory) => (
+                {displayMemories.map((memory) => {
+                  if (!memory?._id) return null;
+                  const typeLabel =
+                    MEMORY_TYPES.find((t) => t.value === memory.type)?.label ??
+                    memory.type ??
+                    "Memory";
+                  const typeClass =
+                    TYPE_COLORS[memory.type] ??
+                    "bg-white/5 text-slate-400 border-white/[0.08]";
+                  return (
                   <div
                     key={memory._id}
                     className="px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
                   >
                     <div className="flex items-start gap-2.5">
                       <span
-                        className={`shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-medium ${
-                          TYPE_COLORS[memory.type]
-                        }`}
+                        className={`shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-medium ${typeClass}`}
                       >
-                        {MEMORY_TYPES.find((t) => t.value === memory.type)?.label}
+                        {typeLabel}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-white/90 text-sm leading-relaxed">
-                          {memory.content}
+                          {memory.content ?? ""}
                         </p>
                         <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
-                          <span>{formatDate(memory.createdAt)}</span>
-                          {memory.tags && memory.tags.length > 0 && (
+                          <span>{formatDate(memory.createdAt ?? Date.now())}</span>
+                          {Array.isArray(memory.tags) && memory.tags.length > 0 && (
                             <>
                               <span className="text-slate-600">·</span>
                               <span>{memory.tags.join(", ")}</span>
@@ -395,7 +428,8 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

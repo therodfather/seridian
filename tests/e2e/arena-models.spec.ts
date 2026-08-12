@@ -10,5 +10,6 @@ test.describe("LLM Arena model manager", () => {
     await expect(page.getByText("MiniCPM5 1B").first()).toBeVisible();
     await expect(page.getByText("Qwen3 0.6B").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Download" }).first()).toBeVisible();
+    await expect(page.getByText("Download a model in the Model Manager")).toBeVisible();
   });
 });

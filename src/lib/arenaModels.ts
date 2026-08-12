@@ -45,3 +45,21 @@ export function getArenaModel(id: string): ArenaModel | undefined {
 export function isOnnxCompatible(model: ArenaModel): boolean {
   return /onnx/i.test(model.modelId) || model.modelId.startsWith("HuggingFaceTB/");
 }
+
+/** Safe extract of model text from Transformers.js pipeline output. */
+export function extractGeneratedText(output: unknown): string {
+  if (!output) return "";
+  if (typeof output === "string") return output;
+  if (Array.isArray(output)) {
+    const first = output[0] as { generated_text?: unknown } | string | undefined;
+    if (typeof first === "string") return first;
+    if (first && typeof first === "object" && first.generated_text != null) {
+      return String(first.generated_text);
+    }
+  }
+  if (typeof output === "object" && output !== null && "generated_text" in output) {
+    const text = (output as { generated_text?: unknown }).generated_text;
+    return text != null ? String(text) : "";
+  }
+  return "";
+}

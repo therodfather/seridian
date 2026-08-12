@@ -14,6 +14,12 @@ test.describe("marketing site", { tag: "@smoke" }, () => {
       page.getByRole("heading", { name: /build and scale with/i }),
     ).toBeVisible();
     await expect(
+      page.getByRole("link", { name: /buy the \$999 health check/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("navigation").getByRole("link", { name: /health check \$999/i }),
+    ).toBeVisible();
+    await expect(
       page.getByText("Cloud Infrastructure & Application Development", {
         exact: true,
       }),
@@ -63,7 +69,7 @@ test.describe("marketing site", { tag: "@smoke" }, () => {
     await contact.scrollIntoViewIfNeeded();
     await expect(contact).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: /talk about your next project/i }),
+      page.getByRole("heading", { name: /pay first\. start this week/i }),
     ).toBeVisible();
   });
 
@@ -73,6 +79,15 @@ test.describe("marketing site", { tag: "@smoke" }, () => {
     await expect(page).toHaveURL(/\/packages$/);
     await expect(
       page.getByRole("heading", { name: /Clear scope/i }),
+    ).toBeVisible();
+    const healthCheck = page.locator("#health-check");
+    await expect(healthCheck).toBeVisible();
+    await expect(page.locator("#mvp-sprint")).toBeVisible();
+    await expect(
+      healthCheck.getByRole("link", { name: /request \$999 invoice|buy health check/i }),
+    ).toBeVisible();
+    await expect(
+      page.locator("#mvp-sprint").getByRole("link", { name: /request 50% deposit/i }),
     ).toBeVisible();
   });
 });

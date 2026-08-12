@@ -58,7 +58,7 @@ export function Header() {
             size="sm"
             className="rounded-lg bg-seridian-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-seridian-400"
           >
-            <Link href={ROUTES.contact}>Get in touch</Link>
+            <Link href={ROUTES.packagesHealthCheck}>Health Check $999</Link>
           </Button>
         </nav>
 
@@ -104,7 +104,7 @@ export function Header() {
               className="rounded-lg bg-seridian-500 px-4 py-2.5 text-center text-sm font-medium text-slate-950 hover:bg-seridian-400"
               onClick={() => setMobileOpen(false)}
             >
-              <Link href={ROUTES.contact}>Get in touch</Link>
+              <Link href={ROUTES.packagesHealthCheck}>Health Check $999</Link>
             </Button>
           </div>
         </nav>

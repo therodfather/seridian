@@ -10,6 +10,11 @@ import {
   Separator,
   Textarea,
 } from "@bytecats/ui-kit";
+import {
+  healthCheckCtaHint,
+  healthCheckCtaLabel,
+  healthCheckPayHref,
+} from "@/lib/healthCheckOffer";
 
 type Toast = { msg: string; type: "success" | "error" } | null;
 
@@ -112,12 +117,26 @@ export function Contact() {
                 id="contact-heading"
                 className="font-display mt-3 text-3xl font-bold tracking-tight text-white md:text-4xl"
               >
-                Let&apos;s talk about your next project
+                Pay first. Start this week.
               </h2>
               <p className="mt-4 leading-relaxed text-slate-400">
-                Whether you&apos;re planning a cloud migration, building a new product, or need an experienced technical
-                partner — reach out for a no-obligation conversation about how Seridian can help.
+                The $999 Cloud Health Check is prepaid — no call required. Sprint
+                work starts when a 50% deposit clears. Use the form if you need a
+                15-minute kickoff, not a free look at your infra.
               </p>
+
+              <div className="mt-6">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full rounded-lg bg-seridian-500 px-6 py-3.5 text-sm font-semibold text-slate-950 hover:bg-seridian-400 h-auto sm:w-auto"
+                >
+                  <a href={healthCheckPayHref()}>{healthCheckCtaLabel()}</a>
+                </Button>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  {healthCheckCtaHint()}
+                </p>
+              </div>
 
               <Separator className="my-8 bg-white/5" />
 
@@ -142,10 +161,39 @@ export function Contact() {
                   </a>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Prefer email? Use the link above or submit the form — every submission creates a GitHub issue on our{" "}
-                  <span className="text-slate-300">project board</span>.
+                  Prefer email? Use the link above. The form is for kickoff notes —
+                  it is not a free infrastructure review.
                 </p>
               </div>
+
+              <dl className="mt-8 space-y-4 text-sm">
+                <div>
+                  <dt className="font-medium text-slate-200">Do I need a call?</dt>
+                  <dd className="mt-1 text-slate-400">
+                    No. Pay the Health Check and we start from your access notes.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-slate-200">What is in the report?</dt>
+                  <dd className="mt-1 text-slate-400">
+                    Critical / high / recommended findings, cost notes, and a
+                    30/60/90-day remediation plan.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-slate-200">How long?</dt>
+                  <dd className="mt-1 text-slate-400">
+                    Written report in 3–5 business days after access is granted.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-slate-200">No card handy?</dt>
+                  <dd className="mt-1 text-slate-400">
+                    Email hello@seridian.dev and we will send a pay link or wire
+                    instructions.
+                  </dd>
+                </div>
+              </dl>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit} noValidate aria-describedby="contact-status">
@@ -226,7 +274,7 @@ export function Contact() {
                   onChange={(e) => setMessage(e.target.value)}
                   maxLength={2000}
                   className="w-full resize-none border-white/10 bg-slate-950/80 text-white shadow-none placeholder:text-slate-500 focus-visible:border-seridian-500/50 focus-visible:ring-seridian-500/50"
-                  placeholder="Tell us about your project or challenge..."
+                  placeholder="What's on fire this week? Demo date, CI, bill, or a contractor who vanished."
                 />
                 <div className="mt-1 flex justify-between">
                   {fieldErrors.message ? (
@@ -255,7 +303,7 @@ export function Contact() {
                     Sending…
                   </span>
                 ) : (
-                  "Send message"
+                  "Send kickoff note"
                 )}
               </Button>
 

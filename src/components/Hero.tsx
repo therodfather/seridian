@@ -1,5 +1,6 @@
 import { Badge, Button, Card, CardContent } from "@bytecats/ui-kit";
 import HeroWebGL from "./HeroWebGL";
+import { ROUTES } from "@/lib/routes";
 
 export function Hero() {
   return (
@@ -41,7 +42,7 @@ export function Hero() {
               size="lg"
               className="w-full rounded-lg bg-seridian-500 px-8 py-3.5 text-center text-sm font-semibold text-slate-950 hover:bg-seridian-400 sm:w-auto h-auto"
             >
-              <a href="#contact">Schedule a consultation</a>
+              <a href={ROUTES.packagesHealthCheck}>Buy the $999 Health Check</a>
             </Button>
             <Button
               asChild
@@ -49,7 +50,7 @@ export function Hero() {
               size="lg"
               className="w-full rounded-lg border-white/10 bg-white/5 px-8 py-3.5 text-center text-sm font-semibold text-white hover:bg-white/10 hover:text-white sm:w-auto h-auto"
             >
-              <a href="#services">Explore services</a>
+              <a href={ROUTES.packages}>See packages</a>
             </Button>
           </div>
         </div>

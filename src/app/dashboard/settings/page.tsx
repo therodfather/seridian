@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  Badge,
   Skeleton,
 } from "@bytecats/ui-kit";
 import {
@@ -30,22 +29,25 @@ import {
   Sliders,
   Check,
   Search,
-  Activity,
-  Globe,
   Bell,
-  HardDrive,
-  Cpu,
-  Lock,
-  Sparkles,
   Server,
-  Zap,
 } from "lucide-react";
 import { SyncDashboard } from "@/components/sync/SyncDashboard";
 import { PlatformConnections } from "@/components/settings/PlatformConnections";
 import { SecretsVault } from "@/components/settings/SecretsVault";
 import { AuditLogViewer } from "@/components/settings/AuditLogViewer";
 import { AvatarUpload } from "@/components/settings/AvatarUpload";
+import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
 import { cn } from "@/lib/utils";
+
+const VALID_TABS = new Set([
+  "general",
+  "audit",
+  "users",
+  "sync",
+  "secrets",
+  "agents",
+]);
 
 type User = Doc<"users">;
 
@@ -108,11 +110,13 @@ function UserForm({ user, onClose }: { user?: User; onClose: () => void }) {
   const [pubkey, setPubkey] = useState(user?.pubkey ?? "");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !pubkey.trim()) return;
     setSaving(true);
+    setError(null);
     try {
       await createUser({
         pubkey: pubkey.trim(),
@@ -122,6 +126,8 @@ function UserForm({ user, onClose }: { user?: User; onClose: () => void }) {
         status: "offline",
       });
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save user");
     } finally {
       setSaving(false);
     }
@@ -135,22 +141,27 @@ function UserForm({ user, onClose }: { user?: User; onClose: () => void }) {
       <form onSubmit={handleSubmit} className="space-y-4 py-2">
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-300">Public Key / User Handle *</Label>
-          <Input value={pubkey} onChange={(e) => setPubkey(e.target.value)} placeholder="e.g. janedoe or 0x..." disabled={!!user} className="bg-[#070b14] border-white/10 font-mono text-xs" />
+          <Input value={pubkey} onChange={(e) => setPubkey(e.target.value)} placeholder="e.g. janedoe or 0x..." disabled={!!user || saving} className="bg-[#070b14] border-white/10 font-mono text-xs" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-300">Full Name *</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" className="bg-[#070b14] border-white/10 text-xs" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" disabled={saving} className="bg-[#070b14] border-white/10 text-xs" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-300">Email Address</Label>
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="jane@example.com" className="bg-[#070b14] border-white/10 text-xs" />
+          <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="jane@example.com" disabled={saving} className="bg-[#070b14] border-white/10 text-xs" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-300">Password {user && "(leave blank to keep current)"}</Label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={user ? "••••••••" : "Set account password"} className="bg-[#070b14] border-white/10 text-xs font-mono" />
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={user ? "••••••••" : "Set account password"} disabled={saving} className="bg-[#070b14] border-white/10 text-xs font-mono" />
         </div>
+        {error && (
+          <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {error}
+          </div>
+        )}
         <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.08]">
-          <Button type="button" variant="ghost" onClick={onClose} className="text-slate-400">Cancel</Button>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-slate-400">Cancel</Button>
           <Button type="submit" disabled={saving || !name.trim() || !pubkey.trim()} className="bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs">
             {saving ? "Saving User..." : user ? "Save Changes" : "Create User"}
           </Button>
@@ -161,22 +172,50 @@ function UserForm({ user, onClose }: { user?: User; onClose: () => void }) {
 }
 
 function SettingsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const { user: authUser } = useDashboardAuth();
   const users = useQuery(api.chat.getUsers, {});
+  const githubStats = useQuery(api.githubIngest.getGitHubStats);
+  const linearStats = useQuery(api.linearIngest.getLinearStats);
   const deleteUser = useMutation(api.users.remove);
-  const [activeTab, setActiveTab] = useState(tabParam || "general");
+  const initialTab =
+    tabParam && VALID_TABS.has(tabParam) ? tabParam : "general";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>();
   const [deleteConfirmId, setDeleteConfirmId] = useState<Id<"users"> | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
-  // General Settings State Controls
+  // General Settings State Controls (session-local until org prefs are persisted)
   const [orgName, setOrgName] = useState("Seridian Digital");
   const [timezone, setTimezone] = useState("America/New_York");
   const [auditLogsEnabled, setAuditLogsEnabled] = useState(true);
   const [notifyOnSync, setNotifyOnSync] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (tabParam && VALID_TABS.has(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, activeTab]);
+
+  function selectTab(id: string) {
+    setActiveTab(id);
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === "general") {
+      params.delete("tab");
+    } else {
+      params.set("tab", id);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/dashboard/settings?${qs}` : "/dashboard/settings", {
+      scroll: false,
+    });
+  }
 
   function handleEdit(user: User) {
     setEditingUser(user);
@@ -190,8 +229,16 @@ function SettingsContent() {
 
   async function handleConfirmDelete() {
     if (!deleteConfirmId) return;
-    await deleteUser({ userId: deleteConfirmId });
-    setDeleteConfirmId(null);
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteUser({ userId: deleteConfirmId });
+      setDeleteConfirmId(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not delete user");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function handleSaveGeneralSettings(e: React.FormEvent) {
@@ -207,13 +254,23 @@ function SettingsContent() {
       (u.email && u.email.toLowerCase().includes(userSearchQuery.toLowerCase()))
   );
 
+  const githubSynced =
+    !!githubStats &&
+    (!!githubStats.lastIssueSync ||
+      !!githubStats.lastProjectSync ||
+      githubStats.totalIssues > 0);
+  const linearSynced =
+    !!linearStats &&
+    ((linearStats.lastSync?.all ?? 0) > 0 ||
+      (linearStats.counts?.issues ?? 0) > 0);
+
   const SETTINGS_SECTIONS = [
-    { id: "general", label: "General & Org", icon: Sliders, badge: "System" },
-    { id: "audit", label: "Audit Logs", icon: Shield, badge: "Governance" },
-    { id: "users", label: "Team & Access", icon: Users, badge: `${users?.length ?? 0} Active` },
-    { id: "sync", label: "Integrations & Sync", icon: RefreshCw, badge: "GitHub · Netlify" },
-    { id: "secrets", label: "API Keys & Vault", icon: Key, badge: "Admin Gated" },
-    { id: "agents", label: "AI Agent Studio", icon: Bot, badge: "3 Agents" },
+    { id: "general", label: "General & Org", icon: Sliders },
+    { id: "audit", label: "Audit Logs", icon: Shield },
+    { id: "users", label: "Team & Access", icon: Users },
+    { id: "sync", label: "Integrations & Sync", icon: RefreshCw },
+    { id: "secrets", label: "API Keys & Vault", icon: Key },
+    { id: "agents", label: "AI Agent Studio", icon: Bot },
   ];
 
   return (
@@ -252,7 +309,7 @@ function SettingsContent() {
               <button
                 key={sec.id}
                 type="button"
-                onClick={() => setActiveTab(sec.id)}
+                onClick={() => selectTab(sec.id)}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left",
                   isActive
@@ -274,18 +331,30 @@ function SettingsContent() {
               <span className="flex items-center gap-1.5">
                 <Server className="h-3.5 w-3.5 text-cyan-400" /> Infrastructure
               </span>
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Healthy
+              <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
+                Convex
               </span>
             </div>
             <div className="space-y-1 text-[10.5px] text-slate-500 font-mono">
-              <div className="flex justify-between">
-                <span>Database:</span>
-                <span className="text-slate-300">Convex Production</span>
+              <div className="flex justify-between gap-2">
+                <span>GitHub sync:</span>
+                <span className={githubSynced ? "text-emerald-400" : "text-slate-400"}>
+                  {githubStats === undefined
+                    ? "…"
+                    : githubSynced
+                      ? "Data present"
+                      : "Not synced"}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span>Sync Status:</span>
-                <span className="text-cyan-400">Linear Active</span>
+              <div className="flex justify-between gap-2">
+                <span>Linear (trial):</span>
+                <span className={linearSynced ? "text-amber-400" : "text-slate-400"}>
+                  {linearStats === undefined
+                    ? "…"
+                    : linearSynced
+                      ? "Data present"
+                      : "Not synced"}
+                </span>
               </div>
             </div>
           </div>
@@ -352,7 +421,7 @@ function SettingsContent() {
                 {saveSuccess && (
                   <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400" />
-                    <span>Organization preferences updated cleanly.</span>
+                    <span>Preferences saved for this session (not persisted yet).</span>
                   </div>
                 )}
 
@@ -416,10 +485,33 @@ function SettingsContent() {
               <div className="space-y-2">
                 {users === undefined ? (
                   Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)
+                ) : users.length === 0 ? (
+                  <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.08] text-center p-6">
+                    <Users className="h-6 w-6 text-slate-600 mb-2" />
+                    <p className="text-xs text-slate-300 font-medium">No team members yet</p>
+                    <p className="text-[11px] text-slate-500 mt-1 max-w-xs">
+                      Add a user handle to grant dashboard access for this workspace.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => setFormOpen(true)}
+                      className="mt-4 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs"
+                    >
+                      <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                      Add first user
+                    </Button>
+                  </div>
                 ) : filteredUsers.length === 0 ? (
                   <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.08] text-center p-6">
                     <Users className="h-6 w-6 text-slate-600 mb-2" />
-                    <p className="text-xs text-slate-400">No organization members match search criteria.</p>
+                    <p className="text-xs text-slate-400">No members match “{userSearchQuery}”.</p>
+                    <button
+                      type="button"
+                      onClick={() => setUserSearchQuery("")}
+                      className="mt-2 text-[11px] text-cyan-400 hover:text-cyan-300"
+                    >
+                      Clear search
+                    </button>
                   </div>
                 ) : (
                   filteredUsers.map((user) => (
@@ -451,7 +543,9 @@ function SettingsContent() {
           )}
 
           {/* TAB 4: API KEYS & SECRETS VAULT */}
-          {activeTab === "secrets" && <SecretsVault currentUserId="d" />}
+          {activeTab === "secrets" && (
+            <SecretsVault currentUserId={authUser?.pubkey ?? "admin"} />
+          )}
 
           {/* TAB 5: AI AGENT STUDIO */}
           {activeTab === "agents" && (
@@ -459,17 +553,19 @@ function SettingsContent() {
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Bot className="h-4 w-4 text-cyan-400" />
-                  AI Agent Studio & Automation Hub
+                  AI Agent Studio
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Configure workspace orchestration agents, triggers, API connections, and automated dispatches.</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Planned orchestration agents. Status reflects product intent, not a live runtime check.
+                </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">@SeridianAI</span>
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+                    <span className="text-[10px] font-semibold text-slate-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                      Planned
                     </span>
                   </div>
                   <div className="text-sm font-bold text-white">Executive Architect Agent</div>
@@ -479,19 +575,19 @@ function SettingsContent() {
                 <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">@LinearSyncBot</span>
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+                    <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                      Trial sync UI
                     </span>
                   </div>
                   <div className="text-sm font-bold text-white">Sprint & Issue Orchestrator</div>
-                  <p className="text-xs text-slate-400 leading-relaxed">Syncs Linear tickets, creates issues from chat threads, updates labels, and tracks sprint velocity.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Manual Linear sync lives under Integrations. Prefer GitHub issues for new work.</p>
                 </div>
 
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">@DataPulse</span>
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+                    <span className="text-[10px] font-semibold text-slate-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                      Planned
                     </span>
                   </div>
                   <div className="text-sm font-bold text-white">Analytics & BI Agent</div>
@@ -507,15 +603,30 @@ function SettingsContent() {
         <UserForm user={editingUser} onClose={handleClose} />
       </Dialog>
 
-      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+      <Dialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) {
+            setDeleteConfirmId(null);
+            setDeleteError(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-sm border-white/[0.08] bg-[#080d1a]">
           <DialogHeader>
             <DialogTitle className="text-white font-bold">Confirm User Deletion</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-slate-400">Are you sure you want to revoke and delete this user? Access will be immediately removed.</p>
+          {deleteError && (
+            <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+              {deleteError}
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="ghost" onClick={() => setDeleteConfirmId(null)} className="text-slate-400">Cancel</Button>
-            <Button onClick={handleConfirmDelete} className="bg-red-500 text-white hover:bg-red-400">Confirm Revoke</Button>
+            <Button variant="ghost" onClick={() => setDeleteConfirmId(null)} disabled={deleting} className="text-slate-400">Cancel</Button>
+            <Button onClick={handleConfirmDelete} disabled={deleting} className="bg-red-500 text-white hover:bg-red-400">
+              {deleting ? "Revoking…" : "Confirm Revoke"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

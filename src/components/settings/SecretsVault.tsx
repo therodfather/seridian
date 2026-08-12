@@ -53,6 +53,8 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
   const [isAdding, setIsAdding] = useState(false);
   const [newSecret, setNewSecret] = useState({ name: "", value: "", category: "api", description: "" });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [showValue, setShowValue] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Secret | null>(null);
@@ -74,6 +76,7 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
   async function handleSave() {
     if (!newSecret.name.trim() || !newSecret.value.trim()) return;
     setSaving(true);
+    setActionError(null);
     try {
       await setSecret({
         name: newSecret.name.trim(),
@@ -84,15 +87,25 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
       });
       setIsAdding(false);
       setNewSecret({ name: "", value: "", category: "api", description: "" });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not save secret");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(secret: Secret) {
-    await deleteSecret({ name: secret.name, currentUserId });
-    setDeleteConfirm(null);
-    setSelectedSecret(null);
+    setDeleting(true);
+    setActionError(null);
+    try {
+      await deleteSecret({ name: secret.name, currentUserId });
+      setDeleteConfirm(null);
+      setSelectedSecret(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not delete secret");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function handleCopyValue() {
@@ -116,10 +129,16 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
           <Shield className="h-5 w-5 text-slate-400" />
           <span className="text-sm text-slate-400">{stats.configured} secrets stored</span>
         </div>
-        <Button size="sm" onClick={() => setIsAdding(true)} className="bg-seridian-500 text-white hover:bg-seridian-400">
+        <Button size="sm" onClick={() => { setActionError(null); setIsAdding(true); }} className="bg-seridian-500 text-white hover:bg-seridian-400">
           <Plus className="h-3.5 w-3.5 mr-1" /> Add Secret
         </Button>
       </div>
+
+      {actionError && !isAdding && !deleteConfirm && (
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {actionError}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-2">
@@ -140,8 +159,24 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
         {secrets === undefined ? (
           Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-lg animate-pulse bg-white/[0.02]" />)
         ) : filteredSecrets.length === 0 ? (
-          <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-sm text-slate-600">
-            {search ? "No matching secrets" : "No secrets yet"}
+          <div className="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-center px-4">
+            <p className="text-sm text-slate-400">
+              {search ? "No matching secrets" : "No secrets yet"}
+            </p>
+            {!search && (
+              <p className="text-[11px] text-slate-600 mt-1 max-w-sm">
+                Store API keys and tokens here. Writes require an admin handle.
+              </p>
+            )}
+            {!search && (
+              <Button
+                size="sm"
+                onClick={() => { setActionError(null); setIsAdding(true); }}
+                className="mt-3 bg-seridian-500 text-white hover:bg-seridian-400 text-xs"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add first secret
+              </Button>
+            )}
           </div>
         ) : (
           filteredSecrets.map((secret) => {
@@ -202,9 +237,14 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setIsAdding(false)} className="text-slate-400 text-xs">Cancel</Button>
+              <Button variant="ghost" onClick={() => setIsAdding(false)} disabled={saving} className="text-slate-400 text-xs">Cancel</Button>
               <Button onClick={handleSave} disabled={saving || !newSecret.name.trim() || !newSecret.value.trim()} className="bg-seridian-500 text-white hover:bg-seridian-400 text-xs">{saving ? "Saving..." : "Save Secret"}</Button>
             </div>
+            {actionError && isAdding && (
+              <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                {actionError}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -245,9 +285,16 @@ export function SecretsVault({ currentUserId = "dee" }: { currentUserId?: string
             <h3 className="text-sm font-medium text-white">Delete secret?</h3>
             <p className="text-xs text-slate-400">Permanently delete <span className="font-mono text-white">{deleteConfirm.name}</span>? This cannot be undone.</p>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setDeleteConfirm(null)} className="text-slate-400 text-xs">Cancel</Button>
-              <Button onClick={() => handleDelete(deleteConfirm)} className="bg-red-500 text-white hover:bg-red-400 text-xs">Delete</Button>
+              <Button variant="ghost" onClick={() => setDeleteConfirm(null)} disabled={deleting} className="text-slate-400 text-xs">Cancel</Button>
+              <Button onClick={() => handleDelete(deleteConfirm)} disabled={deleting} className="bg-red-500 text-white hover:bg-red-400 text-xs">
+                {deleting ? "Deleting…" : "Delete"}
+              </Button>
             </div>
+            {actionError && deleteConfirm && (
+              <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                {actionError}
+              </div>
+            )}
           </DialogContent>
         )}
       </Dialog>

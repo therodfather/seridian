@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@bytecats/ui-kit";
 
 const navLinks = [
   { href: "/#services", label: "Services" },
-  { href: "/packages", label: "Packages" },
+  { href: "/(marketing)/packages", label: "Packages" },
   { href: "/#approach", label: "Approach" },
   { href: "/#expertise", label: "Expertise" },
   { href: "/#contact", label: "Contact" },
@@ -15,8 +14,6 @@ const navLinks = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
-  const isDashboard = pathname.startsWith("/dashboard");
 
   return (
     <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
@@ -46,24 +43,15 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {!isDashboard &&
-            navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm text-slate-400 transition-colors hover:text-white"
-              >
-                {link.label}
-              </Link>
-            ))}
-          {isDashboard && (
+          {navLinks.map((link) => (
             <Link
-              href="/"
+              key={link.href}
+              href={link.href}
               className="text-sm text-slate-400 transition-colors hover:text-white"
             >
-              Home
+              {link.label}
             </Link>
-          )}
+          ))}
           <Button
             asChild
             size="sm"
@@ -100,26 +88,16 @@ export function Header() {
       {mobileOpen && (
         <nav className="border-t border-white/5 bg-slate-950/95 px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
-            {!isDashboard &&
-              navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm text-slate-400 transition-colors hover:text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            {isDashboard && (
+            {navLinks.map((link) => (
               <Link
-                href="/"
+                key={link.href}
+                href={link.href}
                 className="text-sm text-slate-400 transition-colors hover:text-white"
                 onClick={() => setMobileOpen(false)}
               >
-                Home
+                {link.label}
               </Link>
-            )}
+            ))}
             <Button
               asChild
               className="rounded-lg bg-seridian-500 px-4 py-2.5 text-center text-sm font-medium text-slate-950 hover:bg-seridian-400"

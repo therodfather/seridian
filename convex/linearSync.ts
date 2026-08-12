@@ -240,7 +240,6 @@ const PROJECTS_QUERY = `
         name
         description
         state
-        teamId
       }
     }
   }
@@ -279,7 +278,6 @@ type LinearProjectNode = {
   name: string;
   description: string | null;
   state: string;
-  teamId: string | null;
 };
 type LinearLabelNode = { id: string; name: string; color: string | null };
 type LinearUserNode = {
@@ -668,7 +666,6 @@ export const syncLinearProjects = action({
       name: p.name,
       description: p.description ?? undefined,
       state: p.state,
-      teamId: p.teamId ?? undefined,
     }));
     const result: { created: number; updated: number; total: number } =
       await ctx.runMutation(internal.linearSync.upsertProjects, {

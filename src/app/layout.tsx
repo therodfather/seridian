@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "@bytecats/ui-kit/styles.css";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { Toaster } from "@bytecats/ui-kit";
 
 const spaceGrotesk = Space_Grotesk({
@@ -28,6 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://seridian.dev"),
   title: "Seridian | Cloud Infrastructure & Application Development Consulting",
   description:
     "Seridian helps organizations design, build, and scale cloud infrastructure and modern applications. Expert consulting for AWS, Azure, GCP, and full-stack development.",
@@ -60,9 +59,7 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        {children}
         <Toaster position="top-right" richColors />
       </body>
     </html>

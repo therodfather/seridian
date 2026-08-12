@@ -43,6 +43,6 @@ export const send = mutation({
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("messages").collect();
+    return await ctx.db.query("messages").take(500);
   },
 });

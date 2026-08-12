@@ -114,7 +114,7 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
                 className="bg-[#070b14] border-white/[0.08] text-white text-xl font-semibold focus:border-cyan-400"
               />
             ) : (
-              <h1 className="text-xl font-semibold text-white">{page.title}</h1>
+              <h1 className="text-xl font-semibold text-white">{page.title ?? "Untitled"}</h1>
             )}
           </div>
 
@@ -213,7 +213,7 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
           <div className="prose prose-invert max-w-none">
             <div className="bg-[#0c1222] rounded-lg border border-white/[0.08] p-6">
               <pre className="whitespace-pre-wrap text-slate-300 font-sans text-sm leading-relaxed">
-                {page.content}
+                {page.content ?? ""}
               </pre>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
 import { Button, Input } from "@bytecats/ui-kit";
@@ -23,14 +23,17 @@ export function WikiSidebar({
   const pages = useQuery(api.wiki.listPages, { bankId });
 
   const filteredPages = useMemo(() => {
-    if (!pages) return [];
+    if (!Array.isArray(pages)) return [];
     if (!search.trim()) return pages;
     const q = search.toLowerCase();
-    return pages.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.tags?.some((t) => t.toLowerCase().includes(q)),
-    );
+    return pages.filter((p) => {
+      const title = (p.title ?? "").toLowerCase();
+      const tags = Array.isArray(p.tags) ? p.tags : [];
+      return (
+        title.includes(q) ||
+        tags.some((t) => (t ?? "").toLowerCase().includes(q))
+      );
+    });
   }, [pages, search]);
 
   const recentPages = useMemo(() => {
@@ -116,7 +119,7 @@ export function WikiSidebar({
                     }`}
                   >
                     <FileText className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate flex-1">{page.title}</span>
+                    <span className="truncate flex-1">{page.title ?? "Untitled"}</span>
                     <span className="text-[10px] text-slate-600 shrink-0">
                       {formatDate(page.updatedAt ?? page.createdAt ?? 0)}
                     </span>
@@ -142,7 +145,7 @@ export function WikiSidebar({
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{page.title}</span>
+                  <span className="truncate">{page.title ?? "Untitled"}</span>
                 </button>
               ))}
             </div>

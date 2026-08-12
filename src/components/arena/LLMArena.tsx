@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Bot,
   Send,
@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBytes } from "@/lib/format";
-import { ARENA_MODELS, type ArenaModel } from "@/lib/arenaModels";
+import {
+  ARENA_MODELS,
+  extractGeneratedText,
+  type ArenaModel,
+} from "@/lib/arenaModels";
 import { ModelManager, type ModelState } from "@/components/arena/ModelManager";
 
 interface Message {
@@ -63,7 +67,9 @@ function buildPrompt(messages: { role: string; content: string }[]): string {
 
 export function LLMArena() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedModel, setSelectedModel] = useState<ArenaModel>(ARENA_MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState<ArenaModel | null>(
+    ARENA_MODELS[0] ?? null,
+  );
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [modelStatuses, setModelStatuses] = useState<ModelStatus>({});
@@ -72,8 +78,8 @@ export function LLMArena() {
   const pipelineRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentProgress = modelStatuses[selectedModel?.modelId] || {
-    status: "idle",
+  const currentProgress = (selectedModel && modelStatuses[selectedModel.modelId]) || {
+    status: "idle" as const,
     percent: 0,
     loaded: 0,
     total: 0,
@@ -181,11 +187,7 @@ export function LLMArena() {
     [modelStatuses, updateModelStatus]
   );
 
-  useEffect(() => {
-    if (selectedModel && modelStatuses[selectedModel.modelId]?.status !== "ready") {
-      loadModel(selectedModel);
-    }
-  }, [selectedModel]);
+  // Do not auto-download/load models on mount — wait for explicit Load in ModelManager.
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || loading || !pipelineRef.current) return;
@@ -209,7 +211,7 @@ export function LLMArena() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: output[0].generated_text || "",
+        content: extractGeneratedText(output) || "(empty response)",
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
@@ -253,19 +255,45 @@ export function LLMArena() {
       <div className="w-[22rem] shrink-0 border-r border-white/[0.08] bg-[#0c1222] overflow-y-auto">
         <ModelManager
           onSelectModel={handleSelectModel}
-          selectedModelId={selectedModel.modelId}
+          selectedModelId={selectedModel?.modelId}
           modelStatuses={managerStatuses}
           onModelStatusChange={(modelId, state) => {
-            updateModelStatus(modelId, { status: state === "cached" ? "idle" : state });
+            updateModelStatus(modelId, {
+              status:
+                state === "cached"
+                  ? "idle"
+                  : state === "ready"
+                    ? "ready"
+                    : state === "error"
+                      ? "error"
+                      : state === "downloading"
+                        ? "downloading"
+                        : state === "loading"
+                          ? "loading"
+                          : "idle",
+            });
           }}
         />
       </div>
 
       {/* Main chat area */}
       <div className="flex-1 flex flex-col relative">
+        {ARENA_MODELS.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="text-center p-6">
+              <AlertCircle className="h-8 w-8 text-slate-500 mx-auto mb-3" />
+              <h3 className="text-white font-semibold mb-1">No models available</h3>
+              <p className="text-sm text-slate-400">
+                The local model catalog is empty. Add models to start chatting.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Progress overlay */}
-        {(currentProgress.status === "downloading" ||
-          currentProgress.status === "loading") && (
+        {selectedModel &&
+          (currentProgress.status === "downloading" ||
+            currentProgress.status === "loading") && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10 backdrop-blur-sm transition-opacity duration-300">
             <div className="bg-[#0c1222] rounded-xl p-6 border border-cyan-500/30 max-w-sm w-full mx-4 shadow-2xl shadow-cyan-500/10">
               {currentProgress.status === "loading" &&
@@ -275,7 +303,7 @@ export function LLMArena() {
                 <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mx-auto mb-4" />
               )}
               <h3 className="text-white font-semibold text-center mb-1">
-                {selectedModel.name}
+                {selectedModel?.name ?? "Model"}
               </h3>
               <p className="text-slate-400 text-sm text-center mb-4">
                 {currentProgress.status === "downloading"
@@ -320,7 +348,7 @@ export function LLMArena() {
         )}
 
         {/* Error overlay */}
-        {currentProgress.status === "error" && (
+        {selectedModel && currentProgress.status === "error" && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10 backdrop-blur-sm transition-opacity duration-300">
             <div className="bg-[#0c1222] rounded-xl p-6 border border-red-500/30 max-w-sm w-full mx-4 shadow-2xl shadow-red-500/10">
               <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
@@ -331,7 +359,7 @@ export function LLMArena() {
                 {currentProgress.error || "An error occurred while loading the model."}
               </p>
               <button
-                onClick={() => loadModel(selectedModel)}
+                onClick={() => selectedModel && loadModel(selectedModel)}
                 className="w-full rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm text-red-400 hover:bg-red-500/30 transition-colors"
               >
                 Retry
@@ -342,14 +370,29 @@ export function LLMArena() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 && currentProgress.status !== "ready" && (
+          {messages.length === 0 && currentProgress.status === "idle" && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <Bot className="w-12 h-12 text-slate-600 mb-4" />
               <h2 className="text-lg font-semibold text-white mb-2">
                 LLM Arena
               </h2>
               <p className="text-sm text-slate-400 max-w-md">
-                Select a model to start chatting with local AI.
+                Download a model in the Model Manager, then click Load to start
+                chatting. Models stay local in your browser.
+              </p>
+            </div>
+          )}
+          {messages.length === 0 &&
+            currentProgress.status !== "ready" &&
+            currentProgress.status !== "idle" &&
+            currentProgress.status !== "error" && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Bot className="w-12 h-12 text-slate-600 mb-4" />
+              <h2 className="text-lg font-semibold text-white mb-2">
+                LLM Arena
+              </h2>
+              <p className="text-sm text-slate-400 max-w-md">
+                Preparing the selected model…
               </p>
             </div>
           )}
@@ -357,7 +400,7 @@ export function LLMArena() {
             <div className="flex flex-col items-center justify-center h-full text-center">
               <Bot className="w-12 h-12 text-cyan-400 mb-4" />
               <h2 className="text-lg font-semibold text-white mb-2">
-                {selectedModel.name} Ready
+                {selectedModel?.name ?? "Model"} Ready
               </h2>
               <p className="text-sm text-slate-400 max-w-md">
                 Start a conversation below.
@@ -439,7 +482,7 @@ export function LLMArena() {
             </div>
             <div className="flex items-center gap-1.5">
               <Cpu className="h-3 w-3 text-cyan-400" />
-              <span>{selectedModel.name}</span>
+              <span>{selectedModel?.name ?? "No model"}</span>
             </div>
           </div>
           <div className="flex items-center gap-4">

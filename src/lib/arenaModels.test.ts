@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   ARENA_MODELS,
+  extractGeneratedText,
   getArenaModel,
   isOnnxCompatible,
 } from "./arenaModels";
@@ -26,5 +27,14 @@ describe("ARENA_MODELS", () => {
       "onnx-community/Qwen3-0.6B-ONNX",
     );
     expect(getArenaModel("missing")).toBeUndefined();
+  });
+
+  test("extractGeneratedText tolerates missing or odd pipeline output", () => {
+    expect(extractGeneratedText(undefined)).toBe("");
+    expect(extractGeneratedText(null)).toBe("");
+    expect(extractGeneratedText([])).toBe("");
+    expect(extractGeneratedText([{ generated_text: "hello" }])).toBe("hello");
+    expect(extractGeneratedText("plain")).toBe("plain");
+    expect(extractGeneratedText({ generated_text: 42 })).toBe("42");
   });
 });

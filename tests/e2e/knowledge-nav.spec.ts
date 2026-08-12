@@ -15,11 +15,20 @@ test.describe("knowledge navigation", () => {
     await navigateTo(page, "LLM Arena");
     await expect(page).toHaveURL(/\/dashboard\/arena/);
     await expect(page.getByRole("heading", { name: "LLM Arena", level: 1 })).toBeVisible();
+    await expect(page.getByText("Model Manager")).toBeVisible();
   });
 
   test("opens wiki from the sidebar", async ({ page }) => {
     await gotoDashboard(page);
     await navigateTo(page, "Wiki");
     await expect(page).toHaveURL(/\/dashboard\/wiki/);
+    await expect(page.getByRole("heading", { name: "Wiki", level: 1 })).toBeVisible();
+  });
+
+  test("opens second brain from the sidebar", async ({ page }) => {
+    await gotoDashboard(page);
+    await navigateTo(page, "Second Brain");
+    await expect(page).toHaveURL(/\/dashboard\/brain/);
+    await expect(page.getByRole("heading", { name: "Second Brain", level: 1 })).toBeVisible();
   });
 });

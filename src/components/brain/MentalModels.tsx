@@ -39,11 +39,13 @@ export function MentalModels({ bankId }: MentalModelsProps) {
   const updateMemory = useMutation(api.memory.updateMemory);
   const deleteMemory = useMutation(api.memory.deleteMemory);
 
-  const filteredModels = mentalModels?.filter((m) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return m.content.toLowerCase().includes(q);
-  });
+  const filteredModels = Array.isArray(mentalModels)
+    ? mentalModels.filter((m) => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (m.content ?? "").toLowerCase().includes(q);
+      })
+    : undefined;
 
   const handleCreate = useCallback(async () => {
     if (!newContent.trim()) return;

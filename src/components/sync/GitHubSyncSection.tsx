@@ -5,6 +5,8 @@ import { useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { SyncCard } from "./SyncCard";
 
+import { CheckSquare, FolderKanban } from "lucide-react";
+
 interface GitHubSyncSectionProps {
   onSyncComplete?: () => void;
 }
@@ -118,7 +120,7 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <SyncCard
           title="Issues"
-          icon="☐"
+          icon={CheckSquare}
           lastSynced={stats.lastIssueSync}
           count={stats.totalIssues}
           countLabel="synced issues"
@@ -129,7 +131,7 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
         />
         <SyncCard
           title="Projects"
-          icon="▭"
+          icon={FolderKanban}
           lastSynced={stats.lastProjectSync}
           count={stats.totalProjects}
           countLabel="synced projects"

@@ -240,7 +240,6 @@ const PROJECTS_QUERY = `
         name
         description
         state
-        teamId
       }
     }
   }
@@ -279,7 +278,6 @@ type LinearProjectNode = {
   name: string;
   description: string | null;
   state: string;
-  teamId: string | null;
 };
 type LinearLabelNode = { id: string; name: string; color: string | null };
 type LinearUserNode = {
@@ -616,6 +614,15 @@ export const updateSyncMeta = internalMutation({
         value: args.value,
       });
     }
+
+    await ctx.db.insert("auditLogs", {
+      action: "Linear Sync Executed",
+      actor: "LinearSyncBot",
+      details: `Completed sync operation for ${args.key}`,
+      category: "sync",
+      timestamp: Date.now(),
+      metadata: JSON.stringify({ key: args.key, value: args.value }),
+    });
   },
 });
 
@@ -668,7 +675,6 @@ export const syncLinearProjects = action({
       name: p.name,
       description: p.description ?? undefined,
       state: p.state,
-      teamId: p.teamId ?? undefined,
     }));
     const result: { created: number; updated: number; total: number } =
       await ctx.runMutation(internal.linearSync.upsertProjects, {

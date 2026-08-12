@@ -65,11 +65,11 @@ export const getLinearUsers = query({
 export const getLinearStats = query({
   args: {},
   handler: async (ctx) => {
-    const issues = await ctx.db.query("issues").take(10000);
-    const teams = await ctx.db.query("linearTeams").take(1000);
-    const projects = await ctx.db.query("linearProjects").take(1000);
-    const labels = await ctx.db.query("linearLabels").take(1000);
-    const users = await ctx.db.query("linearUsers").take(1000);
+    const issues = await ctx.db.query("issues").take(500);
+    const teams = await ctx.db.query("linearTeams").take(500);
+    const projects = await ctx.db.query("linearProjects").take(500);
+    const labels = await ctx.db.query("linearLabels").take(500);
+    const users = await ctx.db.query("linearUsers").take(500);
 
     const lastSyncMeta = await ctx.db
       .query("syncMeta")

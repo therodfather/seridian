@@ -33,8 +33,8 @@ export const getGitHubProjects = query({
 export const getGitHubStats = query({
   args: {},
   handler: async (ctx) => {
-    const issues = await ctx.db.query("githubIssues").collect();
-    const projects = await ctx.db.query("githubProjects").collect();
+    const issues = await ctx.db.query("githubIssues").take(500);
+    const projects = await ctx.db.query("githubProjects").take(500);
 
     const issuesByState: Record<string, number> = {};
     for (const issue of issues) {

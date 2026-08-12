@@ -67,9 +67,9 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
-  const clients = useQuery(api.clients.list, {});
-  const issues = useQuery(api.issues.list, {});
-  const proposals = useQuery(api.proposals.list, {});
+  const clients = useQuery(api.clients.list, open ? {} : "skip");
+  const issues = useQuery(api.issues.list, open ? {} : "skip");
+  const proposals = useQuery(api.proposals.list, open ? {} : "skip");
 
   const searchResults = useMemo<SearchResult[]>(() => {
     const results: SearchResult[] = [];

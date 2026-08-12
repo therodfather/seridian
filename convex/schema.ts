@@ -11,6 +11,59 @@ export default defineSchema({
     status: v.union(v.literal("active"), v.literal("inactive")),
     website: v.optional(v.string()),
     industry: v.optional(v.string()),
+    // Corporate Social Media & Web Presence
+    companyLinkedin: v.optional(v.string()),
+    companyTwitter: v.optional(v.string()),
+    companyGithub: v.optional(v.string()),
+    // Business Intelligence & Deep Corporate Network fields
+    techStack: v.optional(v.array(v.string())),
+    identifiedNeeds: v.optional(v.array(v.string())),
+    competitors: v.optional(v.array(v.string())),
+    annualRevenue: v.optional(v.string()),
+    companySize: v.optional(v.string()),
+    // Client's downstream customer network ("Their Clients")
+    downstreamClients: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          industry: v.optional(v.string()),
+          relationshipType: v.string(), // e.g. "Key Account", "Vendor", "Partner"
+          notes: v.optional(v.string()),
+        })
+      )
+    ),
+    // Rich Personnel & Employee Dossiers (Who's Who + Background Checks + Social Media)
+    keyPersonnel: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          name: v.string(),
+          role: v.string(),
+          email: v.optional(v.string()),
+          phone: v.optional(v.string()),
+          linkedin: v.optional(v.string()),
+          twitter: v.optional(v.string()),
+          github: v.optional(v.string()),
+          personalWebsite: v.optional(v.string()),
+          influenceLevel: v.optional(v.union(v.literal("champion"), v.literal("decision_maker"), v.literal("blocker"), v.literal("neutral"))),
+          personalInterests: v.optional(v.array(v.string())),
+          backgroundCheckNotes: v.optional(v.string()),
+          backgroundCheckStatus: v.optional(v.union(v.literal("pending"), v.literal("verified"), v.literal("flagged"), v.literal("none"))),
+          notes: v.optional(v.string()),
+        })
+      )
+    ),
+    // Corporate Relationship Graph Mapping
+    relationshipGraph: v.optional(
+      v.array(
+        v.object({
+          sourceId: v.string(),
+          targetId: v.string(),
+          relation: v.string(), // e.g. "Reports To", "Influences", "Partnered With"
+        })
+      )
+    ),
+    intelligenceNotes: v.optional(v.string()),
   }).index("by_status", ["status"]),
 
   contracts: defineTable({
@@ -81,6 +134,16 @@ export default defineSchema({
     key: v.string(),
     value: v.string(),
   }).index("by_key", ["key"]),
+
+  secrets: defineTable({
+    name: v.string(),
+    maskedValue: v.string(),
+    description: v.optional(v.string()),
+    category: v.string(),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
 
   caseStudies: defineTable({
     title: v.string(),
@@ -271,4 +334,40 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     syncedAt: v.number(),
   }).index("by_linearId", ["linearId"]),
+
+  auditLogs: defineTable({
+    action: v.string(),
+    actor: v.string(),
+    details: v.string(),
+    category: v.union(
+      v.literal("secret"),
+      v.literal("user"),
+      v.literal("sync"),
+      v.literal("system")
+    ),
+    timestamp: v.number(),
+    metadata: v.optional(v.string()),
+  })
+    .index("by_timestamp", ["timestamp"])
+    .index("by_category", ["category"]),
+
+  // Real-time Collaborative Document Multiplayer Editing & Presence (Google Docs Style)
+  docPresence: defineTable({
+    fileId: v.id("files"),
+    userPubkey: v.string(),
+    userName: v.string(),
+    cursorPosition: v.number(),
+    activeSelection: v.optional(v.string()),
+    lastSeen: v.number(),
+  })
+    .index("by_fileId", ["fileId"])
+    .index("by_fileId_and_pubkey", ["fileId", "userPubkey"]),
+
+  docEdits: defineTable({
+    fileId: v.id("files"),
+    content: v.string(),
+    lastUpdatedBy: v.string(),
+    updatedAt: v.number(),
+  }).index("by_fileId", ["fileId"]),
 });
+

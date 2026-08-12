@@ -1,13 +1,7 @@
-"use client";
-
 import { redirect } from "next/navigation";
-import { useEffect } from "react";
+import { settingsTabHref } from "@/lib/routes";
 
+/** Legacy Sync nav URL — keep bookmarks working by sending users to Settings. */
 export default function SyncPage() {
-  useEffect(() => {
-    redirect("/dashboard/settings");
-  }, []);
-
-  return null;
+  redirect(settingsTabHref("sync"));
 }
-

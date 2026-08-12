@@ -28,4 +28,11 @@ test.describe("settings integrations", { tag: "@smoke" }, () => {
     await expect(page.getByText("Links").first()).toBeVisible();
     await expect(page.getByText(/^Live$/)).toHaveCount(0);
   });
+
+  test("deep link opens integrations & sync tab", async ({ page }) => {
+    await gotoDashboard(page);
+    await page.goto("/dashboard/settings?tab=sync");
+    await expect(page).toHaveURL(/tab=sync/);
+    await expect(page.getByText("Platform connections")).toBeVisible();
+  });
 });

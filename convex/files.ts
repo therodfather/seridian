@@ -97,6 +97,60 @@ export const move = mutation({
   },
 });
 
+export const rename = mutation({
+  args: {
+    fileId: v.id("files"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.fileId, { name: args.name });
+    return args.fileId;
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const createDocument = mutation({
+  args: {
+    name: v.string(),
+    type: v.string(),
+    storageId: v.id("_storage"),
+    size: v.number(),
+    initialContent: v.optional(v.string()),
+    parentId: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    uploadedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const fileId = await ctx.db.insert("files", {
+      name: args.name,
+      type: args.type,
+      size: args.size,
+      storageId: args.storageId,
+      parentId: args.parentId,
+      clientId: args.clientId,
+      uploadedBy: args.uploadedBy,
+      createdAt: Date.now(),
+    });
+
+    if (args.initialContent) {
+      await ctx.db.insert("docEdits", {
+        fileId,
+        content: args.initialContent,
+        lastUpdatedBy: args.uploadedBy,
+        updatedAt: Date.now(),
+      });
+    }
+
+    return fileId;
+  },
+});
+
 export const upload = action({
   args: {
     name: v.string(),

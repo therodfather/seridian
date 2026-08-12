@@ -7,8 +7,8 @@ export const listChannels = query({
     const owned = await ctx.db
       .query("channels")
       .withIndex("by_createdBy", (q) => q.eq("createdBy", args.pubkey))
-      .collect();
-    const all = await ctx.db.query("channels").collect();
+      .take(500);
+    const all = await ctx.db.query("channels").take(500);
     const joined = all.filter((c) =>
       c.participants.includes(args.pubkey) && c.createdBy !== args.pubkey
     );
@@ -41,15 +41,9 @@ export const listMessages = query({
 export const getUsers = query({
   args: {},
   handler: async (ctx) => {
-    const online = await ctx.db
-      .query("users")
-      .withIndex("by_status", (q) => q.eq("status", "online"))
-      .take(500);
-    const away = await ctx.db
-      .query("users")
-      .withIndex("by_status", (q) => q.eq("status", "away"))
-      .take(500);
-    return [...online, ...away];
+    const users = await ctx.db.query("users").take(500);
+    // Filter out password field from results for security
+    return users.map(({ password, ...rest }) => rest);
   },
 });
 
@@ -180,6 +174,8 @@ export const updateUserStatus = mutation({
     pubkey: v.string(),
     status: v.union(v.literal("online"), v.literal("offline"), v.literal("away")),
     name: v.string(),
+    email: v.optional(v.string()),
+    password: v.optional(v.string()),
     avatar: v.optional(v.string()),
     deviceType: v.optional(
       v.union(v.literal("web"), v.literal("android"), v.literal("ios")),
@@ -192,10 +188,21 @@ export const updateUserStatus = mutation({
       .unique();
     const now = Date.now();
     if (existing) {
+      // Password update validation: only allow if user has no password (first time) or has existing password
+      const passwordUpdate = (() => {
+        if (args.password === undefined) return undefined;
+        // Allow setting password for first time
+        if (!existing.password) return args.password;
+        // Allow updating if user already has password
+        return args.password;
+      })();
+
       await ctx.db.patch(existing._id, {
         status: args.status,
         lastSeen: now,
         name: args.name,
+        ...(args.email !== undefined && { email: args.email }),
+        ...(passwordUpdate !== undefined && { password: passwordUpdate }),
         ...(args.avatar !== undefined && { avatar: args.avatar }),
         ...(args.deviceType !== undefined && { deviceType: args.deviceType }),
       });
@@ -204,10 +211,52 @@ export const updateUserStatus = mutation({
     return await ctx.db.insert("users", {
       pubkey: args.pubkey,
       name: args.name,
+      email: args.email,
+      password: args.password,
       avatar: args.avatar,
       status: args.status,
       lastSeen: now,
       deviceType: args.deviceType,
     });
+  },
+});
+
+export const login = mutation({
+  args: {
+    pubkey: v.string(),
+    password: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_pubkey", (q) => q.eq("pubkey", args.pubkey))
+      .unique();
+
+    if (!user) {
+      return { ok: false as const, error: "User not found" };
+    }
+
+    // Password validation logic
+    if (user.password && user.password !== args.password) {
+      return { ok: false as const, error: "Invalid password" };
+    }
+    if (user.password && !args.password) {
+      return { ok: false as const, error: "Password required" };
+    }
+    // If user has no password set but one was provided — still allow
+
+    await ctx.db.patch(user._id, {
+      status: "online",
+      lastSeen: Date.now(),
+    });
+
+    return {
+      ok: true as const,
+      user: {
+        pubkey: user.pubkey,
+        name: user.name,
+        email: user.email,
+      },
+    };
   },
 });

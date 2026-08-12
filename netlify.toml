@@ -6,4 +6,5 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  BUN_VERSION = "1.4.0"
   NETLIFY_NEXT_SKEW_PROTECTION = "true"

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -16,6 +15,7 @@ import {
   Folder,
   RefreshCw,
   MessageSquare,
+  Settings,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
@@ -39,6 +39,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/files", label: "Files", icon: Folder, group: "tools" },
   { href: "/dashboard/sync", label: "Sync", icon: RefreshCw, group: "tools" },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare, group: "tools" },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, group: "tools" },
 ];
 
 const groupLabels = { core: "Core", business: "Business", tools: "Tools" } as const;
@@ -69,12 +70,13 @@ function NavLink({ item, isActive, collapsed }: { item: NavItem; isActive: boole
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-seridian-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14]",
         isActive
           ? "bg-seridian-500/10 text-seridian-400 shadow-[inset_0_0_0_1px_rgba(6,182,212,0.12)]"
           : "text-slate-400 hover:bg-white/[0.05] hover:text-white",
         collapsed && "justify-center px-2",
       )}
+      aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
     >
       <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -83,8 +85,12 @@ function NavLink({ item, isActive, collapsed }: { item: NavItem; isActive: boole
   );
 }
 
-export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
 
   const grouped = navItems.reduce(
@@ -103,7 +109,7 @@ export function Sidebar() {
       )}
     >
       <div className={cn("flex h-14 items-center border-b border-white/[0.06]", collapsed ? "justify-center px-2" : "px-4")}>
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-seridian-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14] rounded-lg">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-seridian-500/10">
             <span className="font-display text-sm font-bold text-seridian-400">S</span>
           </span>
@@ -111,7 +117,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
+      <nav role="navigation" aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
         {Object.entries(grouped).map(([group, items]) => (
           <NavGroup key={group} group={group} items={items} pathname={pathname} collapsed={collapsed} />
         ))}
@@ -123,7 +129,7 @@ export function Sidebar() {
           variant="ghost"
           size="icon"
           className="flex h-9 w-full items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.05] hover:text-white transition-colors duration-200"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={onToggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

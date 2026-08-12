@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import { Doc } from "convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bytecats/ui-kit";
 import {
   type Activity,
@@ -20,13 +21,12 @@ const MAX_ITEMS = 20;
 // Activity builders — derive Activity objects from Convex entities
 // ---------------------------------------------------------------------------
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 function buildActivities(
-  issues: any[] | undefined,
-  deals: any[] | undefined,
-  bookings: any[] | undefined,
-  proposals: any[] | undefined,
-  clients: any[] | undefined,
+  issues: Doc<"issues">[] | undefined,
+  deals: Doc<"deals">[] | undefined,
+  bookings: Doc<"bookings">[] | undefined,
+  proposals: Doc<"proposals">[] | undefined,
+  clients: Doc<"clients">[] | undefined,
 ): Activity[] {
   const activities: Activity[] = [];
 
@@ -62,9 +62,6 @@ function buildActivities(
 
   if (deals) {
     for (const deal of deals) {
-      // We don't have createdAt on deals, so use the stage as a proxy.
-      // If stage is not lead, treat it as a stage change activity.
-      const ts = Date.now() - deal.probability * 1000; // rough ordering
       activities.push({
         id: `deal-${deal._id}`,
         type: deal.stage === "lead" ? "deal_created" : "deal_stage_changed",
@@ -73,7 +70,7 @@ function buildActivities(
           deal.stage === "lead"
             ? `New deal — $${deal.value.toLocaleString()}`
             : `Stage → ${deal.stage.replace("_", " ")}`,
-        timestamp: ts,
+        timestamp: deal._creationTime,
         entityId: deal._id,
         entityType: "deal",
       });
@@ -112,10 +109,10 @@ function buildActivities(
       } else {
         activities.push({
           id: `proposal-${proposal._id}`,
-          type: "proposal_sent",
+          type: "proposal_created",
           title: proposal.title,
           description: `Status: ${proposal.status}`,
-          timestamp: proposal.createdAt,
+          timestamp: proposal._creationTime,
           user: proposal.createdBy,
           entityId: proposal._id,
           entityType: "proposal",
@@ -126,14 +123,12 @@ function buildActivities(
 
   if (clients) {
     for (const client of clients) {
-      // We don't have a createdAt field, so derive a pseudo-timestamp
-      // from the client's position in the list (newest first from Convex).
       activities.push({
         id: `client-${client._id}`,
         type: "client_added",
         title: client.name,
         description: client.company,
-        timestamp: Date.now(), // approximate
+        timestamp: client._creationTime,
         entityId: client._id,
         entityType: "client",
       });
@@ -150,14 +145,13 @@ function buildActivities(
 // ---------------------------------------------------------------------------
 
 function ActivityItem({ activity }: { activity: Activity }) {
-  const Icon = getActivityIcon(activity.type);
   return (
     <div className="group flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.03]">
       <div
-        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${getActivityColor(activity.type)}`}
+        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs ${getActivityColor(activity.type)}`}
         aria-hidden="true"
       >
-        <Icon className="h-3.5 w-3.5" />
+        {getActivityIcon(activity.type)}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-slate-200 truncate">

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { SyncCard } from "./SyncCard";
+import { CheckSquare, Users, FolderKanban, Tag, UserCheck, RefreshCw } from "lucide-react";
 
 interface LinearSyncSectionProps {
   onSyncComplete?: () => void;
@@ -40,84 +41,46 @@ export function LinearSyncSection({ onSyncComplete }: LinearSyncSectionProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
         <div>
-          <h2 className="text-lg font-semibold text-white">Linear Sync</h2>
-          <p className="text-sm text-slate-500">
-            Manage Linear workspace data synchronization
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 text-cyan-400" /> Linear Workspace Integration
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Real-time synchronization for Linear tickets, teams, project roadmaps, and labels.
           </p>
         </div>
         <button
           type="button"
           onClick={handleSync}
           disabled={syncing}
-          className="inline-flex items-center gap-2 rounded-lg bg-seridian-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-seridian-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {syncing ? (
-            <>
-              <svg
-                className="h-4 w-4 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              Syncing All...
-            </>
-          ) : (
-            <>
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Sync All
-            </>
-          )}
+          <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Syncing..." : "Sync All Linear Data"}
         </button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
           {error}
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SyncCard
           title="Issues"
-          icon="☐"
+          icon={CheckSquare}
           lastSynced={lastSync.issues}
           count={counts.issues}
-          countLabel="synced issues"
+          countLabel="synced tickets"
           syncing={syncing}
           onSync={handleSync}
           connected={true}
-          details={undefined}
         />
         <SyncCard
           title="Teams"
-          icon="◎"
+          icon={Users}
           lastSynced={lastSync.teams}
           count={counts.teams}
           countLabel="synced teams"
@@ -127,17 +90,17 @@ export function LinearSyncSection({ onSyncComplete }: LinearSyncSectionProps) {
         />
         <SyncCard
           title="Projects"
-          icon="▭"
+          icon={FolderKanban}
           lastSynced={lastSync.projects}
           count={counts.projects}
-          countLabel="synced projects"
+          countLabel="synced roadmaps"
           syncing={syncing}
           onSync={handleSync}
           connected={true}
         />
         <SyncCard
           title="Labels"
-          icon="🏷"
+          icon={Tag}
           lastSynced={lastSync.labels}
           count={counts.labels}
           countLabel="synced labels"
@@ -147,10 +110,10 @@ export function LinearSyncSection({ onSyncComplete }: LinearSyncSectionProps) {
         />
         <SyncCard
           title="Users"
-          icon="👤"
+          icon={UserCheck}
           lastSynced={lastSync.users}
           count={counts.users}
-          countLabel="synced users"
+          countLabel="synced members"
           syncing={syncing}
           onSync={handleSync}
           connected={true}

@@ -15,6 +15,7 @@ export type ActivityType =
   | "deal_created"
   | "deal_stage_changed"
   | "booking_created"
+  | "proposal_created"
   | "proposal_sent"
   | "client_added";
 
@@ -82,6 +83,7 @@ const ACTIVITY_ICONS: Record<ActivityType, LucideIcon> = {
   deal_created: DollarSign,
   deal_stage_changed: ArrowRight,
   booking_created: Calendar,
+  proposal_created: Send,
   proposal_sent: Send,
   client_added: UserPlus,
 };
@@ -96,6 +98,7 @@ const ACTIVITY_COLORS: Record<ActivityType, string> = {
   deal_created: "text-emerald-400 bg-emerald-500/10",
   deal_stage_changed: "text-violet-400 bg-violet-500/10",
   booking_created: "text-cyan-400 bg-cyan-500/10",
+  proposal_created: "text-orange-400 bg-orange-500/10",
   proposal_sent: "text-orange-400 bg-orange-500/10",
   client_added: "text-pink-400 bg-pink-500/10",
 };

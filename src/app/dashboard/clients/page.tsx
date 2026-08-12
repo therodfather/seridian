@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-k
 import { ClientList } from "@/components/clients/ClientList";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
-import { PageHeader } from "@/components/dashboard/PageHeader";
 
 export default function ClientsPage() {
   const [formOpen, setFormOpen] = useState(false);
@@ -36,10 +35,6 @@ export default function ClientsPage() {
 
   return (
     <DashboardGuard>
-      <PageHeader
-        title="Clients"
-        description="Manage your client relationships"
-      />
       <ClientList onAdd={handleAdd} onEdit={handleEdit} />
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

@@ -9,7 +9,6 @@ import { ProposalList } from "@/components/proposals/ProposalList";
 import { ProposalForm } from "@/components/proposals/ProposalForm";
 import { ProposalCard } from "@/components/proposals/ProposalCard";
 import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
-import { PageHeader } from "@/components/dashboard/PageHeader";
 
 export default function ProposalsPage() {
   const [formOpen, setFormOpen] = useState(false);
@@ -58,10 +57,6 @@ export default function ProposalsPage() {
 
   return (
     <DashboardGuard>
-      <PageHeader
-        title="Proposals"
-        description="Create and manage project proposals"
-      />
       <ProposalList onAdd={handleAdd} onEdit={handleEdit} onView={handleView} />
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

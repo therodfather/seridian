@@ -15,6 +15,7 @@ import {
   Folder,
   RefreshCw,
   MessageSquare,
+  Settings,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/files", label: "Files", icon: Folder },
   { href: "/dashboard/sync", label: "Sync", icon: RefreshCw },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 interface MobileNavProps {

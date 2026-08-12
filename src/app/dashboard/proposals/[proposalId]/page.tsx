@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
@@ -108,9 +109,9 @@ export default function ProposalDetailPage({
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
         <p>Invalid proposal link.</p>
-        <a href="/dashboard/proposals" className="text-cyan-400 hover:underline">
+        <Link href="/dashboard/proposals" className="text-cyan-400 hover:underline">
           Back to Proposals
-        </a>
+        </Link>
       </div>
     );
   }
@@ -129,9 +130,9 @@ export default function ProposalDetailPage({
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
         <p>Proposal not found.</p>
-        <a href="/dashboard/proposals" className="text-cyan-400 hover:underline">
+        <Link href="/dashboard/proposals" className="text-cyan-400 hover:underline">
           Back to Proposals
-        </a>
+        </Link>
       </div>
     );
   }

@@ -29,16 +29,11 @@ import { cn } from "@/lib/utils";
 import { isConvexId } from "@/lib/convexId";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { ClientForm } from "@/components/clients/ClientForm";
+import { ClientDealOpsPanels } from "@/components/clients/ClientDealOpsPanels";
 import {
   Building2,
-  Users,
-  Cpu,
-  Target,
-  Swords,
   DollarSign,
   Plus,
-  BrainCircuit,
-  Lightbulb,
   ShieldCheck,
   ShieldAlert,
   Network,
@@ -50,6 +45,9 @@ import {
   UserCheck,
   Globe,
   ExternalLink,
+  Folder,
+  FileText,
+  PenLine,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -373,6 +371,15 @@ export default function ClientDetailPage({
           <TabsTrigger value="deals" className="gap-2 text-xs">
             Deals ({deals?.length ?? 0})
           </TabsTrigger>
+          <TabsTrigger value="files" className="gap-2 text-xs">
+            <Folder className="w-4 h-4 text-amber-400" /> Files
+          </TabsTrigger>
+          <TabsTrigger value="proposals" className="gap-2 text-xs">
+            <FileText className="w-4 h-4 text-blue-400" /> Proposals
+          </TabsTrigger>
+          <TabsTrigger value="contracts" className="gap-2 text-xs">
+            <PenLine className="w-4 h-4 text-cyan-400" /> Contracts
+          </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: WHO'S WHO PERSONNEL & BACKGROUND DOSSIERS */}
@@ -599,6 +606,8 @@ export default function ClientDetailPage({
             </div>
           )}
         </TabsContent>
+
+        <ClientDealOpsPanels clientId={client._id} />
       </Tabs>
 
       {/* Personnel Dossier & Background Check Modal */}

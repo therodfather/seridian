@@ -72,13 +72,29 @@ export default defineSchema({
     value: v.number(),
     status: v.union(
       v.literal("draft"),
+      v.literal("sent"),
+      v.literal("signed"),
       v.literal("active"),
       v.literal("completed"),
     ),
     startDate: v.string(),
     endDate: v.optional(v.string()),
     notes: v.optional(v.string()),
-  }).index("by_clientId", ["clientId"]),
+    body: v.optional(v.string()),
+    proposalId: v.optional(v.id("proposals")),
+    fileId: v.optional(v.id("files")),
+    signToken: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    signerName: v.optional(v.string()),
+    signerEmail: v.optional(v.string()),
+    signerTitle: v.optional(v.string()),
+    signatureText: v.optional(v.string()),
+    signedAt: v.optional(v.number()),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_status", ["status"])
+    .index("by_signToken", ["signToken"])
+    .index("by_proposalId", ["proposalId"]),
 
   issues: defineTable({
     title: v.string(),

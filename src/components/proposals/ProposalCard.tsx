@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
+import { ROUTES } from "@/lib/routes";
 
 type Proposal = Doc<"proposals">;
 
@@ -55,14 +58,18 @@ interface ProposalCardProps {
   proposalId: Id<"proposals">;
   onBack?: () => void;
   onEdit?: (proposalId: Id<"proposals">) => void;
+  onCreated?: (contractId: Id<"contracts">) => void;
 }
 
-export function ProposalCard({ proposalId, onBack, onEdit }: ProposalCardProps) {
+export function ProposalCard({ proposalId, onBack, onEdit, onCreated }: ProposalCardProps) {
+  const router = useRouter();
   const proposal = useQuery(api.proposals.get, { proposalId });
   const clients = useQuery(api.clients.list, {});
   const sendProposal = useMutation(api.proposals.send);
   const acceptProposal = useMutation(api.proposals.accept);
   const rejectProposal = useMutation(api.proposals.reject);
+  const createFromProposal = useMutation(api.contracts.createFromProposal);
+  const [creatingContract, setCreatingContract] = useState(false);
 
   const clientName = proposal?.clientId
     ? clients?.find((c) => c._id === proposal.clientId)?.name
@@ -114,6 +121,23 @@ export function ProposalCard({ proposalId, onBack, onEdit }: ProposalCardProps) 
     }
   }
 
+  async function handleCreateContract() {
+    try {
+      setCreatingContract(true);
+      const contractId = await createFromProposal({ proposalId });
+      toastMutationSuccess("Contract ready");
+      if (onCreated) {
+        onCreated(contractId);
+      } else {
+        router.push(ROUTES.dashboard.contracts);
+      }
+    } catch (error) {
+      toastMutationError(error, "Failed to create contract");
+    } finally {
+      setCreatingContract(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -159,6 +183,16 @@ export function ProposalCard({ proposalId, onBack, onEdit }: ProposalCardProps) 
               Reject
             </Button>
           </>
+        )}
+        {proposal.status === "accepted" && proposal.clientId && (
+          <Button
+            type="button"
+            size="sm"
+            disabled={creatingContract}
+            onClick={handleCreateContract}
+          >
+            {creatingContract ? "Creating…" : "Create contract"}
+          </Button>
         )}
         {onEdit && (
           <Button

@@ -5,8 +5,16 @@ import { api } from "./_generated/api";
 export const list = query({
   args: {
     parentId: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
   },
   handler: async (ctx, args) => {
+    if (args.clientId) {
+      return await ctx.db
+        .query("files")
+        .withIndex("by_clientId", (q) => q.eq("clientId", args.clientId!))
+        .order("desc")
+        .take(500);
+    }
     if (args.parentId) {
       return await ctx.db
         .query("files")

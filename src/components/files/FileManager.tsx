@@ -106,7 +106,11 @@ export function FileManager({ clientId }: FileManagerProps) {
   const [createInitialContent, setCreateInitialContent] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const files = useQuery(api.files.list, { parentId: currentFolder });
+  const scopedToClient = Boolean(clientId);
+  const files = useQuery(
+    api.files.list,
+    clientId ? { clientId } : { parentId: currentFolder },
+  );
   const removeFile = useMutation(api.files.remove);
   const renameFile = useMutation(api.files.rename);
   const createDoc = useMutation(api.files.createDocument);
@@ -207,7 +211,7 @@ export function FileManager({ clientId }: FileManagerProps) {
         storageId: storageId as Id<"_storage">,
         size: blob.size,
         initialContent: initialContent,
-        parentId: currentFolder,
+        parentId: scopedToClient ? undefined : currentFolder,
         clientId,
         uploadedBy: "Dee",
       });
@@ -262,11 +266,11 @@ export function FileManager({ clientId }: FileManagerProps) {
 
       {/* Upload area */}
       {showUpload && (
-        <FileUpload parentId={currentFolder} clientId={clientId} onComplete={() => setShowUpload(false)} />
+        <FileUpload parentId={scopedToClient ? undefined : currentFolder} clientId={clientId} onComplete={() => setShowUpload(false)} />
       )}
 
-      {/* Breadcrumbs */}
-      {currentFolder && (
+      {/* Breadcrumbs — skipped when listing a client's files flat */}
+      {currentFolder && !scopedToClient && (
         <button type="button" onClick={() => setCurrentFolder(undefined)} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
           <ArrowLeft className="h-3 w-3" /> Back to root
         </button>
@@ -308,10 +312,20 @@ export function FileManager({ clientId }: FileManagerProps) {
         <div className="space-y-0.5">
           {/* Folders */}
           {folders.map((folder) => (
-            <button key={folder._id} type="button" onClick={() => setCurrentFolder(folder._id)} className="group flex w-full items-center gap-3 rounded-lg border border-white/[0.06] bg-[#0c1222]/60 px-3 py-2 text-left transition-colors hover:border-white/[0.1] hover:bg-[#0c1222]">
+            <button
+              key={folder._id}
+              type="button"
+              onClick={() => {
+                if (scopedToClient) return;
+                setCurrentFolder(folder._id);
+              }}
+              className="group flex w-full items-center gap-3 rounded-lg border border-white/[0.06] bg-[#0c1222]/60 px-3 py-2 text-left transition-colors hover:border-white/[0.1] hover:bg-[#0c1222]"
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500/10 text-yellow-400"><Folder className="h-4 w-4" /></div>
               <span className="flex-1 truncate text-sm text-slate-200 group-hover:text-white">{folder.name}</span>
-              <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400" />
+              {!scopedToClient && (
+                <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400" />
+              )}
             </button>
           ))}
 
@@ -342,7 +356,15 @@ export function FileManager({ clientId }: FileManagerProps) {
         /* Grid view */
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {folders.map((folder) => (
-            <button key={folder._id} type="button" onClick={() => setCurrentFolder(folder._id)} className="group flex flex-col items-center gap-2 rounded-lg border border-white/[0.06] bg-[#0c1222]/60 p-4 transition-colors hover:border-white/[0.1]">
+            <button
+              key={folder._id}
+              type="button"
+              onClick={() => {
+                if (scopedToClient) return;
+                setCurrentFolder(folder._id);
+              }}
+              className="group flex flex-col items-center gap-2 rounded-lg border border-white/[0.06] bg-[#0c1222]/60 p-4 transition-colors hover:border-white/[0.1]"
+            >
               <Folder className="h-8 w-8 text-yellow-400" />
               <span className="truncate text-xs text-slate-300 group-hover:text-white w-full text-center">{folder.name}</span>
             </button>

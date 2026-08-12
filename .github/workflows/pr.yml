@@ -52,6 +52,18 @@ jobs:
           path: .next
           if-no-files-found: ignore
 
+      - name: Deploy preview to Netlify
+        if: github.event_name == 'pull_request' && success()
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: .next
+          production-deploy: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy preview from ${{ github.sha }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
   size-check:
     name: Bundle Size Check (bun)
     runs-on: ubuntu-latest

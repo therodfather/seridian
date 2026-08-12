@@ -22,7 +22,7 @@ test.describe("settings integrations", { tag: "@smoke" }, () => {
     );
     await expect(page.getByRole("link", { name: /Open deploys/i })).toHaveAttribute(
       "href",
-      /netlify\.com\/projects\/seridian/,
+      "https://app.netlify.com/projects/seridian/deploys",
     );
     await expect(page.getByText("Linear sync (trial)")).toBeVisible();
     await expect(page.getByText("Links").first()).toBeVisible();

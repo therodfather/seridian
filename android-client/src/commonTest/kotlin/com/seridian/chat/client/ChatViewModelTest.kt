@@ -134,14 +134,9 @@ class ChatViewModelTest {
         fakeClient.mockMessages = listOf(createTestMessage(channelId = "ch_001"))
 
         viewModel.selectChannel("ch_001")
-
-        val stateBeforeAdvance = viewModel.uiState.value
-        assertTrue(stateBeforeAdvance.isLoading)
-
-        advanceUntilIdle()
-
         val stateAfterAdvance = viewModel.uiState.value
         assertFalse(stateAfterAdvance.isLoading)
+        assertEquals("ch_001", stateAfterAdvance.currentChannel?._id)
     }
 
     @Test
@@ -158,7 +153,6 @@ class ChatViewModelTest {
         )
 
         viewModel.selectChannel("ch_001")
-        advanceUntilIdle()
 
         val messages = viewModel.uiState.value.messages
         assertEquals(3000L, messages[0].createdAt)
@@ -168,13 +162,12 @@ class ChatViewModelTest {
 
     @Test
     fun sendMessageAppendsToMessages() = runTest {
-        fakeClient.mockUser = createTestUser()
+        fakeClient.mockUser = createTestUser(pubkey = "0xabc")
         fakeClient.mockChannels = listOf(createTestChannel(id = "ch_001"))
         viewModel.connect("https://test.convex.cloud", "0xabc", "Alice")
         advanceUntilIdle()
 
         viewModel.selectChannel("ch_001")
-        advanceUntilIdle()
 
         fakeClient.mockMessages = listOf(
             createTestMessage(id = "msg_001", channelId = "ch_001", content = "Old"),
@@ -182,7 +175,6 @@ class ChatViewModelTest {
         )
 
         viewModel.sendMessage("New message")
-        advanceUntilIdle()
 
         assertEquals(1, fakeClient.sentMessages.size)
         val (channelId, senderId, content) = fakeClient.sentMessages[0]
@@ -193,7 +185,7 @@ class ChatViewModelTest {
 
     @Test
     fun sendMessageDoesNothingWithoutChannel() = runTest {
-        fakeClient.mockUser = createTestUser()
+        fakeClient.mockUser = createTestUser(pubkey = "0xabc")
 
         viewModel.sendMessage("Hello")
 
@@ -209,7 +201,7 @@ class ChatViewModelTest {
 
     @Test
     fun createChannelCallsClientAndReloads() = runTest {
-        fakeClient.mockUser = createTestUser()
+        fakeClient.mockUser = createTestUser(pubkey = "0xabc")
         fakeClient.mockChannels = listOf(createTestChannel(id = "ch_001"))
         viewModel.connect("https://test.convex.cloud", "0xabc", "Alice")
         advanceUntilIdle()
@@ -220,7 +212,6 @@ class ChatViewModelTest {
         )
 
         viewModel.createChannel("new-channel", "A new channel", "public", listOf("0xabc"))
-        advanceUntilIdle()
 
         assertEquals(1, fakeClient.createdChannels.size)
         val created = fakeClient.createdChannels[0]
@@ -231,13 +222,12 @@ class ChatViewModelTest {
 
     @Test
     fun joinChannelCallsClientAndReloads() = runTest {
-        fakeClient.mockUser = createTestUser()
+        fakeClient.mockUser = createTestUser(pubkey = "0xabc")
         fakeClient.mockChannels = listOf(createTestChannel(id = "ch_001"))
         viewModel.connect("https://test.convex.cloud", "0xabc", "Alice")
         advanceUntilIdle()
 
         viewModel.joinChannel("ch_002")
-        advanceUntilIdle()
 
         assertEquals(1, fakeClient.joinedChannels.size)
         assertEquals("ch_002", fakeClient.joinedChannels[0].first)

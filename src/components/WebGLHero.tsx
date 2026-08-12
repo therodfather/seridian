@@ -3,8 +3,14 @@
 import { useEffect, useRef } from "react";
 
 // Lightweight WebGL2 shader hero — < ~3KB gzipped
-// Animated cyan gradient mesh + particles, DPR-aware, resizes via ResizeObserver,
+// Animated cyan gradient mesh, DPR-aware, resizes via ResizeObserver,
 // respects prefers-reduced-motion, pauses when hidden.
+//
+// Shader notes (ANGLE / SwiftShader / Electron quirks):
+// - no loops (float or int) — some GPUs fail compile with empty info logs
+// - no user-defined helpers — keep main() self-contained
+// - mediump fragment precision — more portable than highp on soft GL
+// - ASCII-only GLSL comments
 
 const VERTEX_SRC = `#version 300 es
 precision highp float;
@@ -12,21 +18,17 @@ in vec2 a_pos;
 void main(){ gl_Position = vec4(a_pos,0.0,1.0); }
 `;
 
+// Soft cyan gradient mesh. Intentionally simple for maximum WebGL2 compile coverage.
 const FRAGMENT_SRC = `#version 300 es
-precision highp float;
+precision mediump float;
 uniform float u_time;
 uniform vec2 u_res;
 out vec4 outColor;
 
-// hash for particles
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
-
 void main(){
-  vec2 frag = gl_FragCoord.xy;
-  vec2 uv = frag / u_res;
+  vec2 uv = gl_FragCoord.xy / max(u_res, vec2(1.0));
   vec2 p = uv - 0.5;
-  // Dampened aspect correction — blend toward square coordinates
-  // instead of full ratio, preventing elongation on portrait screens
+  // Dampened aspect correction toward square coords (avoids portrait stretch)
   float aspect = u_res.x / max(u_res.y, 1.0);
   float ac = mix(1.0, aspect, 0.4);
   p.x *= ac;
@@ -34,42 +36,39 @@ void main(){
   float t = u_time * 0.14;
 
   // Seridian palette
-  vec3 bg = vec3(0.027, 0.043, 0.078); // #070b14
-  vec3 c1 = vec3(0.023, 0.713, 0.831); // #06b6d4
-  vec3 c2 = vec3(0.133, 0.827, 0.933); // #22d3ee
-  vec3 c3 = vec3(0.404, 0.910, 0.976); // #67e8f9
+  vec3 bg = vec3(0.027, 0.043, 0.078);
+  vec3 c1 = vec3(0.023, 0.713, 0.831);
+  vec3 c2 = vec3(0.133, 0.827, 0.933);
+  vec3 c3 = vec3(0.404, 0.910, 0.976);
 
-  // two large blobs drifting — low opacity gradient mesh
+  // two large blobs drifting
   float d1 = length(p + vec2(0.22 * sin(t), 0.14 * cos(t * 0.8)));
   float d2 = length(p - vec2(0.20 * cos(t * 0.65), 0.22 * sin(t * 0.75)));
   float b1 = 0.42 / (1.0 + d1 * 3.2);
   float b2 = 0.36 / (1.0 + d2 * 2.9);
 
-  // soft flow lines — use aspect-corrected uv so patterns don't stretch
+  // soft flow lines (aspect-corrected)
   vec2 flowUv = vec2(uv.x * ac, uv.y);
   float flow = sin(flowUv.x * 7.0 + t * 1.1) * 0.5 + cos(flowUv.y * 6.0 - t * 0.9) * 0.5;
   float flowMask = smoothstep(0.35, 0.85, fract(flow * 0.9 + flowUv.y * 0.6)) * 0.07;
 
-  // top-center glow wash aligned with existing glow-orb
+  // top-center glow wash
   float orb = exp(-length(p - vec2(0.0, 0.38)) * 2.15) * 0.9;
 
-  // particle field — sparse, slow drift (int loop: float counters fail on some GPUs)
-  float particles = 0.0;
-  for (int i = 0; i < 8; i++) {
-    float fi = float(i);
-    vec2 seed = vec2(hash(vec2(fi, 1.3)), hash(vec2(fi, 7.7)));
-    // drift slowly on x/y
-    vec2 pos = vec2(
-      fract(seed.x + t * (0.015 + seed.y * 0.02) + sin(seed.y * 6.28) * 0.1),
-      fract(seed.y + t * 0.008 + cos(seed.x * 6.28) * 0.05)
-    );
-    // convert to aspect-corrected p-space
-    vec2 pp = pos - 0.5;
-    pp.x *= ac;
-    float d = length(p - pp);
-    // soft point
-    particles += 0.006 / (1.0 + d * 220.0);
-  }
+  // a few unrolled sparkles (no loops) for subtle motion
+  vec2 s0 = vec2(fract(0.18 + t * 0.02), fract(0.62 + t * 0.008));
+  vec2 s1 = vec2(fract(0.71 + t * 0.015), fract(0.28 + t * 0.01));
+  vec2 s2 = vec2(fract(0.43 + t * 0.018), fract(0.81 + t * 0.006));
+  vec2 s3 = vec2(fract(0.88 + t * 0.012), fract(0.47 + t * 0.009));
+  vec2 p0 = (s0 - 0.5) * vec2(ac, 1.0);
+  vec2 p1 = (s1 - 0.5) * vec2(ac, 1.0);
+  vec2 p2 = (s2 - 0.5) * vec2(ac, 1.0);
+  vec2 p3 = (s3 - 0.5) * vec2(ac, 1.0);
+  float particles =
+    0.006 / (1.0 + length(p - p0) * 220.0) +
+    0.006 / (1.0 + length(p - p1) * 220.0) +
+    0.006 / (1.0 + length(p - p2) * 220.0) +
+    0.006 / (1.0 + length(p - p3) * 220.0);
   particles = clamp(particles, 0.0, 0.55);
 
   vec3 col = bg;
@@ -77,18 +76,22 @@ void main(){
   col = mix(col, c2, b2 * 0.30);
   col = mix(col, c2, orb * 0.11);
   col = mix(col, c3, flowMask);
-  // particles add on top at low mix
   col += particles * 0.55 * vec3(0.6, 0.95, 1.0);
 
-  // vignette — aspect-aware so it doesn't stretch on portrait
+  // vignette (aspect-aware)
   float vigX = p.x / max(ac, 0.5);
   float vig = 1.0 - (vigX * vigX + p.y * p.y) * 0.42;
   col *= vig;
 
-  // keep alpha 1 (opaque) but colors are subtle; parent bg stays #070b14
   outColor = vec4(col, 1.0);
 }
 `;
+
+function rendererLabel(gl: WebGL2RenderingContext): string {
+  const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+  if (!dbg) return gl.getParameter(gl.RENDERER) || "unknown";
+  return String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || "unknown");
+}
 
 function compile(
   gl: WebGL2RenderingContext,
@@ -101,9 +104,14 @@ function compile(
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(s)?.trim();
+    // Capture raw info log before delete; empty/null is common on stub GL.
+    const raw = gl.getShaderInfoLog(s);
+    const log = typeof raw === "string" ? raw.trim() : "";
     gl.deleteShader(s);
-    throw new Error(log ? `${label} shader: ${log}` : `${label} shader compile failed`);
+    const detail = log || "(empty getShaderInfoLog)";
+    throw new Error(
+      `${label} shader compile failed: ${detail} | renderer=${rendererLabel(gl)}`
+    );
   }
   return s;
 }
@@ -133,9 +141,12 @@ function createProgram(
   gl.deleteShader(vs);
   gl.deleteShader(fs);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    const log = gl.getProgramInfoLog(prog) ?? "link error";
+    const raw = gl.getProgramInfoLog(prog);
+    const log = typeof raw === "string" ? raw.trim() : "";
     gl.deleteProgram(prog);
-    throw new Error(log);
+    throw new Error(
+      `program link failed: ${log || "(empty getProgramInfoLog)"} | renderer=${rendererLabel(gl)}`
+    );
   }
   return prog;
 }
@@ -228,38 +239,80 @@ function setupFallback2D(
   };
 }
 
+// After WEBGL_lose_context, getContext("webgl2") returns the same lost
+// context forever. React Strict Mode remounts must either skip loseContext
+// or mint a fresh <canvas> outside React's host tree — we skip loseContext
+// and rely on deleteProgram/deleteBuffer + GC when the canvas unmounts.
+function replaceCanvas(old: HTMLCanvasElement): HTMLCanvasElement {
+  const next = document.createElement("canvas");
+  for (let i = 0; i < old.attributes.length; i++) {
+    const attr = old.attributes[i];
+    next.setAttribute(attr.name, attr.value);
+  }
+  next.style.cssText = old.style.cssText;
+  old.replaceWith(next);
+  return next;
+}
+
+const WEBGL2_ATTRS: WebGLContextAttributes = {
+  alpha: false,
+  antialias: true,
+  depth: false,
+  stencil: false,
+  premultipliedAlpha: false,
+  powerPreference: "default",
+};
+
+function acquireWebGL2(start: HTMLCanvasElement): {
+  canvas: HTMLCanvasElement;
+  gl: WebGL2RenderingContext | null;
+} {
+  let canvas = start;
+  let gl: WebGL2RenderingContext | null = null;
+  try {
+    gl = canvas.getContext("webgl2", WEBGL2_ATTRS);
+  } catch {
+    gl = null;
+  }
+
+  // Recover from an externally lost context (tab discard, GPU reset).
+  // Note: we do not call loseContext() ourselves anymore — that raced with
+  // React Strict Mode's mount→cleanup→mount and forced a permanent fallback.
+  if (gl?.isContextLost()) {
+    canvas = replaceCanvas(canvas);
+    try {
+      gl = canvas.getContext("webgl2", WEBGL2_ATTRS);
+    } catch {
+      gl = null;
+    }
+  }
+
+  if (gl && gl.isContextLost()) gl = null;
+  return { canvas, gl };
+}
+
 export default function WebGLHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
     const wrap = wrapRef.current;
-    if (!canvas || !wrap) return;
+    const startCanvas = canvasRef.current;
+    if (!startCanvas || !wrap) return;
 
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
     let reducedMotion = mql.matches;
+
+    const acquired = acquireWebGL2(startCanvas);
+    let canvas = acquired.canvas;
+    canvasRef.current = canvas;
 
     // fade in
     requestAnimationFrame(() => {
       canvas.style.opacity = "1";
     });
 
-    // try WebGL2
-    let gl: WebGL2RenderingContext | null = null;
-    try {
-      gl = canvas.getContext("webgl2", {
-        alpha: false,
-        antialias: true,
-        depth: false,
-        stencil: false,
-        premultipliedAlpha: false,
-        powerPreference: "high-performance",
-      }) as WebGL2RenderingContext | null;
-    } catch {
-      gl = null;
-    }
-
+    const gl = acquired.gl;
     if (!gl) {
       return setupFallback2D(wrap, canvas, mql);
     }
@@ -269,7 +322,8 @@ export default function WebGLHero() {
     try {
       program = createProgram(gl, VERTEX_SRC, FRAGMENT_SRC);
     } catch (err) {
-      // shader error → fallback (dev-only log; 2D fallback is intentional)
+      // Real shader/driver failure → 2D fallback (dev-only log).
+      // Lost-context remounts are handled above via canvas replace.
       if (process.env.NODE_ENV === "development") {
         console.warn("[WebGLHero] shader error, using 2d fallback", err);
       }
@@ -301,6 +355,7 @@ export default function WebGLHero() {
     let ro: ResizeObserver | null = null;
 
     const resize = () => {
+      if (gl.isContextLost()) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = wrap.getBoundingClientRect();
       const w = Math.max(1, Math.round(rect.width * dpr));
@@ -308,17 +363,15 @@ export default function WebGLHero() {
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
-        // css size via parent; canvas style already 100%
-        gl!.viewport(0, 0, w, h);
-        gl!.uniform2f(uRes, w, h);
+        gl.viewport(0, 0, w, h);
+        gl.uniform2f(uRes, w, h);
       } else {
-        // ensure viewport matches even if not resized
-        gl!.viewport(0, 0, canvas.width, canvas.height);
+        gl.viewport(0, 0, canvas.width, canvas.height);
       }
       // draw once after resize so no blank frame
       if (reducedMotion || hidden) {
-        gl!.uniform1f(uTime, elapsed);
-        gl!.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.uniform1f(uTime, elapsed);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
     };
 
@@ -326,10 +379,10 @@ export default function WebGLHero() {
     resize();
 
     const render = (now: number) => {
-      if (reducedMotion || hidden) return;
+      if (reducedMotion || hidden || gl.isContextLost()) return;
       elapsed = (now - start) * 0.001;
-      gl!.uniform1f(uTime, elapsed);
-      gl!.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.uniform1f(uTime, elapsed);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
       raf = requestAnimationFrame(render);
     };
 
@@ -354,27 +407,24 @@ export default function WebGLHero() {
       if (hidden) {
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
-        // capture elapsed so resume is seamless
-        // elapsed already updated in last frame; keep it
-      } else if (!reducedMotion) {
-        // resume subtracting elapsed
+      } else if (!reducedMotion && !gl.isContextLost()) {
         start = performance.now() - elapsed * 1000;
         raf = requestAnimationFrame(render);
-      } else {
-        // reduced-motion: just redraw static
-        gl!.uniform1f(uTime, elapsed);
-        gl!.drawArrays(gl.TRIANGLES, 0, 3);
+      } else if (!gl.isContextLost()) {
+        gl.uniform1f(uTime, elapsed);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     const onReduceChange = (e: MediaQueryListEvent) => {
       reducedMotion = e.matches;
+      if (gl.isContextLost()) return;
       if (reducedMotion) {
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
-        gl!.uniform1f(uTime, elapsed);
-        gl!.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.uniform1f(uTime, elapsed);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
       } else if (!document.hidden) {
         start = performance.now() - elapsed * 1000;
         raf = requestAnimationFrame(render);
@@ -388,10 +438,11 @@ export default function WebGLHero() {
       mql.removeEventListener?.("change", onReduceChange);
       window.removeEventListener("resize", resize);
       if (ro) ro.disconnect();
-      if (program) gl?.deleteProgram(program);
-      if (posBuf) gl?.deleteBuffer(posBuf);
-      // release GPU context explicitly on unmount
-      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      if (program && !gl.isContextLost()) gl.deleteProgram(program);
+      if (posBuf && !gl.isContextLost()) gl.deleteBuffer(posBuf);
+      // Do NOT call WEBGL_lose_context here. React Strict Mode remounts the
+      // effect on the same canvas; a lost context cannot be recreated in-place
+      // and previously surfaced as a bogus "shader compile error" in bun dev.
     };
   }, []);
 

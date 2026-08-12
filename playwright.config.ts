@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const CI = !!process.env.CI;
-const baseURL = process.env.BASE_URL || "http://localhost:3000";
+const port = process.env.PORT || "3000";
+const baseURL = process.env.BASE_URL || `http://localhost:${port}`;
 /** When BASE_URL points at a deployed site, skip starting a local server (no secrets needed). */
 const isRemoteBase =
   !!process.env.BASE_URL &&
@@ -36,11 +37,12 @@ export default defineConfig({
     : {
         webServer: {
           command: CI ? "bun run start" : "bun run dev",
-          url: "http://localhost:3000",
+          url: baseURL,
           reuseExistingServer: !CI,
           timeout: 120_000,
           env: {
             ...process.env,
+            PORT: port,
             NEXT_PUBLIC_CONVEX_URL:
               process.env.NEXT_PUBLIC_CONVEX_URL ||
               "https://fine-flamingo-162.convex.cloud",

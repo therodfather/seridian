@@ -24,6 +24,7 @@ interface ClientDealOpsPanelsProps {
 export function ClientDealOpsPanels({ clientId }: ClientDealOpsPanelsProps) {
   const proposals = useQuery(api.proposals.getByClient, { clientId });
   const contracts = useQuery(api.contracts.list, { clientId });
+  const payments = useQuery(api.payments.listForClient, { clientId });
 
   return (
     <>
@@ -105,6 +106,50 @@ export function ClientDealOpsPanels({ clientId }: ClientDealOpsPanelsProps) {
                   {formatCurrency(contract.value)}
                 </p>
               </Link>
+            ))}
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="payments" className="space-y-4 pt-4">
+        {payments === undefined ? (
+          <div className="space-y-2">
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
+            No Stripe payments recorded for this client yet.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {payments.map((payment) => (
+              <div
+                key={payment._id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">
+                    {payment.description ?? payment.stripePaymentIntentId}
+                  </p>
+                  <Badge
+                    variant="secondary"
+                    className={
+                      "mt-1 text-[10px] capitalize px-1.5 py-0 border-white/10 " +
+                      (payment.status === "succeeded"
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : payment.status === "refunded"
+                          ? "bg-amber-500/10 text-amber-400"
+                          : "bg-red-500/10 text-red-400")
+                    }
+                  >
+                    {payment.status}
+                  </Badge>
+                </div>
+                <p className="shrink-0 text-sm font-semibold tabular-nums text-white">
+                  {formatCurrency(payment.amount / 100)}
+                </p>
+              </div>
             ))}
           </div>
         )}

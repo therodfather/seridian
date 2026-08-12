@@ -380,6 +380,9 @@ export default function ClientDetailPage({
           <TabsTrigger value="contracts" className="gap-2 text-xs">
             <PenLine className="w-4 h-4 text-cyan-400" /> Contracts
           </TabsTrigger>
+          <TabsTrigger value="payments" className="gap-2 text-xs">
+            <DollarSign className="w-4 h-4 text-emerald-400" /> Payments
+          </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: WHO'S WHO PERSONNEL & BACKGROUND DOSSIERS */}

@@ -64,7 +64,9 @@ export default defineSchema({
       )
     ),
     intelligenceNotes: v.optional(v.string()),
-  }).index("by_status", ["status"]),
+  })
+    .index("by_status", ["status"])
+    .index("by_email", ["email"]),
 
   contracts: defineTable({
     name: v.string(),
@@ -295,6 +297,35 @@ export default defineSchema({
     .index("by_clientId", ["clientId"])
     .index("by_createdBy", ["createdBy"]),
 
+  // Stripe events land here first, keyed by Stripe's event id, so a retried
+  // webhook delivery is a no-op instead of double-recording a payment.
+  stripeEvents: defineTable({
+    stripeEventId: v.string(),
+    type: v.string(),
+    receivedAt: v.number(),
+  }).index("by_stripeEventId", ["stripeEventId"]),
+
+  payments: defineTable({
+    stripePaymentIntentId: v.string(),
+    stripeCustomerId: v.optional(v.string()),
+    amount: v.number(), // smallest currency unit (cents), as Stripe reports it
+    currency: v.string(),
+    status: v.union(
+      v.literal("succeeded"),
+      v.literal("failed"),
+      v.literal("refunded"),
+    ),
+    description: v.optional(v.string()),
+    customerEmail: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    proposalId: v.optional(v.id("proposals")),
+    contractId: v.optional(v.id("contracts")),
+    createdAt: v.number(),
+  })
+    .index("by_stripePaymentIntentId", ["stripePaymentIntentId"])
+    .index("by_clientId", ["clientId"])
+    .index("by_createdAt", ["createdAt"]),
+
   emailTemplates: defineTable({
     name: v.string(),
     subject: v.string(),
@@ -392,7 +423,8 @@ export default defineSchema({
       v.literal("secret"),
       v.literal("user"),
       v.literal("sync"),
-      v.literal("system")
+      v.literal("system"),
+      v.literal("payment")
     ),
     timestamp: v.number(),
     metadata: v.optional(v.string()),

@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 import {
   Badge,
   Button,
@@ -219,8 +218,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <DashboardGuard>
-      <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-[#070b14] text-slate-100 -m-6 p-6">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-[#070b14] text-slate-100 -m-6 p-6">
         {/* TOP BAR / NAVIGATION HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5 mb-6">
           <div className="flex items-center gap-3">
@@ -587,6 +585,5 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
-    </DashboardGuard>
   );
 }

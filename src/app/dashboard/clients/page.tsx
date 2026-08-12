@@ -7,7 +7,6 @@ import { Id } from "convex/_generated/dataModel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-kit";
 import { ClientList } from "@/components/clients/ClientList";
 import { ClientForm } from "@/components/clients/ClientForm";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 
 export default function ClientsPage() {
   const [formOpen, setFormOpen] = useState(false);
@@ -34,7 +33,7 @@ export default function ClientsPage() {
   }
 
   return (
-    <DashboardGuard>
+    <>
       <ClientList onAdd={handleAdd} onEdit={handleEdit} />
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
@@ -55,6 +54,6 @@ export default function ClientsPage() {
           )}
         </DialogContent>
       </Dialog>
-    </DashboardGuard>
+    </>
   );
 }

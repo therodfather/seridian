@@ -24,9 +24,12 @@
 
 ## Checklist (bun only — do not use npm/yarn/pnpm)
 - [ ] `bun run lint` passes
-- [ ] `bunx tsc --noEmit` passes
+- [ ] `bun run typecheck` passes
+- [ ] `bun run test` passes (Convex + unit)
+- [ ] `bun run test:e2e:smoke` passes locally (or CI Playwright smoke is green)
 - [ ] `bun run build` succeeds
 - [ ] `bun install --frozen-lockfile` is clean (no `package-lock.json` drift)
+- [ ] Convex/ViewModel changes include or update tests in the same PR
 - [ ] No layout shift (CLS) regressions
 - [ ] Fonts use `display: swap` and are preloaded
 - [ ] WebGL has `prefers-reduced-motion` fallback

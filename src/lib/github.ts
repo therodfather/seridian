@@ -35,7 +35,7 @@ function githubHeaders(token: string): Record<string, string> {
   };
 }
 
-function parseRepo(repo: string): { owner: string; name: string } | null {
+export function parseRepo(repo: string): { owner: string; name: string } | null {
   const trimmed = repo.trim();
   const slash = trimmed.indexOf("/");
   if (slash <= 0 || slash === trimmed.length - 1) return null;

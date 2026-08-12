@@ -1,6 +1,10 @@
 export { Sidebar } from "./Sidebar";
 export { DashboardLayout } from "./DashboardLayout";
-export { DashboardGuard } from "./DashboardGuard";
+export {
+  DashboardGuard,
+  DashboardAuthProvider,
+  useDashboardAuth,
+} from "./DashboardGuard";
 export { PageHeader } from "./PageHeader";
 export { PageSkeleton, CardGridSkeleton, KanbanSkeleton } from "./PageSkeleton";
 export { EmptyState } from "./EmptyState";

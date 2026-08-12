@@ -40,7 +40,6 @@ import {
   Server,
   Zap,
 } from "lucide-react";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 import { SyncDashboard } from "@/components/sync/SyncDashboard";
 import { SecretsVault } from "@/components/settings/SecretsVault";
 import { AuditLogViewer } from "@/components/settings/AuditLogViewer";
@@ -516,10 +515,8 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <DashboardGuard>
-      <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
-        <SettingsContent />
-      </Suspense>
-    </DashboardGuard>
+    <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+      <SettingsContent />
+    </Suspense>
   );
 }

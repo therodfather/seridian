@@ -7,7 +7,6 @@ import { Id } from "convex/_generated/dataModel";
 import { Bot } from "lucide-react";
 import { LLMArena } from "@/components/arena/LLMArena";
 import { WikiEngine } from "@/components/arena/WikiEngine";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 
 type Tab = "arena" | "wiki";
 
@@ -55,8 +54,7 @@ export default function ArenaDashboardPage() {
   }, [banks, creatingBank, bankId, createBank]);
 
   return (
-    <DashboardGuard>
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
@@ -92,7 +90,6 @@ export default function ArenaDashboardPage() {
         <div className="flex h-[calc(100vh-14rem)] rounded-xl border border-white/[0.08] overflow-hidden bg-[#070b14]">
           {activeTab === "arena" ? <LLMArena /> : bankId ? <WikiEngine bankId={bankId} /> : null}
         </div>
-      </div>
-    </DashboardGuard>
+    </div>
   );
 }

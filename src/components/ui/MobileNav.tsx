@@ -44,6 +44,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close navigation"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.05] hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />

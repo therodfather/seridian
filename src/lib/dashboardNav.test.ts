@@ -3,6 +3,10 @@ import {
   DASHBOARD_NAV,
   DASHBOARD_ROUTE_NAMES,
   KNOWLEDGE_NAV_HREFS,
+  NUMBER_KEY_NAV,
+  entityHref,
+  navSlug,
+  newItemHref,
 } from "./dashboardNav";
 
 describe("dashboard nav", () => {
@@ -30,8 +34,35 @@ describe("dashboard nav", () => {
 
   test("route names cover every nav slug", () => {
     for (const item of DASHBOARD_NAV) {
-      const slug = item.href.replace("/dashboard", "").replace(/^\//, "") || "overview";
+      const slug = navSlug(item.href);
       expect(DASHBOARD_ROUTE_NAMES[slug]).toBe(item.label);
     }
+  });
+
+  test("entity hrefs point at detail routes", () => {
+    expect(entityHref("clients", "abc")).toBe("/dashboard/clients/abc");
+    expect(entityHref("issues", "xyz")).toBe("/dashboard/issues/xyz");
+    expect(entityHref("proposals", "p1")).toBe("/dashboard/proposals/p1");
+  });
+
+  test("number keys map the first nine sidebar entries including knowledge", () => {
+    expect(NUMBER_KEY_NAV).toHaveLength(9);
+    expect(NUMBER_KEY_NAV.map((item) => item.label)).toEqual([
+      "Overview",
+      "Issues",
+      "Clients",
+      "Bookings",
+      "Sales",
+      "Proposals",
+      "Wiki",
+      "LLM Arena",
+      "Second Brain",
+    ]);
+  });
+
+  test("new item stays on the current section", () => {
+    expect(newItemHref("wiki")).toBe("/dashboard/wiki");
+    expect(newItemHref("clients")).toBe("/dashboard/clients");
+    expect(newItemHref("unknown")).toBe("/dashboard");
   });
 });

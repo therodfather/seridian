@@ -15,7 +15,6 @@ import {
 import { PipelineBoard } from "@/components/sales/PipelineBoard";
 import { DealDetail } from "@/components/sales/DealDetail";
 import { DealForm } from "@/components/sales/DealForm";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -34,11 +33,7 @@ function formatCurrency(value: number): string {
 /* ------------------------------------------------------------------ */
 
 export default function SalesPage() {
-  return (
-    <DashboardGuard>
-      <SalesPageContent />
-    </DashboardGuard>
-  );
+  return <SalesPageContent />;
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,0 +1,3 @@
+# Paths TruffleHog should skip (vendored / generated).
+vendor/ui-kit/dist/**
+android-client/.gradle/**

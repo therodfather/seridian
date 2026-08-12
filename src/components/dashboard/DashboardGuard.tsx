@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { LoginScreen } from "@/components/auth/LoginScreen";
 
 export interface DashboardUser {
@@ -8,20 +15,27 @@ export interface DashboardUser {
   name: string;
 }
 
+interface DashboardAuthValue {
+  user: DashboardUser | null;
+  loading: boolean;
+  handleLogin: (pubkey: string, name: string) => void;
+  handleLogout: () => void;
+}
+
+const DashboardAuthContext = createContext<DashboardAuthValue | null>(null);
+
 function getStoredUser(): DashboardUser | null {
   if (typeof window === "undefined") return null;
   const stored = localStorage.getItem("seridian_user");
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return null;
-    }
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as DashboardUser;
+  } catch {
+    return null;
   }
-  return null;
 }
 
-export function useDashboardAuth() {
+export function DashboardAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,15 +54,29 @@ export function useDashboardAuth() {
     setUser(null);
   }, []);
 
-  return { user, loading, handleLogin, handleLogout };
+  return (
+    <DashboardAuthContext.Provider
+      value={{ user, loading, handleLogin, handleLogout }}
+    >
+      {children}
+    </DashboardAuthContext.Provider>
+  );
 }
 
-export function DashboardGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading, handleLogin, handleLogout } = useDashboardAuth();
+export function useDashboardAuth() {
+  const ctx = useContext(DashboardAuthContext);
+  if (!ctx) {
+    throw new Error("useDashboardAuth must be used within DashboardAuthProvider");
+  }
+  return ctx;
+}
+
+export function DashboardGuard({ children }: { children: ReactNode }) {
+  const { user, loading, handleLogin } = useDashboardAuth();
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-3">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-seridian-500 border-t-transparent" />
           <p className="text-xs text-slate-500">Loading dashboard...</p>
@@ -61,23 +89,5 @@ export function DashboardGuard({ children }: { children: React.ReactNode }) {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div />
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500">
-            {user.name}
-          </span>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

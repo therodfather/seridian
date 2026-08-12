@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { gotoDashboard, navigateTo } from "./helpers";
 
-test.describe("dashboard navigation", () => {
+test.describe("dashboard navigation", { tag: "@smoke" }, () => {
   test("sidebar lists core business sections", async ({ page }) => {
     await gotoDashboard(page);
     const nav = page.locator("aside nav");

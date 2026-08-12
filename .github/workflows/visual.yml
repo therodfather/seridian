@@ -11,6 +11,7 @@ permissions:
 jobs:
   comment-preview:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: marocchino/sticky-pull-request-comment@v2
         with:

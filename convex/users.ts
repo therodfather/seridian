@@ -4,7 +4,8 @@ import { v } from "convex/values";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("users").take(500);
+    const users = await ctx.db.query("users").take(500);
+    return users.map(({ password: _password, ...rest }) => rest);
   },
 });
 
@@ -101,9 +102,12 @@ export const remove = mutation({
 export const get = query({
   args: { pubkey: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_pubkey", (q) => q.eq("pubkey", args.pubkey))
       .first();
+    if (!user) return null;
+    const { password: _password, ...safeUser } = user;
+    return safeUser;
   },
 });

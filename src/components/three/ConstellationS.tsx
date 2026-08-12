@@ -12,7 +12,7 @@ function ConstellationPoints() {
   const pointsRef = useRef<THREE.Points>(null);
   const linesRef = useRef<THREE.LineSegments>(null);
 
-  const { sLineGeo, sPointsGeo, sPointSizes, bgGeo, bgSizes } = useMemo(() => {
+  const { sLineGeo, sPointsGeo, bgGeo } = useMemo(() => {
     const sPoints: [number, number][] = [];
     const segments = 60;
     for (let i = 0; i <= segments; i++) {
@@ -27,10 +27,6 @@ function ConstellationPoints() {
       sPos[i * 3] = sPoints[i][0];
       sPos[i * 3 + 1] = sPoints[i][1];
       sPos[i * 3 + 2] = 0;
-    }
-    const sPointSizes = new Float32Array(sPoints.length);
-    for (let i = 0; i < sPoints.length; i++) {
-      sPointSizes[i] = 1.5 + Math.random() * 1.5;
     }
     const sPointsGeo = new THREE.BufferGeometry();
     sPointsGeo.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
@@ -55,17 +51,15 @@ function ConstellationPoints() {
 
     const bgCount = 30;
     const bgPos = new Float32Array(bgCount * 3);
-    const bgSizes = new Float32Array(bgCount);
     for (let i = 0; i < bgCount; i++) {
       bgPos[i * 3] = (Math.random() - 0.5) * 1.8;
       bgPos[i * 3 + 1] = (Math.random() - 0.5) * 1.4;
       bgPos[i * 3 + 2] = 0;
-      bgSizes[i] = 0.5 + Math.random() * 1.0;
     }
     const bgGeo = new THREE.BufferGeometry();
     bgGeo.setAttribute("position", new THREE.BufferAttribute(bgPos, 3));
 
-    return { sLineGeo, sPointsGeo, sPointSizes, bgGeo, bgSizes };
+    return { sLineGeo, sPointsGeo, bgGeo };
   }, []);
 
   useFrame((state) => {

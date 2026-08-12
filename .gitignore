@@ -43,3 +43,10 @@ next-env.d.ts
 # Local Netlify folder
 .netlify
 seed.ts
+
+# Android / Gradle
+android-client/.gradle/
+android-client/build/
+android-client/**/build/
+*.iml
+.idea/

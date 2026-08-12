@@ -21,10 +21,10 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-                implementation("io.ktor:ktor-client-core:3.0.3")
-                implementation("io.ktor:ktor-client-websockets:3.0.3")
-                implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
+                implementation("io.ktor:ktor-client-core:3.5.2")
+                implementation("io.ktor:ktor-client-websockets:3.5.2")
+                implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
             }
         }
         val commonTest by getting {
@@ -36,7 +36,7 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:3.0.3")
+                implementation("io.ktor:ktor-client-okhttp:3.5.2")
             }
         }
         val androidUnitTest by getting {

@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import {
   DASHBOARD_NAV,
@@ -8,6 +10,33 @@ import {
   navSlug,
   newItemHref,
 } from "./dashboardNav";
+
+const APP_ROOT = join(process.cwd(), "src/app");
+const DASHBOARD_APP_ROOT = join(APP_ROOT, "dashboard");
+const ROUTE_GROUP_RE = /\([^/]+\)/;
+
+function pagePathForHref(href: string): string {
+  const segments = href.replace(/^\//, "").split("/").filter(Boolean);
+  return join(APP_ROOT, ...segments, "page.tsx");
+}
+
+function collectDashboardPageHrefs(
+  dir: string = DASHBOARD_APP_ROOT,
+  segments: string[] = ["dashboard"],
+): string[] {
+  const hrefs: string[] = [];
+  if (existsSync(join(dir, "page.tsx"))) {
+    hrefs.push("/" + segments.join("/"));
+  }
+  for (const entry of readdirSync(dir)) {
+    if (ROUTE_GROUP_RE.test(entry)) continue;
+    const full = join(dir, entry);
+    if (!statSync(full).isDirectory()) continue;
+    if (entry.startsWith("[") && entry.endsWith("]")) continue;
+    hrefs.push(...collectDashboardPageHrefs(full, [...segments, entry]));
+  }
+  return hrefs;
+}
 
 describe("dashboard nav", () => {
   test("includes knowledge surfaces that already exist as routes", () => {
@@ -45,6 +74,20 @@ describe("dashboard nav", () => {
     expect(entityHref("proposals", "p1")).toBe("/dashboard/proposals/p1");
   });
 
+  test("entity detail pages exist on disk", () => {
+    for (const group of ["clients", "issues", "proposals"] as const) {
+      const param =
+        group === "clients"
+          ? "[clientId]"
+          : group === "issues"
+            ? "[issueId]"
+            : "[proposalId]";
+      expect(
+        existsSync(join(DASHBOARD_APP_ROOT, group, param, "page.tsx")),
+      ).toBe(true);
+    }
+  });
+
   test("number keys map the first nine sidebar entries including knowledge", () => {
     expect(NUMBER_KEY_NAV).toHaveLength(9);
     expect(NUMBER_KEY_NAV.map((item) => item.label)).toEqual([
@@ -64,5 +107,37 @@ describe("dashboard nav", () => {
     expect(newItemHref("wiki")).toBe("/dashboard/wiki");
     expect(newItemHref("clients")).toBe("/dashboard/clients");
     expect(newItemHref("unknown")).toBe("/dashboard");
+  });
+
+  test("every nav href maps to a page.tsx (no dead links)", () => {
+    for (const item of DASHBOARD_NAV) {
+      expect(existsSync(pagePathForHref(item.href)), item.href).toBe(true);
+    }
+  });
+
+  test("nav hrefs never leak route-group segments", () => {
+    for (const item of DASHBOARD_NAV) {
+      expect(item.href).not.toMatch(ROUTE_GROUP_RE);
+      expect(item.href.startsWith("/dashboard")).toBe(true);
+    }
+  });
+
+  test("sidebar nav covers every static dashboard page", () => {
+    const navHrefs = new Set(DASHBOARD_NAV.map((item) => item.href));
+    for (const href of collectDashboardPageHrefs()) {
+      expect(navHrefs.has(href), `missing nav entry for ${href}`).toBe(true);
+    }
+  });
+
+  test("dashboard layout enforces auth for all nested routes", () => {
+    const layout = readFileSync(
+      join(DASHBOARD_APP_ROOT, "layout.tsx"),
+      "utf8",
+    );
+    expect(layout).toContain("DashboardAuthProvider");
+    expect(layout).toContain("DashboardGuard");
+    expect(existsSync(join(DASHBOARD_APP_ROOT, "loading.tsx"))).toBe(true);
+    expect(existsSync(join(DASHBOARD_APP_ROOT, "error.tsx"))).toBe(true);
+    expect(existsSync(join(DASHBOARD_APP_ROOT, "not-found.tsx"))).toBe(true);
   });
 });

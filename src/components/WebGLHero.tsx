@@ -95,14 +95,15 @@ function compile(
   type: number,
   src: string
 ): WebGLShader {
+  const label = type === gl.VERTEX_SHADER ? "vertex" : "fragment";
   const s = gl.createShader(type);
-  if (!s) throw new Error("shader create failed");
+  if (!s) throw new Error(`${label} shader create failed`);
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(s) ?? "compile error";
+    const log = gl.getShaderInfoLog(s)?.trim();
     gl.deleteShader(s);
-    throw new Error(log);
+    throw new Error(log ? `${label} shader: ${log}` : `${label} shader compile failed`);
   }
   return s;
 }
@@ -268,8 +269,10 @@ export default function WebGLHero() {
     try {
       program = createProgram(gl, VERTEX_SRC, FRAGMENT_SRC);
     } catch (err) {
-      // shader error → fallback
-      console.warn("[WebGLHero] shader error, using 2d fallback", err);
+      // shader error → fallback (dev-only log; 2D fallback is intentional)
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[WebGLHero] shader error, using 2d fallback", err);
+      }
       return setupFallback2D(wrap, canvas, mql);
     }
 

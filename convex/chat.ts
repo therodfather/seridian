@@ -50,10 +50,13 @@ export const getUsers = query({
 export const getUser = query({
   args: { pubkey: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_pubkey", (q) => q.eq("pubkey", args.pubkey))
       .unique();
+    if (!user) return null;
+    const { password: _password, ...safeUser } = user;
+    return safeUser;
   },
 });
 

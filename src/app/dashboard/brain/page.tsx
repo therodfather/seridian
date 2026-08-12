@@ -1,15 +1,17 @@
 "use client";
+
 import { Brain } from "lucide-react";
 import { SecondBrain } from "@/components/brain/SecondBrain";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
+import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
 import { NeuralBackground } from "@/components/three/backgrounds";
 
 export default function BrainDashboardPage() {
-  const userId = "dee";
-  const userName = "Dee";
+  const { user } = useDashboardAuth();
+  const userId = user?.pubkey ?? "anonymous";
+  const userName = user?.name ?? "User";
 
   return (
-    <DashboardGuard>
+    <>
       <NeuralBackground />
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
@@ -34,6 +36,6 @@ export default function BrainDashboardPage() {
           </div>
         </div>
       </div>
-    </DashboardGuard>
+    </>
   );
 }

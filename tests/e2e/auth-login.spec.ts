@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("dashboard login", () => {
+test.describe("dashboard login", { tag: "@smoke" }, () => {
   test("shows password login form when unauthenticated", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByText("Sign in to continue")).toBeVisible();
@@ -29,5 +29,12 @@ test.describe("dashboard login", () => {
     await expect(
       page.getByRole("button", { name: /sign in|signing in/i }),
     ).toBeVisible();
+  });
+
+  test("issues and chat require login", async ({ page }) => {
+    await page.goto("/dashboard/issues");
+    await expect(page.getByText("Sign in to continue")).toBeVisible();
+    await page.goto("/dashboard/chat");
+    await expect(page.getByText("Sign in to continue")).toBeVisible();
   });
 });

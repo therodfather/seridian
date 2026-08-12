@@ -1,21 +1,25 @@
 # AGENTS.md
 
 ## Package manager — bun only
-- `bun@1.4.0` enforced (`packageManager` + `.bun-version`, Node `22` via `.nvmrc` / `netlify.toml`). Never use `npm`/`yarn`/`pnpm`.
+- `bun@1.3.14` enforced (`packageManager` + `.bun-version`, Node `22` via `.nvmrc` / `netlify.toml`). Never use `npm`/`yarn`/`pnpm`.
 - Install: `bun install --frozen-lockfile` (CI uses `oven-sh/setup-bun@v2` with this exact command).
 - Do not commit `package-lock.json`. README's `npm install` is stale — use `bun`.
 
 ## Commands
 - `bun run dev` — Next.js dev server (http://localhost:3000)
-- `bun run lint` — `next lint` per `package.json` / CI (`next/core-web-vitals` + `next/typescript`). **Broken on Next 16**: `next lint` was removed in Next 16 (`Invalid project directory: .../lint`); `bunx eslint` also errors (circular config in `@eslint/eslintrc` compat). PR gate still runs `bun run lint` so it will fail on this branch until migrated via `npx @next/codemod@canary next-lint-to-eslint-cli .`.
-- `bunx tsc --noEmit` — typecheck (no `typecheck` script; CI runs `bunx tsc --noEmit` directly)
+- `bun run lint` — `eslint src/` (matches CI; do not use `next lint`, removed in Next 16)
+- `bun run typecheck` — `tsc --noEmit`
+- `bun run test` — Vitest (Convex `edge-runtime` + `src/**/*.test.ts` unit)
+- `bun run test:convex` / `bun run test:unit` — single Vitest project
+- `bun run test:e2e:smoke` — Playwright Chromium smoke (`@smoke`); `bun run test:e2e` is the full suite
 - `bun run build` — production build (`next build`); `NEXT_TELEMETRY_DISABLED=1` in CI
-- No test framework configured — no `test` script.
 
 ## CI / PR gate
-- `.github/workflows/pr.yml`: `lint` → `typecheck` → `build` sequential; must all pass. `size-check` and `auto-merge-ready` depend on `ci`. Concurrency cancels in-progress runs per ref.
-- PR checklist (`.github/PULL_REQUEST_TEMPLATE.md`): `bun run lint`, `bun x tsc --noEmit`, `bun run build`, `bun install --frozen-lockfile` clean, CLS/fonts/WebGL checks. Track checkboxes: `shadcn/ui`, `WebGL`, `Custom Fonts`, `Workflow/infra`.
-- Netlify (`netlify.toml`): `command = "bun run build"`, `publish = ".next"`, plugin `@netlify/plugin-nextjs`. Push to `main` auto-deploys; PRs get Deploy Preview.
+- `.github/workflows/pr.yml`: lint → typecheck → vitest → build, then Playwright smoke on PRs (full e2e on `main`). Concurrency cancels in-progress runs per ref.
+- `.github/workflows/android.yml`: `./gradlew check` on Android path changes; AAR pre-release only on `android-v*` tags.
+- `.github/workflows/convex.yml`: Convex tests + tsc when `convex/**` changes.
+- PR checklist (`.github/PULL_REQUEST_TEMPLATE.md`): lint, typecheck, test, e2e smoke, build, bun-only lockfile, CLS/fonts/WebGL checks.
+- Netlify (`netlify.toml`): `command = "bun run build"`, plugin `@netlify/plugin-nextjs`. Push to `main` auto-deploys; PRs get Deploy Preview from Netlify Git integration.
 
 ## Architecture
 - Next.js 16 App Router + React 19 + Tailwind CSS 4 (`@tailwindcss/postcss` in `postcss.config.mjs`) + TypeScript strict (`@/*` → `src/*`).
@@ -48,7 +52,7 @@
 - Active feature branches off `main`: `feature/ui-kit`, `feature/webgl`, `feature/fonts`, `feature/shadcn`, `feature/linear-sync`, `chore/next-16` (this branch — Next 15→16 bump). Check `git branch -a` before creating new work.
 
 ## Gotchas & Quirks
-- `next lint` was removed in Next 16 — see Commands/lint note above; do not paper over by switching CI to `bunx eslint` without fixing compat.
+- `next lint` was removed in Next 16 — `package.json` `lint` script is `eslint src/`, matching CI.
 - **Linear GraphQL API Schema Quirk**: In `projects` query (`SyncLinearProjects`), querying `teamId` directly on `Project` nodes causes HTTP 400. Do not request `teamId` directly on `projects` GraphQL nodes in `convex/linearSync.ts`.
 - **Convex Env vs Netlify/Local Env**: Setting env vars in Netlify CLI or `.env.local` does NOT populate Convex serverless runtime env vars. You must set Convex env vars using `bunx convex env set <KEY> <VALUE>`.
 - Do not add `npm`-generated lockfiles or run `npm install` — it drifts from `bun.lock`.
@@ -68,3 +72,13 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

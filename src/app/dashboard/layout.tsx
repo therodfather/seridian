@@ -1,4 +1,8 @@
 import { ConvexClientProvider } from "../ConvexClientProvider";
+import {
+  DashboardAuthProvider,
+  DashboardGuard,
+} from "@/components/dashboard/DashboardGuard";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { NotificationProvider } from "@/components/dashboard/NotificationProvider";
 import { QueryProvider } from "../QueryProvider";
@@ -12,7 +16,11 @@ export default function DashboardRootLayout({
     <QueryProvider>
       <ConvexClientProvider>
         <NotificationProvider>
-          <DashboardLayout>{children}</DashboardLayout>
+          <DashboardAuthProvider>
+            <DashboardGuard>
+              <DashboardLayout>{children}</DashboardLayout>
+            </DashboardGuard>
+          </DashboardAuthProvider>
         </NotificationProvider>
       </ConvexClientProvider>
     </QueryProvider>

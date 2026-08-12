@@ -71,3 +71,26 @@ export const KNOWLEDGE_NAV_HREFS = [
   "/dashboard/arena",
   "/dashboard/brain",
 ] as const;
+
+export function navSlug(href: string): string {
+  return href.replace("/dashboard", "").replace(/^\//, "") || "overview";
+}
+
+export function entityHref(
+  group: "clients" | "issues" | "proposals",
+  id: string,
+): string {
+  return `/dashboard/${group}/${id}`;
+}
+
+export const NUMBER_KEY_NAV = DASHBOARD_NAV.slice(0, 9).map((item, index) => ({
+  key: String(index + 1),
+  href: item.href,
+  label: item.label,
+  slug: navSlug(item.href),
+}));
+
+export function newItemHref(section: string): string {
+  const match = DASHBOARD_NAV.find((item) => navSlug(item.href) === section);
+  return match?.href ?? "/dashboard";
+}

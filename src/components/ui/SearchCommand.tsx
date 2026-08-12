@@ -15,6 +15,7 @@ import {
   Kbd,
   KbdGroup,
 } from "@bytecats/ui-kit";
+import { DASHBOARD_NAV, NAV_GROUP_LABELS, entityHref } from "@/lib/dashboardNav";
 
 interface SearchResult {
   id: string;
@@ -24,22 +25,20 @@ interface SearchResult {
   group: "clients" | "issues" | "proposals" | "navigation";
 }
 
-const navigationItems: SearchResult[] = [
-  { id: "nav-dashboard", title: "Dashboard", subtitle: "Overview", href: "/dashboard", group: "navigation" },
-  { id: "nav-issues", title: "Issues", subtitle: "Kanban board", href: "/dashboard", group: "navigation" },
-  { id: "nav-clients", title: "Clients", subtitle: "Client directory", href: "/dashboard", group: "navigation" },
-  { id: "nav-proposals", title: "Proposals", subtitle: "Manage proposals", href: "/dashboard", group: "navigation" },
-  { id: "nav-bookings", title: "Bookings", subtitle: "Calendar view", href: "/dashboard", group: "navigation" },
-  { id: "nav-sales", title: "Sales", subtitle: "Pipeline board", href: "/dashboard", group: "navigation" },
-  { id: "nav-templates", title: "Templates", subtitle: "Email templates", href: "/dashboard", group: "navigation" },
-  { id: "nav-files", title: "Files", subtitle: "File manager", href: "/dashboard", group: "navigation" },
-  { id: "nav-wiki", title: "Wiki", subtitle: "Local-first wiki", href: "/dashboard/wiki", group: "navigation" },
-  { id: "nav-arena", title: "LLM Arena", subtitle: "Local models", href: "/dashboard/arena", group: "navigation" },
-  { id: "nav-brain", title: "Second Brain", subtitle: "Knowledge graph", href: "/dashboard/brain", group: "navigation" },
-  { id: "nav-chat", title: "Chat", subtitle: "Team messaging", href: "/dashboard/chat", group: "navigation" },
-  { id: "nav-sync", title: "Sync", subtitle: "Linear & GitHub", href: "/dashboard", group: "navigation" },
+const extraNavItems: SearchResult[] = [
   { id: "nav-home", title: "Home", subtitle: "Marketing site", href: "/", group: "navigation" },
   { id: "nav-packages", title: "Packages", subtitle: "Service packages", href: "/packages", group: "navigation" },
+];
+
+const navigationItems: SearchResult[] = [
+  ...DASHBOARD_NAV.map((item) => ({
+    id: `nav-${item.href}`,
+    title: item.label,
+    subtitle: NAV_GROUP_LABELS[item.group],
+    href: item.href,
+    group: "navigation" as const,
+  })),
+  ...extraNavItems,
 ];
 
 const statusIcons: Record<string, string> = {
@@ -85,7 +84,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           id: `client-${client._id}`,
           title: client.name,
           subtitle: client.company,
-          href: "/dashboard",
+          href: entityHref("clients", client._id),
           group: "clients",
         });
       }
@@ -98,7 +97,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           id: `issue-${issue._id}`,
           title: issue.title,
           subtitle: `${mapStatus(issue.status)} ${issue.status.replace("_", " ")}`,
-          href: "/dashboard",
+          href: entityHref("issues", issue._id),
           group: "issues",
         });
       }
@@ -111,7 +110,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           id: `proposal-${proposal._id}`,
           title: proposal.title,
           subtitle: `${mapStatus(proposal.status)} ${proposal.status}${proposal.value ? ` \u2014 $${proposal.value.toLocaleString()}` : ""}`,
-          href: "/dashboard",
+          href: entityHref("proposals", proposal._id),
           group: "proposals",
         });
       }

@@ -2,85 +2,81 @@ name: Android CI
 
 on:
   push:
-    branches: [main, feature/*]
+    branches: [main]
+    tags: ["android-v*"]
   pull_request:
     branches: [main]
+    paths:
+      - "android-client/**"
+      - ".github/workflows/android.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
-    name: Unit Tests & Build
+    name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: "17"
           cache: gradle
-
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
         working-directory: android-client
-
-      - name: Run unit tests & build library
-        run: ./gradlew build
+      - name: Run unit tests
+        run: ./gradlew check --stacktrace
         working-directory: android-client
-
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: android-test-results
           path: android-client/build/reports/tests/
           if-no-files-found: ignore
-
-      - name: Upload library build outputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-client-aar
-          path: android-client/build/outputs/aar/
-          if-no-files-found: warn
+          retention-days: 7
 
   prerelease:
-    name: Create Pre-Release with Android Assets
+    name: Package Android library
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/android-v')
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          name: android-client-aar
-          path: ./aar-assets
-
+          distribution: zulu
+          java-version: "17"
+          cache: gradle
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+        working-directory: android-client
+      - name: Assemble library
+        run: ./gradlew assemble --stacktrace
+        working-directory: android-client
       - name: Package AAR zip artifact
         run: |
           mkdir -p release-dist
-          if [ -d "./aar-assets" ]; then
-            zip -r release-dist/android-client-v0.1.0-pre.aar.zip ./aar-assets
-          fi
-
-      - name: Create or Update GitHub Pre-Release
+          zip -r "release-dist/${GITHUB_REF_NAME}.aar.zip" android-client/build/outputs/aar/
+      - name: Create GitHub Pre-Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-v0.1.0-pre
-          name: "Android Client v0.1.0 Pre-Release"
+          tag_name: ${{ github.ref_name }}
+          name: "Android Client ${{ github.ref_name }}"
           body: |
-            ## Seridian Android Client Pre-Release (v0.1.0)
-            - Kotlin Multiplatform client library targeting Android (SDK 26-35).
-            - Built automatically from commit `${{ github.sha }}`.
+            Seridian Android client library built from `${{ github.sha }}`.
           prerelease: true
           files: release-dist/*
         env:

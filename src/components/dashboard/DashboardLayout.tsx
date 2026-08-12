@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useStableQuery } from "@/hooks/useConvexQuery";
@@ -13,37 +12,16 @@ import { SearchCommand } from "@/components/ui/SearchCommand";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { StatusIndicator } from "./StatusIndicator";
 import { NotificationBell } from "./NotificationBell";
-import { DASHBOARD_ROUTE_NAMES } from "@/lib/dashboardNav";
+import { useDashboardAuth } from "./DashboardGuard";
+import {
+  DASHBOARD_ROUTE_NAMES,
+  NUMBER_KEY_NAV,
+  newItemHref,
+} from "@/lib/dashboardNav";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
-
-/** Number keys 1-9 map to these section slugs in order. */
-const sectionByNumber: Record<string, string> = {
-  "1": "overview",
-  "2": "issues",
-  "3": "clients",
-  "4": "bookings",
-  "5": "sales",
-  "6": "proposals",
-  "7": "templates",
-  "8": "files",
-  "9": "chat",
-};
-
-/** Context-aware "new item" routes per section. */
-const newRoutes: Record<string, string> = {
-  overview: "/dashboard/issues",
-  issues: "/dashboard/issues",
-  clients: "/dashboard/clients",
-  bookings: "/dashboard/bookings",
-  sales: "/dashboard/sales",
-  proposals: "/dashboard/proposals",
-  templates: "/dashboard/templates",
-  files: "/dashboard/files",
-  chat: "/dashboard/chat",
-};
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -52,6 +30,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { user, handleLogout } = useDashboardAuth();
 
   const clients = useStableQuery<any[]>(api.clients.list, {});
   const issues = useStableQuery<any[]>(api.issues.list, {});
@@ -65,21 +44,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const openIssues = issues?.filter((i) => i.status !== "done").length ?? 0;
   const pipelineValue = deals?.reduce((sum, d) => sum + (d.value || 0), 0) ?? 0;
 
-  // Navigation via number keys — only fires when no input is focused
   const handleNumberNav = useCallback(
     (key: string) => {
-      const section = sectionByNumber[key];
-      if (section) router.push(`/dashboard${section === "overview" ? "" : `/${section}`}`);
+      const target = NUMBER_KEY_NAV.find((item) => item.key === key);
+      if (target) router.push(target.href);
     },
     [router],
   );
 
-  // Context-aware new-item action
   const handleNewItem = useCallback(() => {
-    const target = newRoutes[currentSection] || "/dashboard";
-    router.push(target);
-    // Dispatch event so section components can open their form
-    window.dispatchEvent(new CustomEvent("seridian:new-item", { detail: { section: currentSection } }));
+    router.push(newItemHref(currentSection));
+    window.dispatchEvent(
+      new CustomEvent("seridian:new-item", { detail: { section: currentSection } }),
+    );
   }, [currentSection, router]);
 
   // Close any open modal on Escape
@@ -102,11 +79,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { key: "Escape", action: handleEscape, description: "Close dialog", category: "General" },
         // ? — show shortcuts (no modifier, only when no input is focused)
         { key: "?", action: () => setShortcutsOpen(true), description: "Show shortcuts", category: "General" },
-        // 1-9 — quick navigate to sections
-        ...Object.entries(sectionByNumber).map(([key, section]) => ({
-          key,
-          action: () => handleNumberNav(key),
-          description: `Go to ${DASHBOARD_ROUTE_NAMES[section]}`,
+        ...NUMBER_KEY_NAV.map((item) => ({
+          key: item.key,
+          action: () => handleNumberNav(item.key),
+          description: `Go to ${item.label}`,
           category: "Navigation",
         })),
       ],
@@ -180,6 +156,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex items-center gap-3">
           <StatusIndicator />
           <NotificationBell />
+          <span className="text-white/10">|</span>
+          {user && (
+            <>
+              <span className="text-white/10">|</span>
+              <span>{user.name}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Sign out
+              </button>
+            </>
+          )}
           <span className="text-white/10">|</span>
           <span>Seridian v0.1.0</span>
         </div>

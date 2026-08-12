@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-k
 import { ProposalList } from "@/components/proposals/ProposalList";
 import { ProposalForm } from "@/components/proposals/ProposalForm";
 import { ProposalCard } from "@/components/proposals/ProposalCard";
-import { DashboardGuard } from "@/components/dashboard/DashboardGuard";
 
 export default function ProposalsPage() {
   const [formOpen, setFormOpen] = useState(false);
@@ -45,18 +44,16 @@ export default function ProposalsPage() {
 
   if (viewingId) {
     return (
-      <DashboardGuard>
-        <ProposalCard
-          proposalId={viewingId}
-          onBack={() => setViewingId(undefined)}
-          onEdit={handleEdit}
-        />
-      </DashboardGuard>
+      <ProposalCard
+        proposalId={viewingId}
+        onBack={() => setViewingId(undefined)}
+        onEdit={handleEdit}
+      />
     );
   }
 
   return (
-    <DashboardGuard>
+    <>
       <ProposalList onAdd={handleAdd} onEdit={handleEdit} onView={handleView} />
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
@@ -77,6 +74,6 @@ export default function ProposalsPage() {
           )}
         </DialogContent>
       </Dialog>
-    </DashboardGuard>
+    </>
   );
 }

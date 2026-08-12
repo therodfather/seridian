@@ -1,0 +1,134 @@
+name: Nightly improvement cycle
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: "1.3.14"
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXT_PUBLIC_CONVEX_URL: "https://fine-flamingo-162.convex.cloud"
+  NIGHTLY_ISSUE_TITLE: "Nightly CI failed"
+
+jobs:
+  web:
+    name: Full web suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-nightly-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-nightly-
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
+        env:
+          CI: true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: nightly-playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
+
+  android:
+    name: Android check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+          cache: gradle
+      - run: chmod +x ./gradlew
+        working-directory: android-client
+      - run: ./gradlew check --stacktrace
+        working-directory: android-client
+
+  report:
+    name: Open or close nightly issue
+    runs-on: ubuntu-latest
+    needs: [web, android]
+    if: always()
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = process.env.NIGHTLY_ISSUE_TITLE;
+            const failed = ${{ needs.web.result != 'success' || needs.android.result != 'success' }};
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "ci:nightly",
+              per_page: 5,
+            });
+            const existing = issues.find((issue) => issue.title === title);
+            if (failed) {
+              const body = [
+                "The scheduled improvement cycle failed.",
+                "",
+                `- Web suite: \`${{ needs.web.result }}\``,
+                `- Android check: \`${{ needs.android.result }}\``,
+                `- Run: ${runUrl}`,
+                "",
+                "Fix forward on a PR targeting `main`. This issue is updated by the next green nightly.",
+              ].join("\n");
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                  labels: ["ci:nightly", "type:bug"],
+                });
+              }
+              return;
+            }
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Nightly is green again: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: "closed",
+                state_reason: "completed",
+              });
+            }

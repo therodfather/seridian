@@ -480,4 +480,17 @@ describe("chat functions", () => {
       expect(result.error).toBe("Invalid password");
     }
   });
+
+  test("getUser omits the password field", async () => {
+    await t.mutation(api.users.upsert, {
+      pubkey: "dee",
+      name: "Dee",
+      password: "secret",
+      status: "offline",
+    });
+
+    const user = await t.query(api.chat.getUser, { pubkey: "dee" });
+    expect(user).toMatchObject({ pubkey: "dee", name: "Dee" });
+    expect(user).not.toHaveProperty("password");
+  });
 });

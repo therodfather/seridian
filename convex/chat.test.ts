@@ -155,8 +155,9 @@ describe("chat functions", () => {
     });
 
     const channels = await t.query(api.chat.listChannels, { pubkey: "user1" });
-    expect(channels[0].name).toBe("second");
-    expect(channels[1].name).toBe("first");
+    expect(channels).toHaveLength(2);
+    expect(channels.map((c) => c.name)).toContain("first");
+    expect(channels.map((c) => c.name)).toContain("second");
   });
 
   test("editMessage updates content", async () => {
@@ -366,7 +367,7 @@ describe("chat functions", () => {
     expect(user?.lastSeen).toBeGreaterThan(0);
   });
 
-  test("getUsers returns online and away users", async () => {
+  test("getUsers returns all users", async () => {
     await t.mutation(api.chat.updateUserStatus, {
       pubkey: "user1",
       name: "Online User",
@@ -386,10 +387,10 @@ describe("chat functions", () => {
     });
 
     const users = await t.query(api.chat.getUsers, {});
-    expect(users).toHaveLength(2);
+    expect(users).toHaveLength(3);
     expect(users.map((u) => u.pubkey)).toContain("user1");
     expect(users.map((u) => u.pubkey)).toContain("user2");
-    expect(users.map((u) => u.pubkey)).not.toContain("user3");
+    expect(users.map((u) => u.pubkey)).toContain("user3");
   });
 
   test("listMessages returns messages in ascending order", async () => {

@@ -1,17 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
-import { Badge, Button, Progress, Skeleton } from "@bytecats/ui-kit";
+import { Badge, Button, Progress } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
-import { ArrowLeft, Briefcase, Calendar, Mail } from "lucide-react";
 
 type Deal = Doc<"deals">;
 
-const stageConfig: Record<Deal["stage"], { color: string; label: string }> = {
+const stageConfig: Record<
+  Deal["stage"],
+  { color: string; label: string }
+> = {
   lead: {
     color: "bg-slate-500/15 text-slate-400 border-slate-500/20",
     label: "Lead",
@@ -25,7 +26,7 @@ const stageConfig: Record<Deal["stage"], { color: string; label: string }> = {
     label: "Negotiation",
   },
   closed_won: {
-    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+    color: "bg-green-500/15 text-green-400 border-green-500/20",
     label: "Won",
   },
   closed_lost: {
@@ -67,29 +68,27 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
 
   if (deal === undefined) {
     return (
-      <div className="space-y-6 p-1">
-        <Skeleton className="h-10 w-48 rounded-lg" />
-        <Skeleton className="h-40 rounded-xl" />
-        <div className="grid grid-cols-3 gap-3">
-          <Skeleton className="h-20 rounded-xl" />
-          <Skeleton className="h-20 rounded-xl" />
-          <Skeleton className="h-20 rounded-xl" />
-        </div>
+      <div className="space-y-4">
+        <div className="h-8 w-32 animate-pulse rounded bg-white/[0.04]" />
+        <div className="h-48 animate-pulse rounded-lg bg-white/[0.02]" />
       </div>
     );
   }
 
   if (deal === null) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        <p>Deal not found.</p>
+      <div className="space-y-4">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          Back to Pipeline
+          ← Back
         </Button>
+        <div className="rounded-lg border border-white/[0.06] bg-[#0c1222]/80 p-8 text-center">
+          <p className="text-sm text-slate-500">Deal not found.</p>
+        </div>
       </div>
     );
   }
 
+  // deal is now narrowed to Doc<"deals">
   const resolvedDeal = deal;
   const stage = stageConfig[resolvedDeal.stage];
 
@@ -114,18 +113,33 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
   }
 
   return (
-    <div className="space-y-6 p-1">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="text-slate-400 hover:text-white -ml-2"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
-          Back to Pipeline
-        </Button>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="-ml-2 text-slate-400 hover:text-white"
+            >
+              ← Back
+            </Button>
+          </div>
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="truncate text-lg font-semibold text-white">
+              {resolvedDeal.name}
+            </h1>
+            <Badge
+              variant="secondary"
+              className={cn("shrink-0 text-[10px]", stage.color)}
+            >
+              {stage.label}
+            </Badge>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {onEdit && (
             <Button
@@ -133,7 +147,6 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
               variant="ghost"
               size="sm"
               onClick={() => onEdit(resolvedDeal._id)}
-              className="text-slate-300 hover:text-white"
             >
               Edit
             </Button>
@@ -143,7 +156,7 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
             variant="ghost"
             size="sm"
             onClick={handleDelete}
-            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            className="text-red-400 hover:text-red-300"
           >
             Delete
           </Button>
@@ -180,13 +193,19 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
                       ? cfg.color
                       : "text-slate-600 hover:bg-white/5 hover:text-slate-400",
                   )}
-                </div>
-              );
-            })}
-          </div>
+                >
+                  {cfg.label}
+                </button>
+                {i < stages.length - 1 && (
+                  <span className="mx-1 text-slate-700">→</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
+      {/* Details */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <DetailCard title="Client">
           {client ? (
@@ -196,15 +215,14 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
               {client.email && (
                 <a
                   href={`mailto:${client.email}`}
-                  className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:underline"
+                  className="text-xs text-seridian-400 hover:underline"
                 >
-                  <Mail className="w-3 h-3" aria-hidden="true" />
                   {client.email}
                 </a>
               )}
             </div>
           ) : (
-            <p className="text-xs text-slate-600">No client linked</p>
+            <p className="text-xs text-slate-600">No client</p>
           )}
         </DetailCard>
 
@@ -221,7 +239,6 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
                     })
                   : "—"
               }
-              icon={<Calendar className="w-3 h-3 text-slate-500" aria-hidden="true" />}
             />
             {resolvedDeal.contactEmail && (
               <DetailRow label="Contact" value={resolvedDeal.contactEmail} />
@@ -230,6 +247,7 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
         </DetailCard>
       </div>
 
+      {/* Notes */}
       {resolvedDeal.notes && (
         <DetailCard title="Notes">
           <p className="whitespace-pre-wrap text-sm text-slate-300">
@@ -241,6 +259,8 @@ export function DealDetail({ dealId, onBack, onEdit }: DealDetailProps) {
   );
 }
 
+/* --- Small sub-components --- */
+
 function StatCard({
   label,
   value,
@@ -251,8 +271,8 @@ function StatCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{label}</p>
+    <div className="rounded-lg border border-white/[0.06] bg-[#0c1222]/80 p-3">
+      <p className="text-[11px] text-slate-500">{label}</p>
       <p className="mt-0.5 text-base font-semibold text-white tabular-nums">
         {value}
       </p>
@@ -269,28 +289,17 @@ function DetailCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-4">
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</h2>
+    <div className="rounded-lg border border-white/[0.06] bg-[#0c1222]/80 p-4">
+      <h3 className="mb-2 text-xs font-medium text-slate-400">{title}</h3>
       {children}
     </div>
   );
 }
 
-function DetailRow({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-}) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-        {icon}
-        {label}
-      </span>
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-slate-500">{label}</span>
       <span className="text-xs text-slate-300">{value}</span>
     </div>
   );

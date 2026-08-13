@@ -60,8 +60,6 @@ export function SyncDashboard() {
     }
   }, [syncLinear, syncGitHub]);
 
-  const statsLoading = linearStats === undefined || githubStats === undefined;
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">

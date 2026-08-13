@@ -18,7 +18,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toastMutationError } from "@/lib/mutationToast";
 
 interface MessageInputProps {
   channelId: Id<"channels">;

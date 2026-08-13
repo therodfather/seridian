@@ -59,7 +59,7 @@ export function LinearSyncSection({ onSyncComplete }: LinearSyncSectionProps) {
           type="button"
           onClick={handleSync}
           disabled={syncing}
-          className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50 self-start sm:self-auto"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
           {syncing ? "Syncing..." : "Sync Linear"}

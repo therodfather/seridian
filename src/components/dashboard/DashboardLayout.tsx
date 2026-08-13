@@ -146,7 +146,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="ml-3 text-sm font-medium text-white">{pageName}</span>
+            <span className="ml-3 text-sm font-medium text-white truncate">{pageName}</span>
           </div>
 
           {isFullBleedRoute ? (
@@ -169,36 +169,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <footer
         role="contentinfo"
         className={cn(
-          "print:hidden relative z-40 flex flex-col gap-2 border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
+          "print:hidden relative z-40 flex flex-col gap-2 overflow-x-auto border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
           sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
-        )}>
+        )}
+      >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span>{pageName}</span>
-          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden text-white/10 sm:inline" aria-hidden="true">|</span>
           <span className="hidden sm:inline">{activeClients} active clients</span>
-          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden text-white/10 sm:inline" aria-hidden="true">|</span>
           <span className="hidden sm:inline">{openIssues} open issues</span>
-          <span className="hidden text-white/10 sm:inline">|</span>
+          <span className="hidden text-white/10 sm:inline" aria-hidden="true">|</span>
           <span className="hidden sm:inline">${pipelineValue.toLocaleString()} pipeline</span>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="ml-auto flex shrink-0 flex-wrap items-center gap-3">
           <StatusIndicator />
           <NotificationBell />
           {user && (
             <>
-              <span className="hidden text-white/10 sm:inline">|</span>
-              <span className="truncate max-w-[8rem] sm:max-w-none">{user.name}</span>
+              <span className="hidden text-white/10 sm:inline" aria-hidden="true">|</span>
+              <span className="max-w-[8rem] truncate sm:max-w-none">{user.name}</span>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-slate-500 hover:text-slate-300 transition-colors"
+                className="rounded text-slate-500 transition-colors hover:text-slate-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-seridian-500"
               >
                 Sign out
               </button>
             </>
           )}
-          <span className="hidden text-white/10 sm:inline">|</span>
-          <span className="hidden sm:inline">Seridian v0.1.0</span>
+          <span className="hidden text-white/10 md:inline" aria-hidden="true">|</span>
+          <span className="hidden md:inline">Seridian v0.1.0</span>
         </div>
       </footer>
 

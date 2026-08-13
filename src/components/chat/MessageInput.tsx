@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toastMutationError } from "@/lib/mutationToast";
 
 interface MessageInputProps {
   channelId: Id<"channels">;
@@ -334,6 +335,7 @@ export function MessageInput({
                 ? "Reconnecting — messaging paused..."
                 : placeholder || "Message channel or mention @SeridianAI..."
           }
+          aria-label="Message input"
           rows={2}
           disabled={!canCompose}
           aria-busy={isSending}
@@ -369,7 +371,7 @@ export function MessageInput({
             >
               <Code className="h-3.5 w-3.5" />
             </button>
-            <div className="h-3.5 w-px bg-white/10 mx-0.5" />
+            <div className="mx-0.5 h-3.5 w-px bg-white/10" />
             <button
               type="button"
               onClick={() => setShowMentionMenu(!showMentionMenu)}

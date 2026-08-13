@@ -73,7 +73,7 @@ export default function ArenaDashboardPage() {
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] bg-[#070b14]/95 px-3 py-2 lg:px-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
-            <Bot className="h-4 w-4" />
+            <Bot className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-bold tracking-tight text-white">
@@ -85,13 +85,20 @@ export default function ArenaDashboardPage() {
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-0.5 rounded-md border border-white/[0.08] bg-[#0c1222] p-0.5">
+        <div
+          className="flex shrink-0 gap-0.5 rounded-md border border-white/[0.08] bg-[#0c1222] p-0.5"
+          role="tablist"
+          aria-label="Arena views"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "rounded px-3 py-1.5 text-xs font-medium transition-colors",
+                "rounded px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500",
                 activeTab === tab.id
                   ? "bg-cyan-500/20 text-cyan-400"
                   : "text-slate-400 hover:bg-white/[0.05] hover:text-white",
@@ -110,7 +117,7 @@ export default function ArenaDashboardPage() {
           <WikiEngine bankId={bankId} />
         ) : bankError ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-            <AlertCircle className="h-7 w-7 text-red-400" />
+            <AlertCircle className="h-7 w-7 text-red-400" aria-hidden="true" />
             <p className="max-w-sm text-sm text-slate-400">{bankError}</p>
             <Button
               onClick={() => void ensureBank()}
@@ -122,7 +129,7 @@ export default function ArenaDashboardPage() {
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+            <Loader2 className="h-5 w-5 animate-spin text-cyan-400" aria-hidden="true" />
             <p className="text-sm text-slate-400">Setting up wiki engine…</p>
           </div>
         )}

@@ -15,8 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
   Skeleton,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
+import { GridBackground } from "@/components/three/backgrounds";
 import {
   Wand2,
   Sparkles,
@@ -27,12 +33,10 @@ import {
   Plus,
   ArrowLeft,
   Variable,
-  FileText,
-  Layers,
-  CheckCircle2,
   Sliders,
-  Settings,
-  Mail,
+  Search,
+  Copy,
+  Trash2,
 } from "lucide-react";
 
 type EmailTemplate = Doc<"emailTemplates">;
@@ -60,10 +64,17 @@ export default function TemplatesPage() {
   const templates = useQuery(api.emailTemplates.list, {});
   const createTemplate = useMutation(api.emailTemplates.create);
   const updateTemplate = useMutation(api.emailTemplates.update);
+  const removeTemplate = useMutation(api.emailTemplates.remove);
+  const duplicateTemplate = useMutation(api.emailTemplates.duplicate);
+
+  // Gallery Filters
+  const [gridSearch, setGridSearch] = useState("");
+  const [selectedCatFilter, setSelectedCatFilter] = useState<string>("all");
 
   // View state: "grid" (list view) or active studio step ("meta" | "studio" | "preview")
   const [viewMode, setViewMode] = useState<"grid" | "meta" | "studio" | "preview">("grid");
   const [selectedTemplateId, setSelectedTemplateId] = useState<Id<"emailTemplates"> | null>(null);
+  const [deleteConfirmTemplate, setDeleteConfirmTemplate] = useState<EmailTemplate | null>(null);
 
   // Studio form states
   const [name, setName] = useState("");
@@ -78,10 +89,18 @@ export default function TemplatesPage() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
-  const selectedTemplate = useQuery(
-    api.emailTemplates.get,
-    selectedTemplateId ? { templateId: selectedTemplateId } : "skip"
-  );
+  // Filtered Templates List
+  const filteredTemplates = useMemo(() => {
+    if (!templates) return [];
+    return templates.filter((t) => {
+      const matchesCategory = selectedCatFilter === "all" || t.category === selectedCatFilter;
+      const matchesSearch =
+        !gridSearch.trim() ||
+        t.name.toLowerCase().includes(gridSearch.toLowerCase()) ||
+        t.subject.toLowerCase().includes(gridSearch.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [templates, selectedCatFilter, gridSearch]);
 
   function handleCreateNew() {
     setSelectedTemplateId(null);
@@ -120,6 +139,30 @@ export default function TemplatesPage() {
     setViewMode("studio");
   }
 
+  async function handleDuplicate(e: React.MouseEvent, tmpl: EmailTemplate) {
+    e.stopPropagation();
+    try {
+      await duplicateTemplate({
+        templateId: tmpl._id,
+        name: `${tmpl.name} (Copy)`,
+      });
+      toastMutationSuccess("Template duplicated");
+    } catch (err) {
+      toastMutationError(err, "Failed to duplicate template");
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteConfirmTemplate) return;
+    try {
+      await removeTemplate({ templateId: deleteConfirmTemplate._id });
+      toastMutationSuccess("Template deleted");
+      setDeleteConfirmTemplate(null);
+    } catch (err) {
+      toastMutationError(err, "Failed to delete template");
+    }
+  }
+
   // Parsed variables
   const variablesList = useMemo(() => {
     return Array.from(
@@ -151,8 +194,14 @@ export default function TemplatesPage() {
     return content;
   }, [body, variablesList]);
 
-  function insertVariable(varName: string) {
-    setBody((prev) => prev + " {{" + varName + "}}");
+  function insertSnippet(snippetType: "button" | "callout" | "divider") {
+    if (snippetType === "button") {
+      setBody((prev) => prev + `\n<div style="text-align: center; margin: 24px 0;"><a href="#" style="background: #06b6d4; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: bold; text-decoration: none; display: inline-block;">View Proposal &rarr;</a></div>`);
+    } else if (snippetType === "callout") {
+      setBody((prev) => prev + `\n<div style="background: #ecfeff; border-left: 4px solid #06b6d4; padding: 16px; border-radius: 6px; margin: 16px 0;"><p style="margin: 0; color: #0e7490; font-weight: 600;">Important Notice:</p><p style="margin: 4px 0 0 0; color: #164e63;">Please complete verification before the due date.</p></div>`);
+    } else if (snippetType === "divider") {
+      setBody((prev) => prev + `\n<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />`);
+    }
   }
 
   function handleGenerateAi() {
@@ -184,6 +233,7 @@ export default function TemplatesPage() {
       }
       setIsGeneratingAi(false);
       setAiPrompt("");
+      toastMutationSuccess("Template generated with AI");
     }, 600);
   }
 
@@ -200,6 +250,7 @@ export default function TemplatesPage() {
           category: category,
           variables: variablesList,
         });
+        toastMutationSuccess("Template updated successfully");
       } else {
         const newId = await createTemplate({
           name: name.trim(),
@@ -210,15 +261,20 @@ export default function TemplatesPage() {
           createdBy: "current-user",
         });
         setSelectedTemplateId(newId);
+        toastMutationSuccess("Template published successfully");
       }
       setViewMode("grid");
+    } catch (err) {
+      toastMutationError(err, "Failed to save template");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-[#070b14] text-slate-100 -m-6 p-6">
+    <>
+      <GridBackground />
+      <div className="flex flex-col min-h-[calc(100vh-6rem)] text-slate-100">
         {/* TOP BAR / NAVIGATION HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5 mb-6">
           <div className="flex items-center gap-3">
@@ -226,7 +282,8 @@ export default function TemplatesPage() {
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
-                className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-slate-300 hover:text-white"
+                aria-label="Back to template gallery"
+                className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -252,7 +309,7 @@ export default function TemplatesPage() {
           {viewMode !== "grid" ? (
             <div className="flex flex-wrap items-center gap-3">
               {/* Stages Pill Navigator */}
-              <div className="flex items-center p-1 rounded-xl bg-[#0c1222] border border-white/[0.08]">
+              <div className="flex items-center overflow-x-auto rounded-xl border border-white/[0.08] bg-[#0c1222] p-1">
                 <button
                   type="button"
                   onClick={() => setViewMode("meta")}
@@ -296,23 +353,65 @@ export default function TemplatesPage() {
                 size="sm"
                 onClick={handleSave}
                 disabled={saving || !name.trim() || !subject.trim()}
-                className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/20"
+                className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/20 text-xs"
               >
                 {saving ? "Saving..." : selectedTemplateId ? "Save Changes" : "Publish Template"}
               </Button>
             </div>
           ) : (
-            <Button type="button" size="sm" onClick={handleCreateNew} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold">
+            <Button type="button" size="sm" onClick={handleCreateNew} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs">
               <Plus className="w-4 h-4 mr-1.5" /> New Template Studio
             </Button>
           )}
         </div>
 
-        {/* PAGE CONTENT SWITCHER */}
-
         {/* 1. GRID / GALLERY VIEW */}
         {viewMode === "grid" && (
           <div className="space-y-6">
+            {/* Filter and Search Controls */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0c1222]/80 border border-white/[0.08] p-3 rounded-xl">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  value={gridSearch}
+                  onChange={(e) => setGridSearch(e.target.value)}
+                  placeholder="Search template name or subject..."
+                  aria-label="Search templates"
+                  className="border-white/10 bg-[#070b14] pl-9 text-xs text-white placeholder:text-slate-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCatFilter("all")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
+                    selectedCatFilter === "all"
+                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                      : "bg-white/5 text-slate-400 hover:text-white border border-white/10"
+                  )}
+                >
+                  All Templates ({templates?.length ?? 0})
+                </button>
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCatFilter(cat)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 capitalize",
+                      selectedCatFilter === cat
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                        : "bg-white/5 text-slate-400 hover:text-white border border-white/10"
+                    )}
+                  >
+                    {categoryConfig[cat]?.label ?? cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {/* Studio Creation Launcher Card */}
               <button
@@ -329,14 +428,37 @@ export default function TemplatesPage() {
 
               {templates === undefined ? (
                 [1, 2, 3].map((i) => <Skeleton key={i} className="h-[180px] rounded-xl bg-white/5" />)
+              ) : filteredTemplates.length === 0 && templates.length > 0 ? (
+                <div className="col-span-full rounded-xl border border-dashed border-white/10 bg-[#0c1222]/40 py-12 text-center">
+                  <p className="text-xs text-slate-500">No email templates match your filter query.</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      setGridSearch("");
+                      setSelectedCatFilter("all");
+                    }}
+                    className="mt-3 bg-white/5 text-xs text-slate-300 hover:bg-white/10"
+                  >
+                    Clear filters
+                  </Button>
+                </div>
               ) : (
-                templates.map((tmpl) => {
+                filteredTemplates.map((tmpl) => {
                   const cat = categoryConfig[tmpl.category] ?? categoryConfig.custom;
                   return (
                     <div
                       key={tmpl._id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSelectTemplate(tmpl)}
-                      className="group cursor-pointer flex flex-col justify-between p-5 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 hover:bg-[#0c1222] hover:border-cyan-500/30 transition-all min-h-[180px] shadow-lg"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectTemplate(tmpl);
+                        }
+                      }}
+                      className="group relative flex min-h-[180px] cursor-pointer flex-col justify-between rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-5 shadow-lg transition-all hover:border-cyan-500/30 hover:bg-[#0c1222] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
                     >
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
@@ -354,9 +476,30 @@ export default function TemplatesPage() {
                         <span className="flex items-center gap-1">
                           <Variable className="w-3.5 h-3.5 text-cyan-400" /> {tmpl.variables.length} Tags
                         </span>
-                        <span className="group-hover:text-cyan-400 font-medium transition-colors">
-                          Open Studio &rarr;
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => handleDuplicate(e, tmpl)}
+                            className="rounded p-1 text-slate-500 transition-colors hover:bg-cyan-500/10 hover:text-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                            aria-label={`Duplicate ${tmpl.name}`}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmTemplate(tmpl);
+                            }}
+                            className="rounded p-1 text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                            aria-label={`Delete ${tmpl.name}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="group-hover:text-cyan-400 font-medium transition-colors ml-1">
+                            Studio &rarr;
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -428,7 +571,7 @@ export default function TemplatesPage() {
               </div>
 
               <div className="pt-4 flex justify-end">
-                <Button type="button" onClick={() => setViewMode("studio")} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold">
+                <Button type="button" onClick={() => setViewMode("studio")} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs">
                   Proceed to Split Studio &rarr;
                 </Button>
               </div>
@@ -472,20 +615,29 @@ export default function TemplatesPage() {
                   <Code2 className="w-4 h-4 text-cyan-400" />
                   <span className="text-xs font-semibold text-slate-200">HTML Source Code</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400">Insert:</span>
-                  <div className="flex gap-1">
-                    {variablesList.slice(0, 4).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => insertVariable(v)}
-                        className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-mono"
-                      >
-                        +{v}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] text-slate-400">Snippets:</span>
+                  <button
+                    type="button"
+                    onClick={() => insertSnippet("button")}
+                    className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-medium"
+                  >
+                    + Button
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertSnippet("callout")}
+                    className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-medium"
+                  >
+                    + Callout
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertSnippet("divider")}
+                    className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-medium"
+                  >
+                    + Divider
+                  </button>
                 </div>
               </div>
 
@@ -514,23 +666,25 @@ export default function TemplatesPage() {
                     type="button"
                     onClick={() => setDeviceMode("desktop")}
                     className={cn(
-                      "p-1.5 rounded-md transition-all",
+                      "rounded-md p-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40",
                       deviceMode === "desktop" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-400 hover:text-white"
                     )}
-                    title="Desktop Preview"
+                    aria-label="Desktop preview"
+                    aria-pressed={deviceMode === "desktop"}
                   >
-                    <Monitor className="w-4 h-4" />
+                    <Monitor className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setDeviceMode("mobile")}
                     className={cn(
-                      "p-1.5 rounded-md transition-all",
+                      "rounded-md p-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40",
                       deviceMode === "mobile" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-400 hover:text-white"
                     )}
-                    title="Mobile Viewport"
+                    aria-label="Mobile preview"
+                    aria-pressed={deviceMode === "mobile"}
                   >
-                    <Smartphone className="w-4 h-4" />
+                    <Smartphone className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -585,5 +739,29 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmTemplate} onOpenChange={(o) => !o && setDeleteConfirmTemplate(null)}>
+        {deleteConfirmTemplate && (
+          <DialogContent className="max-w-sm border-white/[0.08] bg-[#0c1222] p-5 space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-white">Delete Template?</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Are you sure you want to delete <strong className="text-white">{deleteConfirmTemplate.name}</strong>? This template will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.08]">
+              <Button size="sm" variant="ghost" onClick={() => setDeleteConfirmTemplate(null)} className="text-slate-400 text-xs">
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-400 text-white font-semibold text-xs">
+                Delete Template
+              </Button>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+    </>
   );
 }
+

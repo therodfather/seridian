@@ -3,8 +3,9 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
-import { Button, Input, Textarea } from "@bytecats/ui-kit";
+import { Button, Input, Textarea, Skeleton } from "@bytecats/ui-kit";
 import { Save, Edit3, Clock, User, Tag } from "lucide-react";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 interface WikiPageProps {
   pageId: Id<"wikiPages">;
@@ -44,8 +45,9 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
         lastEditedBy: "dee",
       });
       setIsEditing(false);
+      toastMutationSuccess("Page saved");
     } catch (error) {
-      console.error("Failed to save page:", error);
+      toastMutationError(error, "Failed to save page");
     }
   };
 
@@ -68,11 +70,12 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
 
   if (page === undefined) {
     return (
-      <div className="bg-[#070b14] rounded-lg border border-white/[0.08] p-8">
-        <div className="flex items-center gap-3 text-slate-400">
-          <Clock className="w-5 h-5 animate-spin" />
-          <span>Loading wiki page...</span>
-        </div>
+      <div className="space-y-4 p-6">
+        <Skeleton className="h-8 w-64 bg-white/10" />
+        <Skeleton className="h-4 w-40 bg-white/10" />
+        <Skeleton className="h-4 w-full bg-white/5" />
+        <Skeleton className="h-4 w-5/6 bg-white/5" />
+        <Skeleton className="h-40 w-full rounded-lg bg-white/5" />
       </div>
     );
   }
@@ -95,13 +98,14 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
 
   return (
     <div className="bg-[#070b14] rounded-lg border border-white/[0.08] overflow-hidden">
-      <div className="bg-[#0c1222] border-b border-white/[0.08] px-4 py-4 sm:px-6">
+      <div className="border-b border-white/[0.08] bg-[#0c1222] px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             {onBack && (
               <Button
+                type="button"
                 onClick={onBack}
-                className="shrink-0 bg-white/5 hover:bg-white/10 text-white text-sm px-3 py-1 md:hidden"
+                className="shrink-0 bg-white/5 px-3 py-1 text-sm text-white hover:bg-white/10 md:hidden"
               >
                 ← Back
               </Button>
@@ -114,7 +118,7 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
                 className="bg-[#070b14] border-white/[0.08] text-white text-xl font-semibold focus:border-cyan-400"
               />
             ) : (
-              <h1 className="truncate text-xl font-semibold text-white">{page.title ?? "Untitled"}</h1>
+              <h2 className="truncate text-xl font-semibold text-white">{page.title ?? "Untitled"}</h2>
             )}
           </div>
 
@@ -122,25 +126,28 @@ export function WikiPage({ pageId, onBack }: WikiPageProps) {
             {isEditing ? (
               <>
                 <Button
+                  type="button"
                   onClick={handleCancel}
-                  className="bg-white/5 hover:bg-white/10 text-slate-400 text-sm px-4 py-2"
+                  className="bg-white/5 px-4 py-2 text-sm text-slate-400 hover:bg-white/10"
                 >
                   Cancel
                 </Button>
                 <Button
+                  type="button"
                   onClick={handleSave}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white text-sm px-4 py-2 flex items-center gap-2"
+                  className="flex items-center gap-2 bg-cyan-500 px-4 py-2 text-sm text-black hover:bg-cyan-400"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="h-4 w-4" aria-hidden="true" />
                   Save
                 </Button>
               </>
             ) : (
               <Button
+                type="button"
                 onClick={handleEdit}
-                className="bg-white/5 hover:bg-white/10 text-white text-sm px-4 py-2 flex items-center gap-2"
+                className="flex items-center gap-2 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10"
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="h-4 w-4" aria-hidden="true" />
                 Edit
               </Button>
             )}

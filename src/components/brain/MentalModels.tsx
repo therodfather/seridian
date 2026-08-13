@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
-import { Button, Input, Textarea } from "@bytecats/ui-kit";
+import { Button, Input, Textarea, Skeleton } from "@bytecats/ui-kit";
 import {
   Lightbulb,
   Plus,
@@ -97,39 +97,40 @@ export function MentalModels({ bankId }: MentalModelsProps) {
   };
 
   return (
-    <div className="bg-[#070b14] rounded-xl border border-white/[0.08] overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-white/[0.08]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-amber-400" />
-            <h3 className="text-white font-semibold">Mental Models</h3>
+    <div>
+      <div className="border-b border-white/[0.08] p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Lightbulb className="h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
+            <h3 className="font-semibold text-white">Mental Models</h3>
             {mentalModels && (
-              <span className="text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded">
+              <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-slate-500">
                 {mentalModels.length}
               </span>
             )}
           </div>
           <Button
+            type="button"
             onClick={() => setIsCreating(!isCreating)}
-            className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-1.5 flex items-center gap-1"
+            className="flex shrink-0 items-center gap-1 bg-cyan-500 px-3 py-1.5 text-xs text-black hover:bg-cyan-400"
           >
             {isCreating ? (
-              <X className="w-3.5 h-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             ) : (
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             {isCreating ? "Cancel" : "Add Model"}
           </Button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" aria-hidden="true" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search mental models..."
-            className="bg-[#0c1222] border-white/[0.08] text-white text-xs pl-8 py-1.5 focus:border-cyan-400"
+            aria-label="Search mental models"
+            className="border-white/[0.08] bg-[#0c1222] py-1.5 pl-8 text-xs text-white focus:border-cyan-400"
           />
         </div>
       </div>
@@ -151,24 +152,26 @@ export function MentalModels({ bankId }: MentalModelsProps) {
           />
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               onClick={handleCreate}
               disabled={isRetaining || !newContent.trim()}
-              className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-1.5 flex items-center gap-1"
+              className="flex items-center gap-1 bg-cyan-500 px-3 py-1.5 text-xs text-black hover:bg-cyan-400"
             >
               {isRetaining ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <Check className="w-3.5 h-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden="true" />
               )}
               Save Model
             </Button>
             <Button
+              type="button"
               onClick={() => {
                 setIsCreating(false);
                 setNewTitle("");
                 setNewContent("");
               }}
-              className="bg-white/5 hover:bg-white/10 text-slate-400 text-xs px-3 py-1.5"
+              className="bg-white/5 px-3 py-1.5 text-xs text-slate-400 hover:bg-white/10"
             >
               Cancel
             </Button>
@@ -179,17 +182,29 @@ export function MentalModels({ bankId }: MentalModelsProps) {
       {/* List */}
       <div className="max-h-[500px] overflow-y-auto">
         {!mentalModels ? (
-          <div className="p-8 flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+          <div className="space-y-2 p-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg bg-white/5" />
+            ))}
           </div>
         ) : filteredModels && filteredModels.length === 0 ? (
           <div className="p-8 text-center">
-            <Lightbulb className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-500 text-xs">
+            <Lightbulb className="mx-auto mb-2 h-8 w-8 text-slate-600" aria-hidden="true" />
+            <p className="text-xs text-slate-500">
               {searchQuery
                 ? "No mental models match your search"
                 : "No mental models yet. Add your first framework."}
             </p>
+            {!searchQuery && (
+              <Button
+                type="button"
+                onClick={() => setIsCreating(true)}
+                className="mt-3 bg-cyan-500 px-3 py-1.5 text-xs text-black hover:bg-cyan-400"
+              >
+                <Plus className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+                Add Model
+              </Button>
+            )}
           </div>
         ) : (
           <div className="p-2">
@@ -264,18 +279,20 @@ export function MentalModels({ bankId }: MentalModelsProps) {
                     </div>
                     <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                       <button
+                        type="button"
                         onClick={() => startEditing(model._id, model.content)}
-                        className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-amber-400 transition-colors"
-                        title="Edit"
+                        className="rounded p-1 text-slate-500 transition-colors hover:bg-white/10 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                        aria-label="Edit mental model"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        <Edit3 className="h-3.5 w-3.5" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(model._id)}
-                        className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-red-400 transition-colors"
-                        title="Delete"
+                        className="rounded p-1 text-slate-500 transition-colors hover:bg-white/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                        aria-label="Delete mental model"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>

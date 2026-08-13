@@ -77,10 +77,12 @@ export default function IssuesPage() {
   const updateIssue = useMutation(api.issues.update);
   const removeIssue = useMutation(api.issues.remove);
 
-  // Filters
+  // Filters & Controls
+  const [filterSearch, setFilterSearch] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterClient, setFilterClient] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
 
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -114,6 +116,25 @@ export default function IssuesPage() {
     );
   }, [clients]);
 
+  // Metrics
+  const metrics = useMemo(() => {
+    if (!issues) return { total: 0, open: 0, urgentHigh: 0, done: 0 };
+    let open = 0;
+    let urgentHigh = 0;
+    let done = 0;
+    for (const item of issues) {
+      if (item.status === "done") {
+        done++;
+      } else {
+        open++;
+      }
+      if (item.priority === "urgent" || item.priority === "high") {
+        urgentHigh++;
+      }
+    }
+    return { total: issues.length, open, urgentHigh, done };
+  }, [issues]);
+
   // Filtered issues
   const filteredIssues = useMemo(() => {
     if (!issues) return null;
@@ -124,9 +145,17 @@ export default function IssuesPage() {
         if (filterClient === "_none" && issue.clientId) return false;
         if (filterClient !== "_none" && issue.clientId !== filterClient) return false;
       }
+      if (filterSearch.trim()) {
+        const q = filterSearch.toLowerCase();
+        const matchTitle = issue.title.toLowerCase().includes(q);
+        const matchDesc = issue.description?.toLowerCase().includes(q);
+        const matchAssignee = issue.assignee?.toLowerCase().includes(q);
+        const matchId = issue.identifier?.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchAssignee && !matchId) return false;
+      }
       return true;
     });
-  }, [issues, filterStatus, filterClient, filterPriority]);
+  }, [issues, filterStatus, filterClient, filterPriority, filterSearch]);
 
   // Grouped issues
   const issuesByStatus = useMemo(() => {
@@ -148,7 +177,7 @@ export default function IssuesPage() {
   }, [filteredIssues]);
 
   // Active filter count
-  const activeFilterCount = [filterStatus, filterClient, filterPriority].filter(
+  const activeFilterCount = [filterStatus, filterClient, filterPriority, filterSearch ? "search" : "all"].filter(
     (v) => v !== "all",
   ).length;
 
@@ -163,6 +192,12 @@ export default function IssuesPage() {
     setFormAssignee("");
     setFormDueDate("");
   }, []);
+
+  const openCreateForStatus = useCallback((initialStatus?: Status) => {
+    resetCreateForm();
+    if (initialStatus) setFormStatus(initialStatus);
+    setCreateOpen(true);
+  }, [resetCreateForm]);
 
   const handleCreate = useCallback(async () => {
     if (!formTitle.trim() || creating) return;
@@ -233,37 +268,38 @@ export default function IssuesPage() {
   }, [detailIssueId, removeIssue, addNotification]);
 
   const clearFilters = useCallback(() => {
+    setFilterSearch("");
     setFilterStatus("all");
     setFilterClient("all");
     setFilterPriority("all");
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5 p-1">
       {/* ── Header ────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-white">Issues</h1>
-          {issues && (
-            <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/5 px-1.5 text-[11px] font-medium text-slate-500 tabular-nums">
-              {filteredIssues ? filteredIssues.length : issues.length}
-            </span>
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-white tracking-tight">
+            Issues
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Track tasks, bugs, and client deliverables. Board and table share the same filters.
+          </p>
         </div>
         <Button
           type="button"
           size="sm"
-          className="bg-seridian-600 text-white hover:bg-seridian-500 gap-1.5"
-          onClick={() => setCreateOpen(true)}
+          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5 self-start sm:self-auto"
+          onClick={() => openCreateForStatus("todo")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
@@ -274,123 +310,310 @@ export default function IssuesPage() {
         </Button>
       </div>
 
-      {/* ── Filter Bar ────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/[0.06] bg-[#0c1222]/80 p-2">
-        <span className="text-xs font-medium text-slate-500 pl-1">Filters</span>
-
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-[140px] border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#0c1222] border-white/[0.08]">
-            <SelectItem value="all">All Statuses</SelectItem>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterClient} onValueChange={setFilterClient}>
-          <SelectTrigger className="h-8 w-[140px] border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
-            <SelectValue placeholder="Client" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#0c1222] border-white/[0.08]">
-            <SelectItem value="all">All Clients</SelectItem>
-            {(clients ?? []).map((c: Doc<"clients">) => (
-              <SelectItem key={c._id} value={c._id}>
-                {c.name}
-              </SelectItem>
-            ))}
-            <SelectItem value="_none">No Client</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={filterPriority} onValueChange={setFilterPriority}>
-          <SelectTrigger className="h-8 w-[140px] border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#0c1222] border-white/[0.08]">
-            <SelectItem value="all">All Priorities</SelectItem>
-            {PRIORITY_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {activeFilterCount > 0 && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors px-1"
-          >
-            Clear ({activeFilterCount})
-          </button>
-        )}
+      {/* ── Metric Summary Cards ───────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Backlog Items</span>
+          <p className="text-2xl font-extrabold text-white tabular-nums">
+            {issues === undefined ? "—" : metrics.total}
+          </p>
+          <p className="text-[11px] text-slate-500">Tracked issues across board</p>
+        </div>
+        <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active In-Flight</span>
+          <p className="text-2xl font-extrabold text-yellow-400 tabular-nums">
+            {issues === undefined ? "—" : metrics.open}
+          </p>
+          <p className="text-[11px] text-slate-500">Todo, In-Progress & Review</p>
+        </div>
+        <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Urgent & High Priority</span>
+          <p className="text-2xl font-extrabold text-rose-400 tabular-nums">
+            {issues === undefined ? "—" : metrics.urgentHigh}
+          </p>
+          <p className="text-[11px] text-slate-500">Requires immediate attention</p>
+        </div>
+        <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Completed Items</span>
+          <p className="text-2xl font-extrabold text-emerald-400 tabular-nums">
+            {issues === undefined ? "—" : metrics.done}
+          </p>
+          <p className="text-[11px] text-slate-500">Shipped and verified</p>
+        </div>
       </div>
 
-      {/* ── Kanban Board ──────────────────────────────────── */}
-      <div className="flex h-[calc(100vh-14rem)] gap-4 overflow-x-auto pb-4">
-        {COLUMNS.map((column) => {
-          const columnIssues = issuesByStatus?.[column.key] ?? [];
-
-          return (
-            <div
-              key={column.key}
-              className="flex w-[280px] min-w-[280px] flex-col"
+      {/* ── Filter & Search Control Bar ───────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-3">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <input
+              type="search"
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              placeholder="Search by title, ID, assignee..."
+              aria-label="Search issues by title, ID, or assignee"
+              className="w-full h-8 pl-8 pr-3 text-xs bg-white/5 border border-white/10 rounded-md text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/40"
+            />
+            <svg
+              className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger aria-label="Filter by status" className="h-8 w-[130px] border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#0c1222] border-white/[0.08]">
+              <SelectItem value="all">All Statuses</SelectItem>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterClient} onValueChange={setFilterClient}>
+            <SelectTrigger aria-label="Filter by client" className="h-8 w-[130px] border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
+              <SelectValue placeholder="Client" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#0c1222] border-white/[0.08]">
+              <SelectItem value="all">All Clients</SelectItem>
+              {(clients ?? []).map((c: Doc<"clients">) => (
+                <SelectItem key={c._id} value={c._id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+              <SelectItem value="_none">No Client</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger aria-label="Filter by priority" className="h-8 w-[130px] border-white/[0.08] bg-white/[0.03] text-xs text-slate-300">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#0c1222] border-white/[0.08]">
+              <SelectItem value="all">All Priorities</SelectItem>
+              {PRIORITY_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs text-cyan-400 hover:underline px-2"
+            >
+              Clear filters ({activeFilterCount})
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 border-t border-white/[0.06] pt-2 md:pt-0 md:border-t-0 shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-pressed={viewMode === "kanban"}
+            onClick={() => setViewMode("kanban")}
+            className={cn("h-8 px-2.5 text-xs font-medium", viewMode === "kanban" ? "bg-white/10 text-cyan-400" : "text-slate-400")}
+          >
+            Kanban Board
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-pressed={viewMode === "table"}
+            onClick={() => setViewMode("table")}
+            className={cn("h-8 px-2.5 text-xs font-medium", viewMode === "table" ? "bg-white/10 text-cyan-400" : "text-slate-400")}
+          >
+            Table View
+          </Button>
+        </div>
+      </div>
+
+      {/* ── View Presentation (Kanban or Table) ───────────── */}
+      {viewMode === "kanban" ? (
+        <div className="flex h-[calc(100vh-18rem)] gap-4 overflow-x-auto pb-4">
+          {COLUMNS.map((column) => {
+            const columnIssues = issuesByStatus?.[column.key] ?? [];
+
+            return (
               <div
-                className={cn(
-                  "flex items-center justify-between border-t-2 bg-transparent px-1 pb-3 pt-3",
-                  column.headerColor,
-                )}
+                key={column.key}
+                className="flex w-[290px] min-w-[290px] flex-col rounded-xl border border-white/[0.06] bg-[#0c1222]/50 p-3"
               >
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-slate-400">
-                    {column.label}
-                  </h3>
-                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/5 px-1.5 text-[11px] font-medium text-slate-500 tabular-nums">
-                    {issuesByStatus === null ? "\u2014" : columnIssues.length}
-                  </span>
+                <div
+                  className={cn(
+                    "flex items-center justify-between border-t-2 pb-3 pt-1 px-1",
+                    column.headerColor,
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      {column.label}
+                    </h3>
+                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/10 px-1.5 text-[11px] font-bold text-slate-300 tabular-nums">
+                      {issuesByStatus === null ? "\u2014" : columnIssues.length}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => openCreateForStatus(column.key)}
+                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
+                    title={`Add issue to ${column.label}`}
+                    aria-label={`Add issue to ${column.label}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto rounded-lg pt-1 pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+                  {issuesByStatus === null ? (
+                    <div className="space-y-2">
+                      {[1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className="h-[72px] animate-pulse rounded-lg border border-white/[0.06] bg-white/[0.02]"
+                        />
+                      ))}
+                    </div>
+                  ) : columnIssues.length === 0 ? (
+                    <div className="flex h-28 flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-xs text-slate-600 space-y-1">
+                      <span>No issues</span>
+                      <button
+                        type="button"
+                        onClick={() => openCreateForStatus(column.key)}
+                        className="text-[11px] text-cyan-400 hover:underline"
+                      >
+                        + Create
+                      </button>
+                    </div>
+                  ) : (
+                    columnIssues.map((issue) => (
+                      <IssueCard
+                        key={issue._id}
+                        issue={issue}
+                        clientName={
+                          issue.clientId
+                            ? clientMap.get(issue.clientId) ?? undefined
+                            : undefined
+                        }
+                        onClick={handleIssueClick}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
-
-              <div className="flex flex-1 flex-col gap-2 overflow-y-auto rounded-lg pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/5">
-                {issuesByStatus === null ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="h-[72px] animate-pulse rounded-lg border border-white/[0.06] bg-white/[0.02]"
-                      />
-                    ))}
-                  </div>
-                ) : columnIssues.length === 0 ? (
-                  <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-white/[0.06] text-xs text-slate-600">
-                    No issues
-                  </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-white/[0.02] border-b border-white/[0.08] text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                <tr>
+                  <th className="py-3 px-4">Title</th>
+                  <th className="py-3 px-4">Priority</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Client</th>
+                  <th className="py-3 px-4">Assignee</th>
+                  <th className="py-3 px-4">Due Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.06]">
+                {filteredIssues === null ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} aria-hidden="true">
+                      <td colSpan={6} className="px-4 py-3">
+                        <div className="h-8 animate-pulse rounded-md bg-white/[0.04]" />
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredIssues.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                      {activeFilterCount > 0 ? (
+                        <div className="space-y-2">
+                          <p>No issues match the current filters.</p>
+                          <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="text-xs text-cyan-400 hover:underline"
+                          >
+                            Clear filters
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p>No issues yet.</p>
+                          <button
+                            type="button"
+                            onClick={() => openCreateForStatus("todo")}
+                            className="text-xs text-cyan-400 hover:underline"
+                          >
+                            Create the first issue
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 ) : (
-                  columnIssues.map((issue) => (
-                    <IssueCard
+                  filteredIssues.map((issue) => (
+                    <tr
                       key={issue._id}
-                      issue={issue}
-                      clientName={
-                        issue.clientId
-                          ? clientMap.get(issue.clientId) ?? undefined
-                          : undefined
-                      }
-                      onClick={handleIssueClick}
-                    />
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Open issue ${issue.title}`}
+                      onClick={() => handleIssueClick(issue._id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleIssueClick(issue._id);
+                        }
+                      }}
+                      className="hover:bg-white/[0.03] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-cyan-500"
+                    >
+                      <td className="py-3 px-4 font-semibold text-white">
+                        <div className="flex items-center gap-2">
+                          {issue.identifier && <span className="font-mono text-[10px] text-slate-500">{issue.identifier}</span>}
+                          <span>{issue.title}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold border", PRIORITY_COLORS[issue.priority])}>
+                          {issue.priority.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 capitalize">{issue.status.replace("_", " ")}</td>
+                      <td className="py-3 px-4 text-cyan-400">
+                        {issue.clientId ? clientMap.get(issue.clientId) ?? "—" : "—"}
+                      </td>
+                      <td className="py-3 px-4">{issue.assignee || "Unassigned"}</td>
+                      <td className="py-3 px-4 text-slate-400">{issue.dueDate || "—"}</td>
+                    </tr>
                   ))
                 )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* ── Create Issue Dialog ───────────────────────────── */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

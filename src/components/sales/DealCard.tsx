@@ -20,7 +20,7 @@ const stageConfig: Record<Deal["stage"], { color: string; label: string }> = {
     label: "Negotiation",
   },
   closed_won: {
-    color: "bg-green-500/15 text-green-400 border-green-500/20",
+    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
     label: "Won",
   },
   closed_lost: {
@@ -53,7 +53,7 @@ export function DealCard({ deal, clientName, onClick }: DealCardProps) {
       className={cn(
         "group w-full text-left rounded-lg border border-white/[0.06] bg-[#0c1222]/80 p-3",
         "transition-all duration-150",
-        "hover:border-seridian-500/20 hover:bg-[#0c1222]"
+        "hover:border-cyan-500/30 hover:bg-[#0e162a]"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -76,7 +76,7 @@ export function DealCard({ deal, clientName, onClick }: DealCardProps) {
           {formatCurrency(deal.value)}
         </span>
         {clientName && (
-          <span className="inline-flex items-center rounded-md bg-seridian-500/10 px-1.5 py-0.5 text-[11px] font-medium text-seridian-400">
+          <span className="inline-flex items-center rounded-md bg-cyan-500/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan-400">
             {clientName}
           </span>
         )}

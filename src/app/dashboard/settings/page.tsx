@@ -95,7 +95,13 @@ function UserCard({ user, onEdit, onDelete }: { user: User; onEdit: (user: User)
         <Button variant="ghost" size="sm" onClick={() => onEdit(user)} className="text-slate-400 hover:text-white hover:bg-white/5">
           Edit Profile
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onDelete(user._id)} className="text-red-400 hover:text-red-300 hover:bg-red-500/10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDelete(user._id)}
+          aria-label={`Remove ${user.name}`}
+          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+        >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
@@ -267,40 +273,82 @@ function SettingsContent() {
   const SETTINGS_SECTIONS = [
     { id: "general", label: "General & Org", icon: Sliders },
     { id: "audit", label: "Audit Logs", icon: Shield },
-    { id: "users", label: "Team & Access", icon: Users },
-    { id: "sync", label: "Integrations & Sync", icon: RefreshCw },
+    { id: "users", label: "Team & Access", icon: Users, badge: users ? String(users.length) : undefined },
+    { id: "sync", label: "Integrations & Sync", icon: RefreshCw, badge: githubSynced ? "Active" : undefined },
     { id: "secrets", label: "API Keys & Vault", icon: Key },
-    { id: "agents", label: "AI Agent Studio", icon: Bot },
+    { id: "agents", label: "AI Agent Studio", icon: Bot, badge: "3" },
   ];
 
   return (
     <div className="flex flex-col gap-6">
       {/* OS-Grade Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-5">
         <div className="flex items-center gap-3.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
             <Settings className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-              System Control & Settings
-              <span className="font-mono text-[10px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full font-semibold">
-                v0.1.0-STABLE
-              </span>
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Settings
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Enterprise workspace preferences, access control, secrets vault, and real-time integration channels.
+              Workspace preferences, team access, integrations, and secrets.
+            </p>
+          </div>
+        </div>
+
+        {/* Active Session Info Badge */}
+        <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 px-3 py-2 self-start sm:self-auto">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 font-bold text-xs font-mono">
+            {authUser?.name ? authUser.name.charAt(0).toUpperCase() : "A"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-white truncate max-w-[120px]">
+              {authUser?.name ?? "Administrator"}
+            </p>
+            <p className="text-[10px] font-mono text-cyan-400 truncate max-w-[120px]">
+              {authUser?.pubkey ?? "0x...admin"}
             </p>
           </div>
         </div>
       </div>
 
+      {/* Mobile Horizontal Module Navigation (Shown on small screens) */}
+      <div className="flex md:hidden items-center gap-2 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-none" aria-label="Settings sections">
+        {SETTINGS_SECTIONS.map((sec) => {
+          const Icon = sec.icon;
+          const isActive = activeTab === sec.id;
+          return (
+            <button
+              key={sec.id}
+              type="button"
+              onClick={() => selectTab(sec.id)}
+              aria-pressed={isActive}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border",
+                isActive
+                  ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/30 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 border-white/[0.06] bg-[#080d1a]"
+              )}
+            >
+              <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-400" : "text-slate-500")} />
+              <span>{sec.label}</span>
+              {sec.badge && (
+                <span className="text-[10px] font-mono text-slate-500 bg-white/5 px-1.5 py-0.2 rounded">
+                  {sec.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Modern OS Split Layout (Sidebar Navigation + Main Pane) */}
       <div className="grid gap-6 md:grid-cols-[220px_1fr]">
-        {/* Navigation Panel */}
-        <div className="space-y-1">
+        {/* Navigation Panel (Desktop) */}
+        <div className="hidden md:block space-y-1">
           <div className="px-2 py-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-            System Modules
+            Sections
           </div>
           {SETTINGS_SECTIONS.map((sec) => {
             const Icon = sec.icon;
@@ -310,6 +358,7 @@ function SettingsContent() {
                 key={sec.id}
                 type="button"
                 onClick={() => selectTab(sec.id)}
+                aria-pressed={isActive}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left",
                   isActive
@@ -321,6 +370,11 @@ function SettingsContent() {
                   <Icon className={cn("h-4 w-4", isActive ? "text-cyan-400" : "text-slate-500")} />
                   <span>{sec.label}</span>
                 </div>
+                {sec.badge && (
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">
+                    {sec.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -395,9 +449,11 @@ function SettingsContent() {
                       <p className="text-[11px] text-slate-400 mt-0.5">Record system modification timestamps and administrative actions.</p>
                     </div>
                     <input
+                      id="audit-logs-enabled"
                       type="checkbox"
                       checked={auditLogsEnabled}
                       onChange={(e) => setAuditLogsEnabled(e.target.checked)}
+                      aria-label="Enable immutable action audit logs"
                       className="h-4 w-4 rounded accent-cyan-500 cursor-pointer"
                     />
                   </div>
@@ -410,9 +466,11 @@ function SettingsContent() {
                       <p className="text-[11px] text-slate-400 mt-0.5">Receive instant dispatches on Linear sync and agent updates.</p>
                     </div>
                     <input
+                      id="notify-on-sync"
                       type="checkbox"
                       checked={notifyOnSync}
                       onChange={(e) => setNotifyOnSync(e.target.checked)}
+                      aria-label="Enable integration dispatch alerts"
                       className="h-4 w-4 rounded accent-cyan-500 cursor-pointer"
                     />
                   </div>
@@ -469,10 +527,11 @@ function SettingsContent() {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
                   <input
-                    type="text"
+                    type="search"
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
                     placeholder="Search members by name or handle..."
+                    aria-label="Search members by name or handle"
                     className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/40 focus:outline-none"
                   />
                 </div>
@@ -636,7 +695,15 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+    <Suspense fallback={
+      <div className="space-y-6" aria-busy="true" aria-live="polite">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid gap-6 md:grid-cols-[220px_1fr]">
+          <Skeleton className="hidden md:block h-64 rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
+        </div>
+      </div>
+    }>
       <SettingsContent />
     </Suspense>
   );

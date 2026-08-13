@@ -13,6 +13,7 @@ test.describe("dashboard navigation", { tag: "@smoke" }, () => {
       "Sales",
       "Proposals",
       "Contracts",
+      "Health Check",
       "Files",
       "Chat",
       "Settings",

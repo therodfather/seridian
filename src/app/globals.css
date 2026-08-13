@@ -179,6 +179,34 @@ h3 {
   height: 100%;
 }
 
+@media print {
+  .dashboard-shell {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .dashboard-shell main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .health-check-report {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .health-check-report input,
+  .health-check-report textarea {
+    border: none !important;
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    resize: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-glow,
   .animate-fade-in-up {

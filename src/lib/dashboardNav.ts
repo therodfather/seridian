@@ -7,6 +7,7 @@ import {
   DollarSign,
   FileText,
   PenLine,
+  ClipboardCheck,
   Mail,
   Folder,
   MessageSquare,
@@ -44,6 +45,8 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
   { href: d.files, label: "Files", icon: Folder, group: "tools" },
   { href: d.chat, label: "Chat", icon: MessageSquare, group: "tools" },
   { href: d.settings, label: "Settings", icon: Settings, group: "tools" },
+  // Appended so NUMBER_KEY_NAV (first 9) keeps Wiki / Arena on 8–9.
+  { href: d.healthCheck, label: "Health Check", icon: ClipboardCheck, group: "business" },
 ];
 
 export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
@@ -61,6 +64,7 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   sales: "Sales",
   proposals: "Proposals",
   contracts: "Contracts",
+  "health-check": "Health Check",
   wiki: "Wiki",
   arena: "LLM Arena",
   brain: "Second Brain",

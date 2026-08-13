@@ -103,22 +103,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   return (
-    <div className="flex h-screen flex-col bg-slate-950">
+    <div className="dashboard-shell flex h-screen flex-col bg-slate-950">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-seridian-500 focus:text-white"
+        className="print:hidden sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-seridian-500 focus:text-white"
       >
         Skip to content
       </a>
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="hidden lg:block">
-          <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((p) => !p)} />
+        <div className="print:hidden">
+          <div className="hidden lg:block">
+            <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((p) => !p)} />
+          </div>
         </div>
 
-        <MobileNav
-          open={mobileNavOpen}
-          onClose={() => setMobileNavOpen(false)}
-        />
+        <div className="print:hidden">
+          <MobileNav
+            open={mobileNavOpen}
+            onClose={() => setMobileNavOpen(false)}
+          />
+        </div>
 
         <main
           id="main-content"
@@ -130,7 +134,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         >
           <div
             role="banner"
-            className="flex shrink-0 items-center border-b border-white/5 px-4 py-3 lg:hidden sticky top-0 z-30 bg-slate-950/95 backdrop-blur-sm"
+            className="print:hidden flex shrink-0 items-center border-b border-white/5 px-4 py-3 lg:hidden sticky top-0 z-30 bg-slate-950/95 backdrop-blur-sm"
           >
             <button
               type="button"
@@ -165,7 +169,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <footer
         role="contentinfo"
         className={cn(
-          "relative z-40 flex flex-col gap-2 border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
+          "print:hidden relative z-40 flex flex-col gap-2 border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
           sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
         )}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

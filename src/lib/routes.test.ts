@@ -31,6 +31,7 @@ describe("routes", () => {
     expect(ROUTES.packages).toBe("/packages");
     expect(ROUTES.packagesHealthCheck).toBe("/packages#health-check");
     expect(ROUTES.dashboard.root).toBe("/dashboard");
+    expect(ROUTES.dashboard.healthCheck).toBe("/dashboard/health-check");
     expect(ROUTES.dashboard.settings).toBe("/dashboard/settings");
     expect(ROUTES.dashboard.sync).toBe("/dashboard/sync");
     expect(settingsTabHref("sync")).toBe("/dashboard/settings?tab=sync");

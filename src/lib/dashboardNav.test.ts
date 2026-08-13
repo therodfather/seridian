@@ -61,6 +61,8 @@ describe("dashboard nav", () => {
     expect(hrefs).toContain("/dashboard");
     expect(hrefs).toContain("/dashboard/settings");
     expect(hrefs).toContain("/dashboard/chat");
+    expect(hrefs).toContain("/dashboard/health-check");
+    expect(labels).toContain("Health Check");
     expect(hrefs).not.toContain(ROUTES.dashboard.sync);
     expect(labels).not.toContain("Sync");
     expect(DASHBOARD_REDIRECT_ONLY_HREFS).toContain(ROUTES.dashboard.sync);

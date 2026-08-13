@@ -23,6 +23,7 @@ export const ROUTES = {
     sales: "/dashboard/sales",
     proposals: "/dashboard/proposals",
     contracts: "/dashboard/contracts",
+    healthCheck: "/dashboard/health-check",
     wiki: "/dashboard/wiki",
     arena: "/dashboard/arena",
     brain: "/dashboard/brain",

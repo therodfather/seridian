@@ -179,6 +179,8 @@ export default defineSchema({
       v.literal("linear"),
       v.literal("github"),
       v.literal("netlify"),
+      v.literal("stripe"),
+      v.literal("mercury"),
     ),
     enabled: v.boolean(),
     /** Honest setup state — not a live OAuth health check. */

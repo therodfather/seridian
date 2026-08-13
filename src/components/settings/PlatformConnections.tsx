@@ -1,9 +1,10 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { ExternalLink, GitBranch, Globe } from "lucide-react";
+import { CreditCard, ExternalLink, GitBranch, Globe, Landmark } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
 import { IntegrationsSetupWizard } from "./IntegrationsSetupWizard";
+import { SecretConnectCard } from "./SecretConnectCard";
 import {
   GITHUB_ACTIONS,
   GITHUB_REPO,
@@ -99,8 +100,8 @@ class WizardBoundary extends Component<
           role="alert"
           className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-300"
         >
-          Setup wizard could not load ({this.state.error}). Link cards above still work;
-          deploy the latest Convex functions if this persists.
+          This integration section could not load ({this.state.error}). Link cards above
+          still work; deploy the latest Convex functions if this persists.
         </div>
       );
     }
@@ -155,6 +156,44 @@ export function PlatformConnections({
 
       <WizardBoundary>
         <IntegrationsSetupWizard currentUserId={currentUserId} />
+      </WizardBoundary>
+
+      <div>
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-cyan-400" />
+          Money
+        </h3>
+        <p className="text-xs text-slate-400 mt-1">
+          Paste a credential once, it&apos;s stored in the Convex vault. Disconnect
+          removes it immediately.
+        </p>
+      </div>
+
+      <WizardBoundary>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SecretConnectCard
+            provider="stripe"
+            title="Stripe"
+            description="Webhook secret — powers the payments feed on each client"
+            icon={<CreditCard className="h-5 w-5" />}
+            fieldLabel="Webhook signing secret"
+            fieldPlaceholder="whsec_..."
+            helpText="Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret."
+            helpHref="https://dashboard.stripe.com/webhooks"
+            currentUserId={currentUserId}
+          />
+          <SecretConnectCard
+            provider="mercury"
+            title="Mercury"
+            description="Read-only API token — for pulling bank activity into the dashboard"
+            icon={<Landmark className="h-5 w-5" />}
+            fieldLabel="API token"
+            fieldPlaceholder="Paste your Mercury API token"
+            helpText="Mercury Dashboard → Settings → API → create a read-only token."
+            helpHref="https://mercury.com/dashboard/settings/tokens"
+            currentUserId={currentUserId}
+          />
+        </div>
       </WizardBoundary>
     </div>
   );

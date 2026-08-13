@@ -61,14 +61,22 @@ describe("integrations setup", () => {
     t = convexTest({ schema, modules });
   });
 
-  test("defaults show github/netlify configured and linear not configured", async () => {
+  test("defaults show github/netlify configured and linear/stripe/mercury not configured", async () => {
     const statuses = await t.query(api.integrations.listStatuses, {});
     expect(statuses.map((s) => s.provider)).toEqual([
       "github",
       "netlify",
       "linear",
+      "stripe",
+      "mercury",
     ]);
     expect(statuses.find((s) => s.provider === "linear")?.status).toBe(
+      "not_configured",
+    );
+    expect(statuses.find((s) => s.provider === "stripe")?.status).toBe(
+      "not_configured",
+    );
+    expect(statuses.find((s) => s.provider === "mercury")?.status).toBe(
       "not_configured",
     );
     expect(statuses.find((s) => s.provider === "github")?.status).toBe(
@@ -140,5 +148,99 @@ describe("integrations setup", () => {
       name: "LINEAR_API_KEY",
     });
     expect(vault).toBeNull();
+  });
+
+  test("Stripe connect stores webhook secret and flips status to connected", async () => {
+    const result = await t.mutation(api.integrations.completeStripeSetup, {
+      currentUserId: "admin",
+      webhookSecret: "whsec_abcdef1234567890",
+    });
+    expect(result.success).toBe(true);
+    expect(result.maskedValue).toContain("...");
+
+    const statuses = await t.query(api.integrations.listStatuses, {});
+    const stripe = statuses.find((s) => s.provider === "stripe");
+    expect(stripe?.status).toBe("connected");
+    expect(stripe?.hasSecret).toBe(true);
+    expect(JSON.stringify(statuses)).not.toContain("whsec_abcdef1234567890");
+
+    const webhookSecret = await t.query(
+      internal.integrations.getStripeWebhookSecret,
+      {},
+    );
+    expect(webhookSecret).toBe("whsec_abcdef1234567890");
+  });
+
+  test("Stripe connect rejects a secret without the whsec_ prefix", async () => {
+    await expect(
+      t.mutation(api.integrations.completeStripeSetup, {
+        currentUserId: "admin",
+        webhookSecret: "not-a-real-secret",
+      }),
+    ).rejects.toThrow(/whsec_/);
+  });
+
+  test("Stripe disconnect clears the vault entry", async () => {
+    await t.mutation(api.integrations.completeStripeSetup, {
+      currentUserId: "admin",
+      webhookSecret: "whsec_to_remove_9999",
+    });
+    await t.mutation(api.integrations.disconnectStripe, {
+      currentUserId: "admin",
+    });
+
+    const statuses = await t.query(api.integrations.listStatuses, {});
+    const stripe = statuses.find((s) => s.provider === "stripe");
+    expect(stripe?.status).toBe("not_configured");
+    expect(stripe?.hasSecret).toBe(false);
+
+    const webhookSecret = await t.query(
+      internal.integrations.getStripeWebhookSecret,
+      {},
+    );
+    expect(webhookSecret).toBeNull();
+  });
+
+  test("Mercury connect stores the API token and flips status to connected", async () => {
+    const result = await t.mutation(api.integrations.completeMercurySetup, {
+      currentUserId: "admin",
+      apiToken: "mercury_read_only_token_1234567890",
+    });
+    expect(result.success).toBe(true);
+
+    const statuses = await t.query(api.integrations.listStatuses, {});
+    const mercury = statuses.find((s) => s.provider === "mercury");
+    expect(mercury?.status).toBe("connected");
+    expect(mercury?.hasSecret).toBe(true);
+
+    const vault = await t.query(internal.secrets.getSecretValue, {
+      name: "MERCURY_API_TOKEN",
+    });
+    expect(vault).toBe("mercury_read_only_token_1234567890");
+  });
+
+  test("Mercury connect rejects an obviously-too-short token", async () => {
+    await expect(
+      t.mutation(api.integrations.completeMercurySetup, {
+        currentUserId: "admin",
+        apiToken: "short",
+      }),
+    ).rejects.toThrow(/doesn't look like/);
+  });
+
+  test("non-admin cannot connect Stripe or Mercury", async () => {
+    await expect(
+      t.mutation(api.integrations.completeStripeSetup, {
+        currentUserId: "guest-user",
+        webhookSecret: "whsec_should_fail",
+      }),
+    ).rejects.toThrow(/Unauthorized/);
+
+    await expect(
+      t.mutation(api.integrations.completeMercurySetup, {
+        currentUserId: "guest-user",
+        apiToken: "should_fail_too_1234567890",
+      }),
+    ).rejects.toThrow(/Unauthorized/);
   });
 });

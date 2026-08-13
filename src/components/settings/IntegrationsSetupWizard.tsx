@@ -195,11 +195,18 @@ export function IntegrationsSetupWizard({
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        {(statuses ?? [
-          { provider: "github" as const, enabled: true, status: "configured" as const, hasSecret: false },
-          { provider: "netlify" as const, enabled: true, status: "configured" as const, hasSecret: false },
-          { provider: "linear" as const, enabled: false, status: "not_configured" as const, hasSecret: false },
-        ]).map((row) => {
+        {(
+          statuses?.filter(
+            (row): row is typeof row & { provider: Provider } =>
+              row.provider === "github" ||
+              row.provider === "netlify" ||
+              row.provider === "linear",
+          ) ?? [
+            { provider: "github" as const, enabled: true, status: "configured" as const, hasSecret: false },
+            { provider: "netlify" as const, enabled: true, status: "configured" as const, hasSecret: false },
+            { provider: "linear" as const, enabled: false, status: "not_configured" as const, hasSecret: false },
+          ]
+        ).map((row) => {
           const meta = PROVIDER_META[row.provider];
           const badge = statusBadge(row.status, row.hasSecret);
           return (

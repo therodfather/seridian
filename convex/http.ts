@@ -11,7 +11,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     const signature = req.headers.get("stripe-signature");
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = await ctx.runQuery(
+      internal.integrations.getStripeWebhookSecret,
+      {},
+    );
     if (!signature || !webhookSecret) {
       return new Response("Webhook not configured", { status: 500 });
     }

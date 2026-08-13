@@ -43,6 +43,8 @@ export function SyncCard({
   details,
   syncLabel,
 }: SyncCardProps) {
+  const isSynced = connected && !!lastSynced;
+
   return (
     <div
       className={cn(
@@ -62,7 +64,7 @@ export function SyncCard({
                 <span
                   className={cn(
                     "h-1.5 w-1.5 rounded-full",
-                    connected ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" : "bg-slate-500"
+                    isSynced ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" : "bg-slate-500"
                   )}
                 />
                 <span className="text-[10px] font-semibold text-slate-400">
@@ -76,6 +78,7 @@ export function SyncCard({
             type="button"
             onClick={onSync}
             disabled={syncing}
+            aria-label={syncing ? `Syncing ${title}` : `Sync ${title}`}
             className={cn(
               "flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold transition-all shrink-0",
               syncing

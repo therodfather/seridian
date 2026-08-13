@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
-import { Id } from "convex/_generated/dataModel";
+import { Doc, Id } from "convex/_generated/dataModel";
 import {
   Badge,
   Button,
@@ -48,6 +48,9 @@ import {
   Folder,
   FileText,
   PenLine,
+  ArrowLeft,
+  Search,
+  Trash2,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -61,6 +64,8 @@ const INFLUENCE_CONFIG = {
   blocker: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "Blocker" },
   neutral: { color: "bg-slate-500/10 text-slate-400 border-slate-500/20", label: "Neutral" },
 } as const;
+
+type KeyPerson = NonNullable<Doc<"clients">["keyPersonnel"]>[number];
 
 export default function ClientDetailPage({
   params,
@@ -87,6 +92,10 @@ export default function ClientDetailPage({
   const [personnelModalOpen, setPersonnelModalOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
 
+  // Personnel filter & search
+  const [personnelSearch, setPersonnelSearch] = useState("");
+  const [influenceFilter, setInfluenceFilter] = useState<string>("all");
+
   // Individual Dossier states
   const [pName, setPName] = useState("");
   const [pRole, setPRole] = useState("");
@@ -100,11 +109,6 @@ export default function ClientDetailPage({
   const [pInterests, setPInterests] = useState("");
   const [pBgNotes, setPBgNotes] = useState("");
   const [pBgStatus, setPBgStatus] = useState<"pending" | "verified" | "flagged" | "none">("none");
-
-  // Corporate social media edit states
-  const [compLinkedin, setCompLinkedin] = useState("");
-  const [compTwitter, setCompTwitter] = useState("");
-  const [compGithub, setCompGithub] = useState("");
 
   // State for Downstream Client ("Their Clients")
   const [dsName, setDsName] = useState("");
@@ -126,7 +130,13 @@ export default function ClientDetailPage({
     return (
       <div className="space-y-6 p-1">
         <Skeleton className="h-10 w-48 rounded-lg" />
-        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     );
   }
@@ -144,20 +154,17 @@ export default function ClientDetailPage({
 
   const status = STATUS_CONFIG[client.status];
 
-  // Save Corporate Social Media Hub links
-  async function handleSaveCorporateSocials() {
-    try {
-      await updateClient({
-        clientId: client!._id,
-        companyLinkedin: compLinkedin || undefined,
-        companyTwitter: compTwitter || undefined,
-        companyGithub: compGithub || undefined,
-      });
-      toastMutationSuccess("Company socials saved");
-    } catch (error) {
-      toastMutationError(error, "Failed to save company socials");
-    }
-  }
+  const filteredPersonnel = (client.keyPersonnel ?? []).filter((person) => {
+    const q = personnelSearch.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      person.name.toLowerCase().includes(q) ||
+      person.role.toLowerCase().includes(q) ||
+      (person.email?.toLowerCase().includes(q) ?? false);
+    const matchesInfluence =
+      influenceFilter === "all" || person.influenceLevel === influenceFilter;
+    return matchesSearch && matchesInfluence;
+  });
 
   // Handlers for Employee / Who's Who Dossiers
   async function handleSavePersonnel() {
@@ -202,6 +209,20 @@ export default function ClientDetailPage({
     }
   }
 
+  async function handleDeletePersonnel(personId: string) {
+    const current = client?.keyPersonnel ?? [];
+    const updatedList = current.filter((p) => p.id !== personId);
+    try {
+      await updateClient({
+        clientId: client!._id,
+        keyPersonnel: updatedList,
+      });
+      toastMutationSuccess("Personnel dossier removed");
+    } catch (error) {
+      toastMutationError(error, "Failed to remove dossier");
+    }
+  }
+
   function resetPersonnelForm() {
     setEditingPersonId(null);
     setPName("");
@@ -218,7 +239,7 @@ export default function ClientDetailPage({
     setPBgStatus("none");
   }
 
-  function handleOpenEditPersonnel(p: any) {
+  function handleOpenEditPersonnel(p: KeyPerson) {
     setEditingPersonId(p.id);
     setPName(p.name);
     setPRole(p.role);
@@ -262,6 +283,20 @@ export default function ClientDetailPage({
     }
   }
 
+  async function handleDeleteDownstreamClient(index: number) {
+    const current = client?.downstreamClients ?? [];
+    const updatedList = current.filter((_, idx) => idx !== index);
+    try {
+      await updateClient({
+        clientId: client!._id,
+        downstreamClients: updatedList,
+      });
+      toastMutationSuccess("Downstream client removed");
+    } catch (error) {
+      toastMutationError(error, "Failed to remove downstream client");
+    }
+  }
+
   return (
     <div className="space-y-6 p-1">
       {/* Top Navigation */}
@@ -270,7 +305,7 @@ export default function ClientDetailPage({
           href="/dashboard/clients"
           className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-cyan-500/20 hover:text-white"
         >
-          &larr; Back to Clients
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to Clients
         </Link>
         <Button type="button" size="sm" onClick={() => setEditOpen(true)} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold">
           Edit Corporate Profile
@@ -314,23 +349,23 @@ export default function ClientDetailPage({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-2">Company Web & Social Hub:</span>
             {client.website && (
-              <a href={client.website.startsWith("http") ? client.website : `https://${client.website}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-cyan-400 hover:bg-white/10 transition-all">
-                <Globe className="w-3.5 h-3.5 text-cyan-400" /> Website <ExternalLink className="w-3 h-3 ml-0.5" />
+              <a href={client.website.startsWith("http") ? client.website : `https://${client.website}`} target="_blank" rel="noreferrer" aria-label="Company website" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-cyan-400 hover:bg-white/10 transition-all">
+                <Globe className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" /> Website <ExternalLink className="w-3 h-3 ml-0.5" aria-hidden="true" />
               </a>
             )}
             {client.companyLinkedin && (
-              <a href={client.companyLinkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 transition-all">
-                <Link2 className="w-3.5 h-3.5 text-cyan-400" /> LinkedIn <ExternalLink className="w-3 h-3 ml-0.5" />
+              <a href={client.companyLinkedin} target="_blank" rel="noreferrer" aria-label="Company LinkedIn" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 transition-all">
+                <Link2 className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" /> LinkedIn <ExternalLink className="w-3 h-3 ml-0.5" aria-hidden="true" />
               </a>
             )}
             {client.companyTwitter && (
-              <a href={client.companyTwitter} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/20 text-sky-300 hover:bg-sky-500/20 transition-all">
-                <Link2 className="w-3.5 h-3.5 text-sky-400" /> Twitter/X <ExternalLink className="w-3 h-3 ml-0.5" />
+              <a href={client.companyTwitter} target="_blank" rel="noreferrer" aria-label="Company Twitter" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/20 text-sky-300 hover:bg-sky-500/20 transition-all">
+                <Link2 className="w-3.5 h-3.5 text-sky-400" aria-hidden="true" /> Twitter/X <ExternalLink className="w-3 h-3 ml-0.5" aria-hidden="true" />
               </a>
             )}
             {client.companyGithub && (
-              <a href={client.companyGithub} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition-all">
-                <Link2 className="w-3.5 h-3.5 text-purple-400" /> GitHub <ExternalLink className="w-3 h-3 ml-0.5" />
+              <a href={client.companyGithub} target="_blank" rel="noreferrer" aria-label="Company GitHub" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition-all">
+                <Link2 className="w-3.5 h-3.5 text-purple-400" aria-hidden="true" /> GitHub <ExternalLink className="w-3 h-3 ml-0.5" aria-hidden="true" />
               </a>
             )}
           </div>
@@ -362,13 +397,13 @@ export default function ClientDetailPage({
       {/* Tabs Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList variant="line" className="max-w-full gap-2 overflow-x-auto border-b border-white/[0.08]">
-          <TabsTrigger value="network" className="gap-2 text-xs font-semibold">
-            <Network className="w-4 h-4 text-cyan-400" /> Personnel Social & Background Dossiers
+          <TabsTrigger value="network" className="shrink-0 gap-2 text-xs font-semibold">
+            <Network className="h-4 w-4 text-cyan-400" aria-hidden="true" /> Personnel Social & Background Dossiers
           </TabsTrigger>
-          <TabsTrigger value="their_clients" className="gap-2 text-xs font-semibold">
-            <Share2 className="w-4 h-4 text-emerald-400" /> Client's Client Network ({client.downstreamClients?.length ?? 0})
+          <TabsTrigger value="their_clients" className="gap-2 text-xs font-semibold shrink-0">
+            <Share2 className="w-4 h-4 text-emerald-400" aria-hidden="true" /> Network ({client.downstreamClients?.length ?? 0})
           </TabsTrigger>
-          <TabsTrigger value="deals" className="gap-2 text-xs">
+          <TabsTrigger value="deals" className="gap-2 text-xs shrink-0">
             Deals ({deals?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="files" className="gap-2 text-xs">
@@ -387,10 +422,10 @@ export default function ClientDetailPage({
 
         {/* TAB 1: WHO'S WHO PERSONNEL & BACKGROUND DOSSIERS */}
         <TabsContent value="network" className="space-y-6 pt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-white">Individual Employee Social Media & Intelligence Dossiers</h3>
-              <p className="text-xs text-slate-400">Personal social media handles (LinkedIn, Twitter, GitHub, Website), influence mapping, and background audit records.</p>
+              <h2 className="text-sm font-semibold text-white">Personnel dossiers</h2>
+              <p className="text-xs text-slate-400">Social handles, influence mapping, and background audit records.</p>
             </div>
             <Button
               type="button"
@@ -399,11 +434,39 @@ export default function ClientDetailPage({
                 resetPersonnelForm();
                 setPersonnelModalOpen(true);
               }}
-              className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs"
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs self-start"
             >
-              <UserCheck className="w-3.5 h-3.5 mr-1" /> Add Personnel Dossier
+              <UserCheck className="w-3.5 h-3.5 mr-1" aria-hidden="true" /> Add Personnel Dossier
             </Button>
           </div>
+
+          {(client.keyPersonnel ?? []).length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={personnelSearch}
+                  onChange={(e) => setPersonnelSearch(e.target.value)}
+                  placeholder="Search by name, role, or email..."
+                  aria-label="Search personnel"
+                  className="pl-9 h-9 bg-white/5 border-white/10 text-xs text-white"
+                />
+              </div>
+              <Select value={influenceFilter} onValueChange={setInfluenceFilter}>
+                <SelectTrigger aria-label="Filter by influence" className="h-9 w-full sm:w-[180px] bg-white/5 border-white/10 text-xs text-slate-300">
+                  <SelectValue placeholder="Influence" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0c1222] border-white/10">
+                  <SelectItem value="all">All influence levels</SelectItem>
+                  <SelectItem value="champion">Champion</SelectItem>
+                  <SelectItem value="decision_maker">Decision Maker</SelectItem>
+                  <SelectItem value="blocker">Blocker</SelectItem>
+                  <SelectItem value="neutral">Neutral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {(client.keyPersonnel ?? []).length === 0 ? (
@@ -419,8 +482,12 @@ export default function ClientDetailPage({
                   + Add first personnel profile
                 </Button>
               </div>
+            ) : filteredPersonnel.length === 0 ? (
+              <div className="col-span-full h-32 flex items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
+                No personnel match the current search or filter.
+              </div>
             ) : (
-              client.keyPersonnel?.map((person) => {
+              filteredPersonnel.map((person) => {
                 const influence = INFLUENCE_CONFIG[person.influenceLevel || "neutral"];
                 return (
                   <div key={person.id} className="p-5 rounded-xl border border-white/[0.08] bg-[#0c1222] flex flex-col justify-between space-y-4 shadow-lg">
@@ -431,7 +498,7 @@ export default function ClientDetailPage({
                             {person.name.charAt(0)}
                           </div>
                           <div>
-                            <h4 className="text-sm font-bold text-white">{person.name}</h4>
+                            <h3 className="text-sm font-bold text-white">{person.name}</h3>
                             <p className="text-xs text-slate-400">{person.role}</p>
                           </div>
                         </div>
@@ -448,23 +515,23 @@ export default function ClientDetailPage({
                         {/* Individual Social Media Icons */}
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {person.linkedin && (
-                            <a href={person.linkedin} target="_blank" rel="noreferrer" className="p-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20" title="LinkedIn">
-                              <Link2 className="w-3.5 h-3.5" />
+                            <a href={person.linkedin} target="_blank" rel="noreferrer" aria-label={`${person.name} LinkedIn`} className="p-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20">
+                              <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
                             </a>
                           )}
                           {person.twitter && (
-                            <a href={person.twitter} target="_blank" rel="noreferrer" className="p-1 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20" title="Twitter/X">
-                              <Link2 className="w-3.5 h-3.5" />
+                            <a href={person.twitter} target="_blank" rel="noreferrer" aria-label={`${person.name} Twitter`} className="p-1 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20">
+                              <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
                             </a>
                           )}
                           {person.github && (
-                            <a href={person.github} target="_blank" rel="noreferrer" className="p-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20" title="GitHub">
-                              <Link2 className="w-3.5 h-3.5" />
+                            <a href={person.github} target="_blank" rel="noreferrer" aria-label={`${person.name} GitHub`} className="p-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20">
+                              <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
                             </a>
                           )}
                           {person.personalWebsite && (
-                            <a href={person.personalWebsite} target="_blank" rel="noreferrer" className="p-1 rounded bg-white/10 text-slate-300 border border-white/20 hover:bg-white/20" title="Personal Site">
-                              <Globe className="w-3.5 h-3.5" />
+                            <a href={person.personalWebsite} target="_blank" rel="noreferrer" aria-label={`${person.name} website`} className="p-1 rounded bg-white/10 text-slate-300 border border-white/20 hover:bg-white/20">
+                              <Globe className="w-3.5 h-3.5" aria-hidden="true" />
                             </a>
                           )}
                         </div>
@@ -506,15 +573,31 @@ export default function ClientDetailPage({
                         </div>
                         {person.backgroundCheckNotes && (
                           <p className="text-[11px] text-slate-400 mt-1 bg-white/[0.02] p-2 rounded border border-white/[0.04] italic">
-                            "{person.backgroundCheckNotes}"
+                            &ldquo;{person.backgroundCheckNotes}&rdquo;
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <Button type="button" variant="outline" size="sm" onClick={() => handleOpenEditPersonnel(person)} className="w-full text-xs border-white/10">
-                      Update Dossier
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => handleOpenEditPersonnel(person)} className="flex-1 text-xs border-white/10">
+                        Update Dossier
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Remove ${person.name}`}
+                        onClick={() => {
+                          if (confirm(`Remove ${person.name} from this client?`)) {
+                            void handleDeletePersonnel(person.id);
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })
@@ -531,16 +614,18 @@ export default function ClientDetailPage({
                   value={dsName}
                   onChange={(e) => setDsName(e.target.value)}
                   placeholder="Downstream Company Name"
+                  aria-label="Downstream company name"
                   className="bg-white/5 border-white/10 text-xs text-white"
                 />
                 <Input
                   value={dsIndustry}
                   onChange={(e) => setDsIndustry(e.target.value)}
                   placeholder="Industry / Vertical"
+                  aria-label="Downstream industry"
                   className="bg-white/5 border-white/10 text-xs text-white"
                 />
                 <Select value={dsRelType} onValueChange={setDsRelType}>
-                  <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Relationship type" className="bg-white/5 border-white/10 text-white text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Key Account">Key Account</SelectItem>
                     <SelectItem value="Vendor">Vendor</SelectItem>
@@ -563,11 +648,27 @@ export default function ClientDetailPage({
               ) : (
                 client.downstreamClients?.map((ds, idx) => (
                   <div key={idx} className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-white">{ds.name}</h4>
-                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
-                        {ds.relationshipType}
-                      </Badge>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold text-white truncate">{ds.name}</h3>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
+                          {ds.relationshipType}
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${ds.name}`}
+                          onClick={() => {
+                            if (confirm(`Remove ${ds.name} from the downstream network?`)) {
+                              void handleDeleteDownstreamClient(idx);
+                            }
+                          }}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 w-7 p-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        </Button>
+                      </div>
                     </div>
                     {ds.industry && <p className="text-xs text-slate-400">{ds.industry}</p>}
                   </div>
@@ -583,8 +684,11 @@ export default function ClientDetailPage({
               <Skeleton className="h-16 rounded-lg" />
             </div>
           ) : deals.length === 0 ? (
-            <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
-              No deals linked to this client yet.
+            <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
+              <p>No deals linked to this client yet.</p>
+              <Link href="/dashboard/sales" className="text-cyan-400 hover:underline">
+                Open sales pipeline
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
@@ -668,7 +772,12 @@ export default function ClientDetailPage({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-slate-300 font-medium">Influence & Buying Role</label>
-                <Select value={pInfluence} onValueChange={(v) => setPInfluence(v as any)}>
+                <Select
+                  value={pInfluence}
+                  onValueChange={(v) =>
+                    setPInfluence(v as "champion" | "decision_maker" | "blocker" | "neutral")
+                  }
+                >
                   <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="champion">Champion (Internal Supporter)</SelectItem>
@@ -680,7 +789,12 @@ export default function ClientDetailPage({
               </div>
               <div className="space-y-1">
                 <label className="text-slate-300 font-medium">Background Check Status</label>
-                <Select value={pBgStatus} onValueChange={(v) => setPBgStatus(v as any)}>
+                <Select
+                  value={pBgStatus}
+                  onValueChange={(v) =>
+                    setPBgStatus(v as "pending" | "verified" | "flagged" | "none")
+                  }
+                >
                   <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None / Unchecked</SelectItem>

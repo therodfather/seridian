@@ -91,7 +91,8 @@ export function ChannelList({
         <button
           type="button"
           onClick={onCreateChannel}
-          className="flex h-6 w-6 items-center justify-center rounded-md text-slate-500 hover:bg-white/[0.05] hover:text-slate-300 transition-colors text-xs"
+          aria-label="Create channel"
+          className="flex h-6 w-6 items-center justify-center rounded-md text-xs text-slate-500 transition-colors hover:bg-white/[0.05] hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
         >
           +
         </button>
@@ -108,8 +109,15 @@ export function ChannelList({
             ))}
           </div>
         ) : channels.length === 0 ? (
-          <div className="px-3 py-8 text-center text-xs text-slate-600">
-            No channels yet
+          <div className="px-3 py-8 text-center text-xs text-slate-500">
+            <p>No channels yet</p>
+            <button
+              type="button"
+              onClick={onCreateChannel}
+              className="mt-3 rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+            >
+              Create a channel
+            </button>
           </div>
         ) : (
           <>

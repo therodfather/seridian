@@ -131,6 +131,9 @@ export function PlatformConnections({
         </p>
       </div>
 
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        Links
+      </p>
       <div className="grid gap-4 md:grid-cols-2">
         <ConnectionCard
           title="GitHub"

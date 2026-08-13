@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
@@ -22,6 +23,7 @@ import {
   DialogTitle,
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 const PRIORITY_CONFIG = {
   urgent: { color: "bg-red-500/15 text-red-400 border-red-500/20", label: "Urgent" },
@@ -106,8 +108,9 @@ export default function IssueDetailPage({
         labels,
       });
       setEditOpen(false);
-    } catch {
-      // silent
+      toastMutationSuccess("Issue updated");
+    } catch (err) {
+      toastMutationError(err, "Failed to save issue");
     } finally {
       setSaving(false);
     }
@@ -115,17 +118,33 @@ export default function IssueDetailPage({
 
   if (issue === undefined) {
     return (
-      <div className="space-y-6 p-1">
-        <Skeleton className="h-10 w-48 rounded-lg" />
-        <Skeleton className="h-64 rounded-xl" />
+      <div className="space-y-6 p-1" aria-busy="true" aria-live="polite">
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="h-8 w-40 rounded-lg" />
+          <Skeleton className="h-8 w-24 rounded-lg" />
+        </div>
+        <Skeleton className="h-48 rounded-xl" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-32 rounded-xl" />
       </div>
     );
   }
 
   if (issue === null) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        Issue not found.
+      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.08] text-center p-6">
+        <p className="text-sm font-medium text-slate-300">Issue not found</p>
+        <p className="text-xs text-slate-500">This issue may have been deleted or the link is invalid.</p>
+        <Link
+          href="/dashboard/issues"
+          className="text-xs font-semibold text-cyan-400 hover:underline"
+        >
+          Back to Issues
+        </Link>
       </div>
     );
   }
@@ -133,112 +152,130 @@ export default function IssueDetailPage({
   const priority = PRIORITY_CONFIG[issue.priority];
   const status = STATUS_CONFIG[issue.status];
 
+  async function handleQuickStatus(newStatus: "backlog" | "todo" | "in_progress" | "in_review" | "done") {
+    if (!issue) return;
+    try {
+      await updateIssue({
+        issueId: issue._id,
+        status: newStatus,
+      });
+      toastMutationSuccess(`Status updated to ${STATUS_CONFIG[newStatus].label}`);
+    } catch (err) {
+      toastMutationError(err, "Failed to update status");
+    }
+  }
+
   return (
     <div className="space-y-6 p-1">
-      <div className="flex items-center gap-3">
-        <a
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-seridian-500/20 hover:text-white"
+      {/* Top Header Navigation */}
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          href="/dashboard/issues"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-cyan-500/20 hover:text-white"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-          Back
-        </a>
-        <div className="flex-1" />
-        <Button type="button" size="sm" onClick={openEdit}>
+          &larr; Back to Issues Board
+        </Link>
+        <Button type="button" size="sm" onClick={openEdit} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs">
           Edit Issue
         </Button>
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-6">
+      {/* Main Issue Card Banner */}
+      <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-6 space-y-6">
         <div className="flex items-start gap-4">
           <span
             className={cn(
-              "inline-flex h-7 min-w-[28px] shrink-0 items-center justify-center rounded-md border px-1.5 text-xs font-bold tabular-nums",
+              "inline-flex h-8 min-w-[32px] shrink-0 items-center justify-center rounded-lg border px-2 text-xs font-bold tabular-nums",
               priority.color
             )}
           >
             {issue.priority === "urgent" ? "!!" : issue.priority === "high" ? "!" : issue.priority === "medium" ? "~" : issue.priority === "low" ? "\u2193" : "\u2014"}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold text-white">{issue.title}</h1>
-              <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0", status.color)}>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-white leading-snug">{issue.title}</h1>
+              <Badge variant="secondary" className={cn("text-xs px-2.5 py-0.5 border font-semibold", status.color)}>
                 {status.label}
               </Badge>
             </div>
             {issue.identifier && (
-              <p className="mt-1 text-xs text-slate-500">{issue.identifier}</p>
+              <p className="text-xs font-mono text-cyan-400">{issue.identifier}</p>
             )}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Priority</p>
-            <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0", priority.color)}>
+        {/* Quick Status Workflow Action Triggers */}
+        <div className="pt-4 border-t border-white/[0.06] flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Move Status:</span>
+          {issue.status !== "backlog" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => handleQuickStatus("backlog")} className="text-xs border-white/10 h-7 text-slate-300">
+              Backlog
+            </Button>
+          )}
+          {issue.status !== "todo" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => handleQuickStatus("todo")} className="text-xs border-white/10 h-7 text-slate-300">
+              To Todo
+            </Button>
+          )}
+          {issue.status !== "in_progress" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => handleQuickStatus("in_progress")} className="text-xs border-yellow-500/20 bg-yellow-500/10 text-yellow-300 h-7">
+              In Progress
+            </Button>
+          )}
+          {issue.status !== "in_review" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => handleQuickStatus("in_review")} className="text-xs border-purple-500/20 bg-purple-500/10 text-purple-300 h-7">
+              In Review
+            </Button>
+          )}
+          {issue.status !== "done" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => handleQuickStatus("done")} className="text-xs border-emerald-500/20 bg-emerald-500/10 text-emerald-300 h-7">
+              Mark Done
+            </Button>
+          )}
+        </div>
+
+        {/* Metadata grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-4 border-t border-white/[0.06]">
+          <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Priority Level</p>
+            <Badge variant="secondary" className={cn("text-[10px] px-2 py-0.5 border font-semibold", priority.color)}>
               {priority.label}
             </Badge>
           </div>
 
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Status</p>
-            <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0", status.color)}>
-              {status.label}
-            </Badge>
+          <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Assignee</p>
+            <p className="text-xs font-semibold text-slate-200">{issue.assignee || "Unassigned"}</p>
           </div>
 
-          {issue.assignee && (
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Assignee</p>
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-5 rounded-full bg-slate-700/50 flex items-center justify-center text-[9px] font-medium text-slate-400 uppercase">
-                  {issue.assignee.charAt(0)}
-                </div>
-                <span className="text-sm text-slate-300">{issue.assignee}</span>
-              </div>
-            </div>
-          )}
-
-          {client && (
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Client</p>
-              <a
+          <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Associated Client</p>
+            {client ? (
+              <Link
                 href={`/dashboard/clients/${client._id}`}
-                className="inline-flex items-center gap-1.5 text-sm text-seridian-400 hover:text-seridian-300 transition-colors"
+                className="text-xs font-semibold text-cyan-400 hover:underline block truncate"
               >
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-seridian-500/10 text-[10px] font-semibold text-seridian-400 uppercase">
-                  {client.name.charAt(0)}
-                </span>
                 {client.name}
-              </a>
-            </div>
-          )}
+              </Link>
+            ) : (
+              <p className="text-xs text-slate-500">None</p>
+            )}
+          </div>
 
-          {issue.dueDate && (
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Due Date</p>
-              <p className="text-sm text-slate-300">{formatDate(issue.dueDate)}</p>
-            </div>
-          )}
-
-          {issue.linearId && (
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Linear ID</p>
-              <p className="text-sm text-slate-400 font-mono">{issue.linearId}</p>
-            </div>
-          )}
+          <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Due Date</p>
+            <p className="text-xs font-semibold text-slate-200">{issue.dueDate ? formatDate(issue.dueDate) : "None"}</p>
+          </div>
         </div>
 
         {issue.labels.length > 0 && (
-          <div className="mt-6 space-y-2">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Labels</p>
+          <div className="pt-3 border-t border-white/[0.06] space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Labels & Tags</p>
             <div className="flex flex-wrap gap-1.5">
               {issue.labels.map((label) => (
                 <span
                   key={label}
-                  className="inline-flex items-center rounded-md bg-white/5 px-2 py-0.5 text-xs text-slate-400 border border-white/[0.06]"
+                  className="inline-flex items-center rounded-md bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300 border border-white/10"
                 >
                   {label}
                 </span>
@@ -247,10 +284,10 @@ export default function IssueDetailPage({
           </div>
         )}
 
-        <div className="mt-6">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Description</p>
-          <div className="mt-2 whitespace-pre-wrap rounded-lg bg-white/[0.02] p-4 text-sm leading-relaxed text-slate-300">
-            {issue.description}
+        <div className="pt-4 border-t border-white/[0.06] space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Issue Description</p>
+          <div className="whitespace-pre-wrap rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-sm leading-relaxed text-slate-200">
+            {issue.description || "No description provided."}
           </div>
         </div>
       </div>

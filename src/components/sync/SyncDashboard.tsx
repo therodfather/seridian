@@ -62,17 +62,17 @@ export function SyncDashboard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 flex-wrap">
-          <RefreshCw className="h-5 w-5 text-slate-400 shrink-0" />
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap items-center gap-3">
+          <RefreshCw className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
           {statsLoading ? (
-            <span className="text-sm text-slate-500">Loading sync stats…</span>
+            <span className="h-4 w-48 animate-pulse rounded bg-white/[0.06]" aria-hidden="true" />
           ) : (
             <>
               <span className="text-sm text-slate-400">
                 {githubIssues} GitHub · {linearIssues} Linear issues
               </span>
-              <span className="text-white/10">|</span>
+              <span className="hidden text-white/10 sm:inline" aria-hidden="true">|</span>
               <span className="text-sm text-slate-400">
                 {githubProjects} GitHub projects · {linearTeams + linearProjects} Linear projects/teams
               </span>
@@ -80,19 +80,24 @@ export function SyncDashboard() {
           )}
         </div>
         <Button
+          type="button"
           onClick={handleSyncAll}
           disabled={syncingAll || statsLoading}
           size="sm"
-          className="bg-seridian-500 text-white hover:bg-seridian-400"
+          className="bg-seridian-500 text-white hover:bg-seridian-400 self-start sm:self-auto"
         >
-          <RefreshCw className={`mr-2 h-3.5 w-3.5 ${syncingAll ? "animate-spin" : ""}`} />
+          {syncingAll ? (
+            <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <RefreshCw className="mr-2 h-3.5 w-3.5" aria-hidden="true" />
+          )}
           {syncingAll ? "Syncing…" : "Sync All"}
         </Button>
       </div>
 
       {lastResult && (
         <div
-          role="status"
+          role={lastResult.type === "error" ? "alert" : "status"}
           className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
             lastResult.type === "success"
               ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"

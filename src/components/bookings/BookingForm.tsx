@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
-import { Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-kit";
+import { Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bytecats/ui-kit";
 import { MultiStepForm, Field, FormGrid, FormSection } from "@/components/ui/form";
 
 type Booking = Doc<"bookings">;
@@ -30,10 +30,12 @@ export function BookingForm({ booking, defaultDate, onSuccess, onCancel }: Booki
   const [meetingUrl, setMeetingUrl] = useState(booking?.meetingUrl ?? "");
   const [notes, setNotes] = useState(booking?.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {
     if (!title.trim() || !startTime || !endTime || !clientId) return;
     setSaving(true);
+    setError(null);
     try {
       const payload = {
         title: title.trim(),
@@ -51,6 +53,8 @@ export function BookingForm({ booking, defaultDate, onSuccess, onCancel }: Booki
         await createBooking(payload);
       }
       onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save booking");
     } finally {
       setSaving(false);
     }
@@ -118,11 +122,13 @@ export function BookingForm({ booking, defaultDate, onSuccess, onCancel }: Booki
   ];
 
   return (
-    <DialogContent className="max-w-lg border-white/[0.06] bg-[#0c1222]">
-      <DialogHeader>
-        <DialogTitle className="text-white">{booking ? "Edit Booking" : "New Booking"}</DialogTitle>
-      </DialogHeader>
+    <div className="space-y-3">
+      {error && (
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {error}
+        </div>
+      )}
       <MultiStepForm steps={steps} onSubmit={handleSubmit} onCancel={onCancel} submitting={saving} submitLabel={booking ? "Update" : "Create Booking"} />
-    </DialogContent>
+    </div>
   );
 }

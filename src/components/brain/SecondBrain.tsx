@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
-import { Button, Input, Textarea } from "@bytecats/ui-kit";
+import { Button, Input, Textarea, Skeleton } from "@bytecats/ui-kit";
 import {
   Brain,
   Plus,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { MentalModels } from "./MentalModels";
 import { EntityGraph } from "./EntityGraph";
+import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 interface SecondBrainProps {
   userId: string;
@@ -106,10 +107,12 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
         createdBy: userId,
       });
       setBankId(id);
+      toastMutationSuccess("Second Brain created");
     } catch (error) {
       setCreateError(
         error instanceof Error ? error.message : "Failed to create brain",
       );
+      toastMutationError(error, "Failed to create memory bank");
     } finally {
       setIsCreatingBank(false);
     }
@@ -127,8 +130,9 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
       });
       setNewMemoryContent("");
       setShowAddForm(false);
+      toastMutationSuccess("Memory retained");
     } catch (error) {
-      console.error("Failed to retain memory:", error);
+      toastMutationError(error, "Failed to save memory");
     } finally {
       setIsRetaining(false);
     }
@@ -158,23 +162,30 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
 
   if (!banks) {
     return (
-      <div className="bg-[#070b14] rounded-xl border border-white/[0.08] p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+      <div className="space-y-3 p-4">
+        <Skeleton className="h-9 w-full rounded-lg bg-white/10" />
+        <div className="flex gap-2">
+          <Skeleton className="h-7 w-24 rounded bg-white/10" />
+          <Skeleton className="h-7 w-28 rounded bg-white/10" />
+        </div>
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-lg bg-white/5" />
+        ))}
       </div>
     );
   }
 
   if (!bankId) {
     return (
-      <div className="bg-[#070b14] rounded-xl border border-white/[0.08] p-8 flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <div className="w-14 h-14 rounded-full bg-cyan-400/10 flex items-center justify-center">
-          <Brain className="w-7 h-7 text-cyan-400" />
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-8">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400/10">
+          <Brain className="h-7 w-7 text-cyan-400" aria-hidden="true" />
         </div>
         <div className="text-center">
-          <h3 className="text-white font-semibold text-lg">
+          <h2 className="text-lg font-semibold text-white">
             {userName}&apos;s Second Brain
-          </h3>
-          <p className="text-slate-400 text-sm mt-1 max-w-xs">
+          </h2>
+          <p className="mt-1 max-w-xs text-sm text-slate-400">
             Create your private memory bank to retain facts, observations, and
             mental models.
           </p>
@@ -183,14 +194,15 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
           <p className="text-red-400 text-xs text-center max-w-xs">{createError}</p>
         )}
         <Button
+          type="button"
           onClick={handleCreateBank}
           disabled={isCreatingBank}
-          className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 text-sm"
+          className="bg-cyan-500 px-4 py-2 text-sm text-black hover:bg-cyan-400"
         >
           {isCreatingBank ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2 inline" />
+            <Loader2 className="mr-2 inline h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <Brain className="w-4 h-4 mr-2 inline" />
+            <Brain className="mr-2 inline h-4 w-4" aria-hidden="true" />
           )}
           {createError ? "Retry" : "Create Brain"}
         </Button>
@@ -199,53 +211,57 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
   }
 
   return (
-    <div className="bg-[#070b14] rounded-xl border border-white/[0.08] overflow-hidden">
-      <div className="p-4 border-b border-white/[0.08]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-white font-semibold">{userName}&apos;s Brain</h3>
+    <div className="overflow-hidden">
+      <div className="border-b border-white/[0.08] p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Brain className="h-5 w-5 shrink-0 text-cyan-400" aria-hidden="true" />
+            <h2 className="truncate font-semibold text-white">{userName}&apos;s Brain</h2>
           </div>
           <Button
+            type="button"
             onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-1.5 flex items-center gap-1"
+            className="flex shrink-0 items-center gap-1 bg-cyan-500 px-3 py-1.5 text-xs text-black hover:bg-cyan-400"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             Retain
           </Button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" aria-hidden="true" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search memories..."
-            className="bg-[#0c1222] border-white/[0.08] text-white text-xs pl-8 py-1.5 focus:border-cyan-400"
+            aria-label="Search memories"
+            className="border-white/[0.08] bg-[#0c1222] py-1.5 pl-8 text-xs text-white focus:border-cyan-400"
           />
         </div>
 
-        <div className="flex gap-1 mt-3">
+        <div className="mt-3 flex gap-1">
           <button
+            type="button"
             onClick={() => setActiveTab("all")}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
+            className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 ${
               activeTab === "all"
                 ? "bg-white/10 text-white"
                 : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <Brain className="w-3.5 h-3.5" />
+            <Brain className="h-3.5 w-3.5" aria-hidden="true" />
             All Memories
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("mental_models")}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
+            className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 ${
               activeTab === "mental_models"
                 ? "bg-amber-400/10 text-amber-400"
                 : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <Lightbulb className="w-3.5 h-3.5" />
+            <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
             Mental Models
           </button>
           <button
@@ -274,6 +290,7 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
                 {MEMORY_TYPES.map((t) => (
                   <button
                     key={t.value}
+                    type="button"
                     onClick={() => setSelectedType(t.value)}
                     className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
                       selectedType === t.value
@@ -293,23 +310,25 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
               />
               <div className="flex items-center gap-2">
                 <Button
+                  type="button"
                   onClick={handleRetain}
                   disabled={isRetaining || !newMemoryContent.trim()}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-1.5 flex items-center gap-1"
+                  className="flex items-center gap-1 bg-cyan-500 px-3 py-1.5 text-xs text-black hover:bg-cyan-400"
                 >
                   {isRetaining ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Save className="w-3.5 h-3.5" />
+                    <Save className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
                   Save Memory
                 </Button>
                 <Button
+                  type="button"
                   onClick={() => {
                     setShowAddForm(false);
                     setNewMemoryContent("");
                   }}
-                  className="bg-white/5 hover:bg-white/10 text-slate-400 text-xs px-3 py-1.5"
+                  className="bg-white/5 px-3 py-1.5 text-xs text-slate-400 hover:bg-white/10"
                 >
                   Cancel
                 </Button>
@@ -341,6 +360,7 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
             </div>
             <div className="flex flex-wrap gap-1.5 mt-2">
               <button
+                type="button"
                 onClick={() => setFilterType(null)}
                 className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                   filterType === null
@@ -355,6 +375,7 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
                 return (
                   <button
                     key={t.value}
+                    type="button"
                     onClick={() =>
                       setFilterType(filterType === t.value ? null : t.value)
                     }
@@ -374,12 +395,22 @@ export function SecondBrain({ userId, userName }: SecondBrainProps) {
           <div className="max-h-[500px] overflow-y-auto">
             {displayMemories.length === 0 ? (
               <div className="p-8 text-center">
-                <Brain className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-slate-500 text-xs">
+                <Brain className="mx-auto mb-2 h-8 w-8 text-slate-600" aria-hidden="true" />
+                <p className="text-xs text-slate-500">
                   {searchQuery
                     ? "No memories match your search"
                     : "No memories yet. Retain your first thought."}
                 </p>
+                {!searchQuery && (
+                  <Button
+                    type="button"
+                    onClick={() => setShowAddForm(true)}
+                    className="mt-3 bg-cyan-500 px-3 py-1.5 text-xs text-black hover:bg-cyan-400"
+                  >
+                    <Plus className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+                    Retain a memory
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="p-2">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
-import { Badge, Button } from "@bytecats/ui-kit";
+import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { ROUTES } from "@/lib/routes";
@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<
     label: "Sent",
   },
   accepted: {
-    color: "bg-green-500/15 text-green-400 border-green-500/20",
+    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
     label: "Accepted",
   },
   rejected: {
@@ -33,7 +33,7 @@ const STATUS_CONFIG: Record<
     label: "Rejected",
   },
   expired: {
-    color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20",
+    color: "bg-amber-500/15 text-amber-400 border-amber-500/20",
     label: "Expired",
   },
 };
@@ -77,9 +77,10 @@ export function ProposalCard({ proposalId, onBack, onEdit, onCreated }: Proposal
 
   if (proposal === undefined) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-32 animate-pulse rounded bg-white/[0.03]" />
-        <div className="h-64 animate-pulse rounded-lg bg-white/[0.02]" />
+      <div className="space-y-6 p-1">
+        <Skeleton className="h-10 w-48 rounded-lg" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
       </div>
     );
   }
@@ -147,7 +148,7 @@ export function ProposalCard({ proposalId, onBack, onEdit, onCreated }: Proposal
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-slate-400"
+            className="text-slate-400 hover:text-white"
           >
             ← Back
           </Button>
@@ -168,7 +169,7 @@ export function ProposalCard({ proposalId, onBack, onEdit, onCreated }: Proposal
               type="button"
               size="sm"
               variant="ghost"
-              className="text-green-400 hover:text-green-300"
+              className="text-emerald-400 hover:text-emerald-300"
               onClick={handleAccept}
             >
               Accept
@@ -206,7 +207,7 @@ export function ProposalCard({ proposalId, onBack, onEdit, onCreated }: Proposal
         )}
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-4 sm:p-6">
+      <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">

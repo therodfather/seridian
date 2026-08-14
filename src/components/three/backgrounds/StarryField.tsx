@@ -40,7 +40,7 @@ function Stars() {
 export function StarryBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0">
-      <Canvas orthographic camera={{ zoom: 50, position: [0, 0, 5] }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+      <Canvas orthographic camera={{ zoom: 50, position: [0, 0, 5] }} gl={{ alpha: true }} dpr={[1, 1.5]} style={{ pointerEvents: "none" }}>
         <Stars />
       </Canvas>
     </div>

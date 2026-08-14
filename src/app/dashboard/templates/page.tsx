@@ -22,7 +22,6 @@ import {
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
-import { GridBackground } from "@/components/three/backgrounds";
 import {
   Wand2,
   Sparkles,
@@ -273,7 +272,6 @@ export default function TemplatesPage() {
 
   return (
     <>
-      <GridBackground />
       <div className="flex flex-col min-h-[calc(100vh-6rem)] text-slate-100">
         {/* TOP BAR / NAVIGATION HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5 mb-6">

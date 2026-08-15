@@ -169,7 +169,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <footer
         role="contentinfo"
         className={cn(
-          "print:hidden relative z-40 flex flex-col gap-2 overflow-x-auto border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
+          "print:hidden relative z-40 flex flex-col flex-wrap gap-2 border-t border-white/[0.06] bg-[#0c1222] px-4 py-2 text-xs text-slate-500 transition-all duration-300 ease-in-out sm:flex-row sm:items-center sm:justify-between",
           sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
         )}
       >

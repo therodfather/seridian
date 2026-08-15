@@ -7,7 +7,7 @@ test.describe("business ops dashboard", { tag: "@smoke" }, () => {
 
     await navigateTo(page, "Clients");
     await expect(page).toHaveURL(/\/dashboard\/clients/);
-    await expect(page.getByRole("heading", { name: "Clients" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Clients", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /Add Client/i }).first()).toBeVisible();
 
     await navigateTo(page, "Sales");
@@ -16,12 +16,12 @@ test.describe("business ops dashboard", { tag: "@smoke" }, () => {
 
     await navigateTo(page, "Proposals");
     await expect(page).toHaveURL(/\/dashboard\/proposals/);
-    await expect(page.getByRole("heading", { name: "Proposals" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Proposals", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /New Proposal/i }).first()).toBeVisible();
 
     await navigateTo(page, "Contracts");
     await expect(page).toHaveURL(/\/dashboard\/contracts/);
-    await expect(page.getByRole("heading", { name: "Contracts" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Contracts", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /New Contract/i }).first()).toBeVisible();
 
     await navigateTo(page, "Files");

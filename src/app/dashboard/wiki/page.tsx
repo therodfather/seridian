@@ -94,7 +94,8 @@ export default function WikiDashboardPage() {
     if (banks.length === 0 && !creatingBank && !selectedBankId && !bankError) {
       void loadCompanyKnowledge({ silent: true });
     } else if (banks.length > 0 && !selectedBankId) {
-      setSelectedBankId(banks[0]._id);
+      const companyBank = banks.find((b) => b.name === "Seridian Wiki");
+      setSelectedBankId((companyBank ?? banks[0])._id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot bank bootstrap
   }, [banks, creatingBank, selectedBankId, bankError]);

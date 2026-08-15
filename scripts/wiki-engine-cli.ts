@@ -4,6 +4,10 @@
  * No browser, no Convex, no React — pure function calls against fixture data.
  *
  * Run:  bun run scripts/wiki-engine-cli.ts
+ *       bun run scripts/wiki-engine-cli.ts --llm   (also runs the real local
+ *                                                    T5 model, same one the
+ *                                                    browser uses — downloads
+ *                                                    ~60MB on first run)
  *
  * Reproduces the reported bug: once the Wiki Engine's own generic fallback
  * pages exist (tagged "auto-generated"), the old plan logic considered every
@@ -113,3 +117,15 @@ if (!mentionsRealCompanyInfo) {
 }
 
 console.log("\nOK — plan re-triggers on generic placeholders, and generation is grounded in real company data.\n");
+
+if (process.argv.includes("--llm")) {
+  section("Real local LLM pass (same model + prompt the browser uses)");
+  console.log("Loading Xenova/T5-small via @huggingface/transformers (Node/Bun-compatible)...");
+  const { pipeline } = await import("@huggingface/transformers");
+  const llm = await pipeline("text2text-generation", "Xenova/T5-small");
+  const prompt = buildGeneratePrompt(first, context);
+  const result = await llm(prompt, { max_new_tokens: 512, temperature: 0.7 });
+  const generated = (result as Array<{ generated_text: string }>)[0]?.generated_text ?? "";
+  console.log(`--- LLM output for "${first.title}" ---\n${generated}\n`);
+  console.log(`Length: ${generated.length} chars (validation threshold is 50)`);
+}

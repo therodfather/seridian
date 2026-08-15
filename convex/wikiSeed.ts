@@ -191,7 +191,8 @@ export const seedCompanyKnowledge = mutation({
     const editor = args.lastEditedBy?.trim() || "system";
     const now = Date.now();
 
-    let bank = (await ctx.db.query("memoryBanks").order("desc").take(1))[0];
+    const banks = await ctx.db.query("memoryBanks").collect();
+    let bank = banks.find((b) => b.name === "Seridian Wiki");
     if (!bank) {
       const bankId = await ctx.db.insert("memoryBanks", {
         name: "Seridian Wiki",

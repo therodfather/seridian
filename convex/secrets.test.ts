@@ -61,7 +61,7 @@ describe("integrations setup", () => {
     t = convexTest({ schema, modules });
   });
 
-  test("defaults show github/netlify configured and linear/stripe/mercury not configured", async () => {
+  test("defaults show github/netlify configured and linear/stripe/mercury/telnyx not configured", async () => {
     const statuses = await t.query(api.integrations.listStatuses, {});
     expect(statuses.map((s) => s.provider)).toEqual([
       "github",
@@ -69,6 +69,7 @@ describe("integrations setup", () => {
       "linear",
       "stripe",
       "mercury",
+      "telnyx",
     ]);
     expect(statuses.find((s) => s.provider === "linear")?.status).toBe(
       "not_configured",
@@ -77,6 +78,9 @@ describe("integrations setup", () => {
       "not_configured",
     );
     expect(statuses.find((s) => s.provider === "mercury")?.status).toBe(
+      "not_configured",
+    );
+    expect(statuses.find((s) => s.provider === "telnyx")?.status).toBe(
       "not_configured",
     );
     expect(statuses.find((s) => s.provider === "github")?.status).toBe(

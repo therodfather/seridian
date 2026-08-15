@@ -15,6 +15,7 @@ import {
   BookOpen,
   Bot,
   Brain,
+  PhoneCall,
 } from "lucide-react";
 import { ROUTES, type DashboardRoute } from "./routes";
 
@@ -47,6 +48,7 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
   { href: d.settings, label: "Settings", icon: Settings, group: "tools" },
   // Appended so NUMBER_KEY_NAV (first 9) keeps Wiki / Arena on 8–9.
   { href: d.healthCheck, label: "Health Check", icon: ClipboardCheck, group: "business" },
+  { href: d.ivr, label: "IVR / Voice", icon: PhoneCall, group: "business" },
 ];
 
 export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
@@ -64,6 +66,7 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   sales: "Sales",
   proposals: "Proposals",
   contracts: "Contracts",
+  ivr: "IVR / Voice",
   "health-check": "Health Check",
   wiki: "Wiki",
   arena: "LLM Arena",

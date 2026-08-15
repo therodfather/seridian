@@ -3,6 +3,17 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import Stripe from "stripe";
+import {
+  decodeClientState,
+  telnyxCallAction,
+  verifyTelnyxSignature,
+} from "./lib/telnyxSignature";
+import {
+  edgeKeyFromDigits,
+  executeNode,
+  nextAfterSpeak,
+} from "./lib/telnyxExecutor";
+import { findNode, resolveEdge, type IvrGraph } from "./lib/ivrGraph";
 
 const http = httpRouter();
 
@@ -22,9 +33,6 @@ http.route({
     const payload = await req.text();
     let event: Stripe.Event;
     try {
-      // constructEventAsync uses Web Crypto (SubtleCrypto) instead of Node's
-      // crypto module, which is what makes signature verification work in
-      // Convex's V8 http action runtime.
       event = await Stripe.webhooks.constructEventAsync(
         payload,
         signature,
@@ -83,6 +91,267 @@ http.route({
         ? (metadata.contractId as Id<"contracts">)
         : undefined,
     });
+
+    return new Response(null, { status: 200 });
+  }),
+});
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+http.route({
+  path: "/telnyx/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const payload = await req.text();
+    const signature =
+      req.headers.get("telnyx-signature-ed25519") ??
+      req.headers.get("Telnyx-Signature-Ed25519");
+    const timestamp =
+      req.headers.get("telnyx-timestamp") ?? req.headers.get("Telnyx-Timestamp");
+
+    const publicKey = await ctx.runQuery(
+      internal.telnyx.getPublicKeyForWebhook,
+      {},
+    );
+    if (!publicKey) {
+      return new Response("Telnyx public key not configured", { status: 500 });
+    }
+    if (!signature || !timestamp) {
+      return new Response("Missing signature headers", { status: 400 });
+    }
+
+    const verified = await verifyTelnyxSignature({
+      payload,
+      signatureB64: signature,
+      timestamp,
+      publicKeyB64: publicKey,
+    });
+    if (!verified.ok) {
+      return new Response(`Invalid signature: ${verified.reason}`, {
+        status: 403,
+      });
+    }
+
+    let body: unknown;
+    try {
+      body = JSON.parse(payload);
+    } catch {
+      return new Response("Invalid JSON", { status: 400 });
+    }
+
+    const root = asRecord(body);
+    const data = asRecord(root?.data);
+    const eventType = asString(data?.event_type);
+    const eventPayload = asRecord(data?.payload);
+    if (!eventType || !eventPayload) {
+      return new Response(null, { status: 200 });
+    }
+
+    const callControlId = asString(eventPayload.call_control_id);
+    if (!callControlId) {
+      return new Response(null, { status: 200 });
+    }
+
+    const apiKey = await ctx.runQuery(internal.telnyx.getApiKeyForWebhook, {});
+    if (!apiKey) {
+      return new Response("Telnyx API key not configured", { status: 500 });
+    }
+
+    const fromNumber =
+      asString(eventPayload.from) ?? asString(eventPayload.start_time);
+    const toRaw = eventPayload.to;
+    const toNumber =
+      typeof toRaw === "string"
+        ? toRaw
+        : asString(asRecord(toRaw)?.phone_number) ??
+          asString(asRecord(toRaw)?.number);
+
+    const clientState = decodeClientState(asString(eventPayload.client_state));
+
+    try {
+      if (eventType === "call.initiated") {
+        const direction = asString(eventPayload.direction);
+        if (direction && direction !== "incoming") {
+          return new Response(null, { status: 200 });
+        }
+        await telnyxCallAction(apiKey, callControlId, "answer", {});
+        return new Response(null, { status: 200 });
+      }
+
+      if (eventType === "call.answered") {
+        if (!toNumber) {
+          return new Response(null, { status: 200 });
+        }
+        const published = await ctx.runQuery(internal.ivr.getPublishedByPhone, {
+          phoneNumber: toNumber,
+        });
+        if (!published) {
+          await telnyxCallAction(apiKey, callControlId, "hangup");
+          return new Response(null, { status: 200 });
+        }
+
+        const result = await executeNode({
+          apiKey,
+          callControlId,
+          flowId: published.flowId,
+          versionId: published.versionId,
+          graph: published.graph as IvrGraph,
+          nodeId: published.graph.entryNodeId,
+        });
+
+        await ctx.runMutation(internal.ivr.upsertCallLog, {
+          flowId: published.flowId,
+          versionId: published.versionId,
+          callControlId,
+          fromNumber: asString(eventPayload.from) ?? "unknown",
+          toNumber,
+          status:
+            result.status === "in_progress" ? "answered" : result.status,
+          currentNodeId: result.currentNodeId,
+          routedTo: result.routedTo,
+          lastEventType: eventType,
+          errorMessage: result.errorMessage,
+        });
+        return new Response(null, { status: 200 });
+      }
+
+      if (
+        eventType === "call.speak.ended" ||
+        eventType === "call.gather.ended" ||
+        eventType === "call.recording.saved"
+      ) {
+        if (!clientState) {
+          return new Response(null, { status: 200 });
+        }
+        const version = await ctx.runQuery(internal.ivr.getPublishedVersion, {
+          versionId: clientState.versionId as Id<"ivrFlowVersions">,
+        });
+        if (!version) {
+          return new Response(null, { status: 200 });
+        }
+        const graph = version.graph as IvrGraph;
+        const node = findNode(graph, clientState.nodeId);
+
+        let nextNodeId: string | undefined;
+        let digitPressed: string | undefined;
+        let status:
+          | "in_progress"
+          | "transferred"
+          | "recorded"
+          | "no_input"
+          | "hangup"
+          | "error" = "in_progress";
+
+        if (eventType === "call.gather.ended") {
+          const digits =
+            asString(eventPayload.digits) ??
+            asString(eventPayload.digit) ??
+            "";
+          digitPressed = digits || undefined;
+          const statusEnded = asString(eventPayload.status);
+          const key =
+            statusEnded === "call_hangup"
+              ? ("no_input" as const)
+              : edgeKeyFromDigits(digits);
+          if (key === "no_input" || key === "timeout") {
+            status = "no_input";
+          }
+          nextNodeId = node
+            ? resolveEdge(node, key) ?? resolveEdge(node, "invalid")
+            : undefined;
+        } else if (eventType === "call.speak.ended") {
+          if (node?.type === "hangup") {
+            await telnyxCallAction(apiKey, callControlId, "hangup");
+            status = "hangup";
+          } else if (node?.type === "voicemail") {
+            // recording already started; wait for recording.saved
+            status = "recorded";
+          } else {
+            nextNodeId = nextAfterSpeak(graph, clientState.nodeId);
+          }
+        } else if (eventType === "call.recording.saved") {
+          status = "recorded";
+          nextNodeId = node ? resolveEdge(node, "next") : undefined;
+          if (!nextNodeId) {
+            await telnyxCallAction(apiKey, callControlId, "hangup");
+            status = "hangup";
+          }
+        }
+
+        let routedTo: string | undefined;
+        let currentNodeId = clientState.nodeId;
+
+        if (nextNodeId) {
+          const result = await executeNode({
+            apiKey,
+            callControlId,
+            flowId: version.flowId,
+            versionId: version.versionId,
+            graph,
+            nodeId: nextNodeId,
+          });
+          status = result.status === "in_progress" ? status : result.status;
+          if (status === "in_progress" && result.status === "in_progress") {
+            status = "in_progress";
+          }
+          currentNodeId = result.currentNodeId;
+          routedTo = result.routedTo;
+          if (result.errorMessage) {
+            status = "error";
+          }
+        }
+
+        await ctx.runMutation(internal.ivr.upsertCallLog, {
+          flowId: version.flowId,
+          versionId: version.versionId,
+          callControlId,
+          fromNumber: asString(eventPayload.from) ?? fromNumber,
+          toNumber: toNumber,
+          digitPressed,
+          currentNodeId,
+          routedTo,
+          status,
+          lastEventType: eventType,
+        });
+        return new Response(null, { status: 200 });
+      }
+
+      if (eventType === "call.hangup") {
+        if (clientState) {
+          await ctx.runMutation(internal.ivr.upsertCallLog, {
+            flowId: clientState.flowId as Id<"ivrFlows">,
+            versionId: clientState.versionId as Id<"ivrFlowVersions">,
+            callControlId,
+            status: "hangup",
+            lastEventType: eventType,
+            currentNodeId: clientState.nodeId,
+          });
+        }
+        return new Response(null, { status: 200 });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "webhook error";
+      if (clientState) {
+        await ctx.runMutation(internal.ivr.upsertCallLog, {
+          flowId: clientState.flowId as Id<"ivrFlows">,
+          versionId: clientState.versionId as Id<"ivrFlowVersions">,
+          callControlId,
+          status: "error",
+          errorMessage: message,
+          lastEventType: eventType,
+        });
+      }
+      // Still 200 so Telnyx does not endlessly retry on logic bugs.
+      console.error("Telnyx webhook error:", message);
+    }
 
     return new Response(null, { status: 200 });
   }),

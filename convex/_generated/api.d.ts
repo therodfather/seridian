@@ -10,6 +10,7 @@
 
 import type * as auditLogs from "../auditLogs.js";
 import type * as bookings from "../bookings.js";
+import type * as businesses from "../businesses.js";
 import type * as caseStudies from "../caseStudies.js";
 import type * as channels from "../channels.js";
 import type * as chat from "../chat.js";
@@ -25,7 +26,11 @@ import type * as githubSync from "../githubSync.js";
 import type * as http from "../http.js";
 import type * as integrations from "../integrations.js";
 import type * as issues from "../issues.js";
+import type * as ivr from "../ivr.js";
 import type * as lib_admin from "../lib/admin.js";
+import type * as lib_ivrGraph from "../lib/ivrGraph.js";
+import type * as lib_telnyxExecutor from "../lib/telnyxExecutor.js";
+import type * as lib_telnyxSignature from "../lib/telnyxSignature.js";
 import type * as linearIngest from "../linearIngest.js";
 import type * as linearSync from "../linearSync.js";
 import type * as memory from "../memory.js";
@@ -34,6 +39,7 @@ import type * as payments from "../payments.js";
 import type * as proposals from "../proposals.js";
 import type * as secrets from "../secrets.js";
 import type * as seedIssues from "../seedIssues.js";
+import type * as telnyx from "../telnyx.js";
 import type * as users from "../users.js";
 import type * as wiki from "../wiki.js";
 import type * as wikiSeed from "../wikiSeed.js";
@@ -47,6 +53,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auditLogs: typeof auditLogs;
   bookings: typeof bookings;
+  businesses: typeof businesses;
   caseStudies: typeof caseStudies;
   channels: typeof channels;
   chat: typeof chat;
@@ -62,7 +69,11 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   integrations: typeof integrations;
   issues: typeof issues;
+  ivr: typeof ivr;
   "lib/admin": typeof lib_admin;
+  "lib/ivrGraph": typeof lib_ivrGraph;
+  "lib/telnyxExecutor": typeof lib_telnyxExecutor;
+  "lib/telnyxSignature": typeof lib_telnyxSignature;
   linearIngest: typeof linearIngest;
   linearSync: typeof linearSync;
   memory: typeof memory;
@@ -71,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   proposals: typeof proposals;
   secrets: typeof secrets;
   seedIssues: typeof seedIssues;
+  telnyx: typeof telnyx;
   users: typeof users;
   wiki: typeof wiki;
   wikiSeed: typeof wikiSeed;

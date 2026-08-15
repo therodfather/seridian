@@ -23,6 +23,7 @@ export const ROUTES = {
     sales: "/dashboard/sales",
     proposals: "/dashboard/proposals",
     contracts: "/dashboard/contracts",
+    ivr: "/dashboard/ivr",
     healthCheck: "/dashboard/health-check",
     wiki: "/dashboard/wiki",
     arena: "/dashboard/arena",
@@ -86,4 +87,8 @@ export function proposalHref(id: string): string {
 
 export function contractHref(id: string): string {
   return `${ROUTES.dashboard.contracts}/${id}`;
+}
+
+export function ivrFlowHref(id: string): string {
+  return `${ROUTES.dashboard.ivr}/${id}`;
 }

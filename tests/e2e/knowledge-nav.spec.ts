@@ -15,7 +15,7 @@ test.describe("knowledge navigation", () => {
     await navigateTo(page, "LLM Arena");
     await expect(page).toHaveURL(/\/dashboard\/arena/);
     await expect(page.getByRole("heading", { name: "LLM Arena", level: 1 })).toBeVisible();
-    await expect(page.getByText("Model Manager")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Model Manager", exact: true })).toBeVisible();
   });
 
   test("opens wiki from the sidebar", async ({ page }) => {

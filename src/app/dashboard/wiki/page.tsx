@@ -8,7 +8,6 @@ import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
 import { BookOpen, Plus, AlertCircle, Sparkles, FileText, Code2, ShieldAlert, Eye, Edit3 } from "lucide-react";
 import { WikiSidebar } from "@/components/wiki/WikiSidebar";
 import { WikiPage } from "@/components/wiki/WikiPage";
-import { FloatingPagesBackground } from "@/components/three/backgrounds";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { cn } from "@/lib/utils";
 
@@ -161,284 +160,281 @@ export default function WikiDashboardPage() {
   }, [showCreateDialog]);
 
   return (
-    <>
-      <FloatingPagesBackground />
-      <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
-        <div className="flex flex-col justify-between gap-4 border-b border-white/[0.08] pb-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-lg shadow-cyan-950/40">
-              <BookOpen className="h-6 w-6" aria-hidden="true" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-white">Wiki</h1>
-                <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[10px] text-cyan-400">
-                  Knowledge Base
-                </Badge>
-              </div>
-              <p className="text-xs text-slate-400">
-                Central documentation, process guides, and internal SOPs
-              </p>
-            </div>
+    <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
+      <div className="flex flex-col justify-between gap-4 border-b border-white/[0.08] pb-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-lg shadow-cyan-950/40">
+            <BookOpen className="h-6 w-6" aria-hidden="true" />
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="hidden items-center gap-2 rounded-lg border border-white/[0.08] bg-[#0c1222] px-3 py-1.5 text-xs text-slate-400 sm:flex">
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
-              <span>{pages ? `${pages.length} Articles` : "Loading..."}</span>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-white">Wiki</h1>
+              <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[10px] text-cyan-400">
+                Knowledge Base
+              </Badge>
             </div>
-            <Button
-              type="button"
-              onClick={() => void loadCompanyKnowledge()}
-              disabled={seeding}
-              className="gap-2 bg-white/5 text-sm text-white hover:bg-white/10"
-            >
-              <Sparkles className="h-4 w-4 text-cyan-400" aria-hidden="true" />
-              {seeding ? "Loading…" : "Load company knowledge"}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleOpenCreateDialog}
-              disabled={!selectedBankId}
-              className="gap-1.5 bg-cyan-500 text-xs font-semibold text-black shadow-lg shadow-cyan-950/30 hover:bg-cyan-400"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Create Wiki Page
-            </Button>
+            <p className="text-xs text-slate-400">
+              Central documentation, process guides, and internal SOPs
+            </p>
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#070b14] shadow-2xl">
-          {!selectedBankId ? (
-            <div className="flex flex-1">
-              {bankError ? (
-                <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-                  <AlertCircle className="h-8 w-8 text-red-400" aria-hidden="true" />
-                  <p className="max-w-sm text-sm text-slate-400">{bankError}</p>
-                  <Button
-                    type="button"
-                    onClick={() => void loadCompanyKnowledge()}
-                    disabled={creatingBank}
-                    className="bg-cyan-500 text-xs font-semibold text-black hover:bg-cyan-400"
-                  >
-                    {creatingBank ? "Retrying…" : "Retry setup"}
-                  </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="hidden items-center gap-2 rounded-lg border border-white/[0.08] bg-[#0c1222] px-3 py-1.5 text-xs text-slate-400 sm:flex">
+            <Sparkles className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
+            <span>{pages ? `${pages.length} Articles` : "Loading..."}</span>
+          </div>
+          <Button
+            type="button"
+            onClick={() => void loadCompanyKnowledge()}
+            disabled={seeding}
+            className="gap-2 bg-white/5 text-sm text-white hover:bg-white/10"
+          >
+            <Sparkles className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+            {seeding ? "Loading…" : "Load company knowledge"}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleOpenCreateDialog}
+            disabled={!selectedBankId}
+            className="gap-1.5 bg-cyan-500 text-xs font-semibold text-black shadow-lg shadow-cyan-950/30 hover:bg-cyan-400"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Create Wiki Page
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#070b14] shadow-2xl">
+        {!selectedBankId ? (
+          <div className="flex flex-1">
+            {bankError ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+                <AlertCircle className="h-8 w-8 text-red-400" aria-hidden="true" />
+                <p className="max-w-sm text-sm text-slate-400">{bankError}</p>
+                <Button
+                  type="button"
+                  onClick={() => void loadCompanyKnowledge()}
+                  disabled={creatingBank}
+                  className="bg-cyan-500 text-xs font-semibold text-black hover:bg-cyan-400"
+                >
+                  {creatingBank ? "Retrying…" : "Retry setup"}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex h-full w-full">
+                <div className="hidden w-[280px] shrink-0 flex-col gap-2 border-r border-white/[0.08] p-3 md:flex">
+                  <Skeleton className="h-8 w-full bg-white/10" />
+                  <Skeleton className="h-7 w-full bg-white/10" />
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-8 w-full rounded-md bg-white/5" />
+                  ))}
                 </div>
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
+                  <Skeleton className="h-10 w-10 rounded-2xl bg-cyan-500/20" />
+                  <p className="text-sm text-slate-400">Setting up wiki memory bank...</p>
+                  <Skeleton className="h-4 w-48 bg-white/10" />
+                  <Skeleton className="h-4 w-64 bg-white/5" />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex h-full min-h-0 w-full">
+            <div
+              className={cn(
+                "w-full shrink-0 border-r border-white/[0.08] md:w-[280px]",
+                selectedPageId && "hidden md:block",
+              )}
+            >
+              <WikiSidebar
+                bankId={selectedBankId}
+                selectedPageId={selectedPageId ?? undefined}
+                onSelectPage={setSelectedPageId}
+                onCreatePage={handleOpenCreateDialog}
+              />
+            </div>
+            <div
+              className={cn(
+                "min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#0c1222]",
+                !selectedPageId && "hidden md:flex md:flex-col",
+              )}
+            >
+              {selectedPageId ? (
+                <WikiPage
+                  pageId={selectedPageId}
+                  onBack={() => setSelectedPageId(null)}
+                />
               ) : (
-                <div className="flex h-full w-full">
-                  <div className="hidden w-[280px] shrink-0 flex-col gap-2 border-r border-white/[0.08] p-3 md:flex">
-                    <Skeleton className="h-8 w-full bg-white/10" />
-                    <Skeleton className="h-7 w-full bg-white/10" />
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Skeleton key={i} className="h-8 w-full rounded-md bg-white/5" />
-                    ))}
+                <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
+                    <BookOpen className="h-8 w-8" aria-hidden="true" />
                   </div>
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
-                    <Skeleton className="h-10 w-10 rounded-2xl bg-cyan-500/20" />
-                    <p className="text-sm text-slate-400">Setting up wiki memory bank...</p>
-                    <Skeleton className="h-4 w-48 bg-white/10" />
-                    <Skeleton className="h-4 w-64 bg-white/5" />
+                  <h2 className="mb-2 text-lg font-bold text-white">
+                    Welcome to the Seridian Knowledge Base
+                  </h2>
+                  <p className="mb-6 max-w-md text-xs leading-relaxed text-slate-400">
+                    Select a page from the sidebar or load company knowledge
+                    (offers, stack, and how we make money) for the LLM Arena.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      onClick={() => void loadCompanyKnowledge()}
+                      disabled={seeding}
+                      className="gap-2 bg-white/5 text-white hover:bg-white/10"
+                    >
+                      <Sparkles className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+                      Load company knowledge
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleOpenCreateDialog}
+                      className="gap-2 bg-cyan-500 px-4 py-2 text-xs font-semibold text-black hover:bg-cyan-400"
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      Create New Page
+                    </Button>
                   </div>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex h-full min-h-0 w-full">
-              <div
-                className={cn(
-                  "w-full shrink-0 border-r border-white/[0.08] md:w-[280px]",
-                  selectedPageId && "hidden md:block",
-                )}
-              >
-                <WikiSidebar
-                  bankId={selectedBankId}
-                  selectedPageId={selectedPageId ?? undefined}
-                  onSelectPage={setSelectedPageId}
-                  onCreatePage={handleOpenCreateDialog}
-                />
-              </div>
-              <div
-                className={cn(
-                  "min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#0c1222]",
-                  !selectedPageId && "hidden md:flex md:flex-col",
-                )}
-              >
-                {selectedPageId ? (
-                  <WikiPage
-                    pageId={selectedPageId}
-                    onBack={() => setSelectedPageId(null)}
-                  />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
-                      <BookOpen className="h-8 w-8" aria-hidden="true" />
-                    </div>
-                    <h2 className="mb-2 text-lg font-bold text-white">
-                      Welcome to the Seridian Knowledge Base
-                    </h2>
-                    <p className="mb-6 max-w-md text-xs leading-relaxed text-slate-400">
-                      Select a page from the sidebar or load company knowledge
-                      (offers, stack, and how we make money) for the LLM Arena.
-                    </p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button
-                        type="button"
-                        onClick={() => void loadCompanyKnowledge()}
-                        disabled={seeding}
-                        className="gap-2 bg-white/5 text-white hover:bg-white/10"
-                      >
-                        <Sparkles className="h-4 w-4 text-cyan-400" aria-hidden="true" />
-                        Load company knowledge
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleOpenCreateDialog}
-                        className="gap-2 bg-cyan-500 px-4 py-2 text-xs font-semibold text-black hover:bg-cyan-400"
-                      >
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                        Create New Page
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {showCreateDialog && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="wiki-create-title"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowCreateDialog(false);
-            }}
-          >
-            <div className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c1222] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4">
-                <div>
-                  <h2 id="wiki-create-title" className="text-base font-bold text-white">Compose Wiki Article</h2>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    Create structured documentation with markdown and dynamic tags
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-[#070b14] p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setModalTab("edit")}
-                    className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 ${
-                      modalTab === "edit" ? "bg-cyan-500 font-semibold text-black" : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <Edit3 className="h-3 w-3" aria-hidden="true" /> Write
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModalTab("preview")}
-                    className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 ${
-                      modalTab === "preview" ? "bg-cyan-500 font-semibold text-black" : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <Eye className="h-3 w-3" aria-hidden="true" /> Preview
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 overflow-x-auto border-b border-white/[0.08] bg-[#070b14]/50 px-6 py-2.5">
-                <span className="shrink-0 text-[11px] font-semibold text-slate-400">Quick Templates:</span>
-                {QUICK_TEMPLATES.map((tmpl) => {
-                  const Icon = tmpl.icon;
-                  return (
-                    <button
-                      key={tmpl.id}
-                      type="button"
-                      onClick={() => applyTemplate(tmpl)}
-                      className="flex shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-300 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
-                    >
-                      <Icon className="h-3 w-3 text-cyan-400" />
-                      {tmpl.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="space-y-4 px-6 py-4">
-                {modalTab === "edit" ? (
-                  <>
-                    <div className="space-y-1.5">
-                      <label htmlFor="wiki-page-title" className="text-xs font-semibold text-slate-300">
-                        Article Title *
-                      </label>
-                      <input
-                        id="wiki-page-title"
-                        type="text"
-                        value={newPageTitle}
-                        onChange={(e) => setNewPageTitle(e.target.value)}
-                        placeholder="e.g., SOP: Production Deployment Protocol"
-                        className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label htmlFor="wiki-page-content" className="text-xs font-semibold text-slate-300">
-                        Content (Markdown Supported)
-                      </label>
-                      <textarea
-                        id="wiki-page-content"
-                        value={newPageContent}
-                        onChange={(e) => setNewPageContent(e.target.value)}
-                        placeholder="Write article details using standard markdown headers, bullet lists, and code blocks..."
-                        rows={10}
-                        className="w-full resize-none rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 font-mono text-xs leading-relaxed text-cyan-200 placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label htmlFor="wiki-page-tags" className="text-xs font-semibold text-slate-300">
-                        Tags (comma separated)
-                      </label>
-                      <input
-                        id="wiki-page-tags"
-                        type="text"
-                        value={newPageTags}
-                        onChange={(e) => setNewPageTags(e.target.value)}
-                        placeholder="e.g., sop, deployment, nextjs"
-                        className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 font-mono text-xs text-white placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="prose prose-invert max-h-[400px] min-h-[300px] max-w-none overflow-y-auto rounded-lg border border-white/[0.08] bg-[#070b14] p-4 text-xs text-slate-200">
-                    <h2 className="text-base font-bold text-white">{newPageTitle || "Untitled Page"}</h2>
-                    <div className="mt-4 whitespace-pre-wrap font-mono text-slate-300">
-                      {newPageContent || "(No content written yet)"}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-2 border-t border-white/[0.08] bg-[#080d1a] px-6 py-4">
-                <Button
-                  type="button"
-                  onClick={() => setShowCreateDialog(false)}
-                  className="bg-white/5 text-xs text-slate-300 hover:bg-white/10"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleCreatePage}
-                  disabled={!newPageTitle.trim() || creatingPage}
-                  className="gap-1.5 bg-cyan-500 text-xs font-semibold text-black hover:bg-cyan-400"
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  {creatingPage ? "Creating..." : "Save Wiki Page"}
-                </Button>
-              </div>
-            </div>
           </div>
         )}
       </div>
-    </>
+
+      {showCreateDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wiki-create-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCreateDialog(false);
+          }}
+        >
+          <div className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c1222] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4">
+              <div>
+                <h2 id="wiki-create-title" className="text-base font-bold text-white">Compose Wiki Article</h2>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Create structured documentation with markdown and dynamic tags
+                </p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-[#070b14] p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setModalTab("edit")}
+                  className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 ${
+                    modalTab === "edit" ? "bg-cyan-500 font-semibold text-black" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Edit3 className="h-3 w-3" aria-hidden="true" /> Write
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTab("preview")}
+                  className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 ${
+                    modalTab === "preview" ? "bg-cyan-500 font-semibold text-black" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Eye className="h-3 w-3" aria-hidden="true" /> Preview
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto border-b border-white/[0.08] bg-[#070b14]/50 px-6 py-2.5">
+              <span className="shrink-0 text-[11px] font-semibold text-slate-400">Quick Templates:</span>
+              {QUICK_TEMPLATES.map((tmpl) => {
+                const Icon = tmpl.icon;
+                return (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => applyTemplate(tmpl)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-300 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
+                  >
+                    <Icon className="h-3 w-3 text-cyan-400" />
+                    {tmpl.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-4 px-6 py-4">
+              {modalTab === "edit" ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label htmlFor="wiki-page-title" className="text-xs font-semibold text-slate-300">
+                      Article Title *
+                    </label>
+                    <input
+                      id="wiki-page-title"
+                      type="text"
+                      value={newPageTitle}
+                      onChange={(e) => setNewPageTitle(e.target.value)}
+                      placeholder="e.g., SOP: Production Deployment Protocol"
+                      className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="wiki-page-content" className="text-xs font-semibold text-slate-300">
+                      Content (Markdown Supported)
+                    </label>
+                    <textarea
+                      id="wiki-page-content"
+                      value={newPageContent}
+                      onChange={(e) => setNewPageContent(e.target.value)}
+                      placeholder="Write article details using standard markdown headers, bullet lists, and code blocks..."
+                      rows={10}
+                      className="w-full resize-none rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 font-mono text-xs leading-relaxed text-cyan-200 placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="wiki-page-tags" className="text-xs font-semibold text-slate-300">
+                      Tags (comma separated)
+                    </label>
+                    <input
+                      id="wiki-page-tags"
+                      type="text"
+                      value={newPageTags}
+                      onChange={(e) => setNewPageTags(e.target.value)}
+                      placeholder="e.g., sop, deployment, nextjs"
+                      className="w-full rounded-lg border border-white/[0.08] bg-[#070b14] px-3 py-2 font-mono text-xs text-white placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="prose prose-invert max-h-[400px] min-h-[300px] max-w-none overflow-y-auto rounded-lg border border-white/[0.08] bg-[#070b14] p-4 text-xs text-slate-200">
+                  <h2 className="text-base font-bold text-white">{newPageTitle || "Untitled Page"}</h2>
+                  <div className="mt-4 whitespace-pre-wrap font-mono text-slate-300">
+                    {newPageContent || "(No content written yet)"}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-white/[0.08] bg-[#080d1a] px-6 py-4">
+              <Button
+                type="button"
+                onClick={() => setShowCreateDialog(false)}
+                className="bg-white/5 text-xs text-slate-300 hover:bg-white/10"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreatePage}
+                disabled={!newPageTitle.trim() || creatingPage}
+                className="gap-1.5 bg-cyan-500 text-xs font-semibold text-black hover:bg-cyan-400"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                {creatingPage ? "Creating..." : "Save Wiki Page"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -36,7 +36,7 @@ function Waves() {
 export function LiquidBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0">
-      <Canvas orthographic camera={{ zoom: 50, position: [0, 3, 8] }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+      <Canvas orthographic camera={{ zoom: 50, position: [0, 3, 8] }} gl={{ alpha: true }} dpr={[1, 1.5]} style={{ pointerEvents: "none" }}>
         <Waves />
       </Canvas>
     </div>

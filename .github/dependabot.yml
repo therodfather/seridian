@@ -2,6 +2,7 @@
 # Bun is the only JS package manager — use package-ecosystem: bun (not npm).
 # Weekly cadence; groups reduce PR spam; majors for TS / ESLint / AGP are ignored
 # so humans can plan those upgrades deliberately.
+# Android is frozen on main — gradle updates target android-dev instead.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -60,6 +61,7 @@ updates:
 
   - package-ecosystem: gradle
     directory: /android-client
+    target-branch: android-dev
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

@@ -2,10 +2,10 @@ name: Android CI
 
 on:
   push:
-    branches: [main]
+    branches: [android-dev]
     tags: ["android-v*"]
   pull_request:
-    branches: [main]
+    branches: [android-dev]
     paths:
       - "android-client/**"
       - ".github/workflows/android.yml"

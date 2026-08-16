@@ -14,3 +14,4 @@ export { NotificationProvider } from "./NotificationProvider";
 export { StatusIndicator } from "./StatusIndicator";
 export { ShortcutsDialog } from "./ShortcutsDialog";
 export { ActivityFeed } from "./ActivityFeed";
+export * from "./kit";

@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
-import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
+import { Badge, Button } from "@bytecats/ui-kit";
 import { PhoneCall, Plus } from "lucide-react";
-import { EmptyState } from "@/components/dashboard/EmptyState";
-import { PageHeader } from "@/components/dashboard/PageHeader";
+import {
+  EmptyState,
+  LoadingBlock,
+  PageShell,
+  StatusBadge,
+} from "@/components/dashboard/kit";
 import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
 import { ivrFlowHref } from "@/lib/routes";
 import { useQuery } from "convex/react";
@@ -38,29 +42,25 @@ export function IvrFlowList() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="IVR / Voice"
-        description="Build inbound call menus, publish a version Telnyx executes, and assign a number."
-        action={
-          <Button
-            type="button"
-            size="sm"
-            disabled={!currentUserId || creating}
-            onClick={() => void handleCreate()}
-            className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold"
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            {creating ? "Creating…" : "New flow"}
-          </Button>
-        }
-      />
-
+    <PageShell
+      title="IVR / Voice"
+      description="Build inbound call menus, publish a version Telnyx executes, and assign a number."
+      icon={<PhoneCall className="h-5 w-5" aria-hidden="true" />}
+      action={
+        <Button
+          type="button"
+          size="sm"
+          disabled={!currentUserId || creating}
+          onClick={() => void handleCreate()}
+          className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold"
+        >
+          <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+          {creating ? "Creating…" : "New flow"}
+        </Button>
+      }
+    >
       {!flows ? (
-        <div className="space-y-3" aria-busy="true" aria-label="Loading IVR flows">
-          <Skeleton className="h-20 w-full rounded-xl bg-white/[0.04]" />
-          <Skeleton className="h-20 w-full rounded-xl bg-white/[0.04]" />
-        </div>
+        <LoadingBlock rows={2} label="Loading IVR flows" />
       ) : flows.length === 0 ? (
         <EmptyState
           icon="☎"
@@ -100,18 +100,13 @@ export function IvrFlowList() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <Badge
-                    variant="secondary"
-                    className={
-                      flow.status === "published"
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                        : "border-white/10 bg-white/[0.04] text-slate-400"
-                    }
+                  <StatusBadge
+                    tone={flow.status === "published" ? "success" : "neutral"}
                   >
                     {flow.status === "published"
                       ? `Published v${flow.publishedVersion ?? "?"}`
                       : "Draft"}
-                  </Badge>
+                  </StatusBadge>
                   {flow.numberActive && (
                     <Badge className="border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
                       Live number
@@ -123,6 +118,6 @@ export function IvrFlowList() {
           ))}
         </ul>
       )}
-    </div>
+    </PageShell>
   );
 }

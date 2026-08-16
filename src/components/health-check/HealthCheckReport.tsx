@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Input, Textarea } from "@bytecats/ui-kit";
 import { ClipboardCheck, Plus, Printer, Trash2 } from "lucide-react";
 import { Field, FormGrid } from "@/components/ui/form";
+import { FlowSteps, PageShell } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
 import {
   FINDING_SECTIONS,
@@ -23,6 +24,7 @@ const fieldClass = "bg-white/5 border-white/10";
 export function HealthCheckReport() {
   const [draft, setDraft] = useState<HealthCheckDraft>(emptyHealthCheckDraft);
   const [hydrated, setHydrated] = useState(false);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     setDraft(loadHealthCheckDraft());
@@ -64,24 +66,20 @@ export function HealthCheckReport() {
     setDraft((prev) => ({ ...prev, [severity]: rows }));
   };
 
+  const HEALTH_STEPS = [
+    { id: "client", label: "Client", description: "Who the report is for." },
+    { id: "findings", label: "Findings", description: "Critical / High / Recommended / Doing well." },
+    { id: "plan", label: "30/60/90", description: "Remediation plan and cost savings." },
+    { id: "print", label: "Print", description: "Review the full page, then print." },
+  ];
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="print:hidden flex flex-col gap-4 border-b border-white/[0.08] pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
-            <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">
-              Health Check
-            </h1>
-            <p className="mt-0.5 text-xs text-slate-400">
-              One-page Cloud/SRE report. Fill, print, hand to the client in 3–5
-              days.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
+    <PageShell
+      title="Health Check"
+      description="One-page Cloud/SRE report. Fill, print, hand to the client in 3–5 days."
+      icon={<ClipboardCheck className="h-5 w-5" aria-hidden="true" />}
+      action={
+        <div className="print:hidden flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
@@ -99,6 +97,13 @@ export function HealthCheckReport() {
             Print report
           </Button>
         </div>
+      }
+    >
+      <div className="print:hidden">
+        <FlowSteps steps={HEALTH_STEPS} current={step} onStepChange={setStep} />
+        {HEALTH_STEPS[step]?.description && (
+          <p className="mt-2 text-xs text-slate-500">{HEALTH_STEPS[step].description}</p>
+        )}
       </div>
 
       <article className="health-check-report space-y-6 rounded-2xl border border-white/[0.08] bg-[#0c1222] p-5 sm:p-8 print:border-0 print:bg-white print:p-0">
@@ -244,7 +249,7 @@ export function HealthCheckReport() {
           is a separate CI/CD or feature sprint, scoped from this report.
         </p>
       </article>
-    </div>
+    </PageShell>
   );
 }
 

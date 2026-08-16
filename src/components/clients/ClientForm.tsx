@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Client create/edit — steps: Basics → Contacts → Review.
+ * Change field labels or step names in the `steps` array below.
+ */
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -82,10 +86,58 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
 
   const steps = [
     {
-      id: "contact",
-      label: "Contact",
+      id: "basics",
+      label: "Basics",
       fields: (
-        <FormSection title="Contact Information">
+        <FormSection title="Company basics">
+          <FormGrid>
+            <Field label="Company" required error={errors.company}>
+              <Input
+                value={company}
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  if (errors.company) setErrors((prev) => ({ ...prev, company: undefined }));
+                }}
+                placeholder="Acme Corp"
+                className="bg-white/5 border-white/10"
+              />
+            </Field>
+            <Field label="Industry">
+              <Input
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                placeholder="Technology"
+                className="bg-white/5 border-white/10"
+              />
+            </Field>
+            <Field label="Status">
+              <Select value={status} onValueChange={(v) => setStatus(v as "active" | "inactive")}>
+                <SelectTrigger className="bg-white/5 border-white/10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Website">
+              <Input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="company.com"
+                className="bg-white/5 border-white/10"
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
+      ),
+    },
+    {
+      id: "contacts",
+      label: "Contacts",
+      fields: (
+        <FormSection title="Primary contact">
           <FormGrid>
             <Field label="Name" required error={errors.name}>
               <Input
@@ -111,48 +163,57 @@ export function ClientForm({ client, onSuccess, onCancel }: ClientFormProps) {
               />
             </Field>
             <Field label="Phone">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className="bg-white/5 border-white/10" />
-            </Field>
-            <Field label="Website">
-              <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="company.com" className="bg-white/5 border-white/10" />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 (555) 000-0000"
+                className="bg-white/5 border-white/10"
+              />
             </Field>
           </FormGrid>
+          <Field label="Notes">
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Additional notes..."
+              rows={3}
+              className="bg-white/5 border-white/10"
+            />
+          </Field>
         </FormSection>
       ),
     },
     {
-      id: "company",
-      label: "Company",
+      id: "review",
+      label: "Review",
       fields: (
-        <FormSection title="Company Details">
-          <FormGrid>
-            <Field label="Company" required error={errors.company}>
-              <Input
-                value={company}
-                onChange={(e) => {
-                  setCompany(e.target.value);
-                  if (errors.company) setErrors((prev) => ({ ...prev, company: undefined }));
-                }}
-                placeholder="Acme Corp"
-                className="bg-white/5 border-white/10"
-              />
-            </Field>
-            <Field label="Industry">
-              <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Technology" className="bg-white/5 border-white/10" />
-            </Field>
-            <Field label="Status">
-              <Select value={status} onValueChange={(v) => setStatus(v as "active" | "inactive")}>
-                <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          </FormGrid>
-          <Field label="Notes">
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional notes..." rows={3} className="bg-white/5 border-white/10" />
-          </Field>
+        <FormSection title="Review before saving">
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Company</dt>
+              <dd className="text-right text-white">{company || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Contact</dt>
+              <dd className="text-right text-white">{name || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Email</dt>
+              <dd className="text-right text-white">{email || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Phone</dt>
+              <dd className="text-right text-white">{phone || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Industry</dt>
+              <dd className="text-right text-white">{industry || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2">
+              <dt className="text-slate-500">Status</dt>
+              <dd className="text-right capitalize text-white">{status}</dd>
+            </div>
+          </dl>
         </FormSection>
       ),
     },

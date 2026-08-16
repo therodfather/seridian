@@ -28,6 +28,7 @@ import {
 import { PipelineBoard } from "@/components/sales/PipelineBoard";
 import { DealDetail } from "@/components/sales/DealDetail";
 import { DealForm } from "@/components/sales/DealForm";
+import { PageShell, StatusBadge } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
 
 type StageKey = "lead" | "proposal" | "negotiation" | "closed_won" | "closed_lost";
@@ -198,33 +199,25 @@ function SalesPageContent() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Header Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              Sales Pipeline
-            </h1>
-            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              {stats ? `${stats.activeCount} Active Deals` : "Loading..."}
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Track deal stages, forecast weighted revenue, manage client opportunities, and analyze conversion metrics.
-          </p>
-        </div>
-
+    <PageShell
+      title="Sales Pipeline"
+      description="Track deal stages, forecast weighted revenue, manage client opportunities, and analyze conversion metrics."
+      badge={
+        <StatusBadge tone="success">
+          {stats ? `${stats.activeCount} Active Deals` : "Loading..."}
+        </StatusBadge>
+      }
+      action={
         <Button
           size="sm"
           onClick={handleAddDeal}
-          className="bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1.5 self-start sm:self-auto"
+          className="bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1.5"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Add Opportunity
         </Button>
-      </div>
-
+      }
+    >
       {/* KPI Metrics Dashboard Bar */}
       <ExecutiveKpiBar stats={stats} />
 
@@ -480,7 +473,7 @@ function SalesPageContent() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }
 

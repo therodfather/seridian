@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Proposal create/edit — steps: Client → Scope → Pricing → Review.
+ * Change step labels or field copy in the `steps` array below.
+ */
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
@@ -88,6 +92,8 @@ export function ProposalForm({ proposal, onSuccess, onCancel }: ProposalFormProp
     }
   }
 
+  const selectedClient = clients?.find((c) => c._id === clientId);
+
   const clientSelect =
     clients === undefined ? (
       <Skeleton className="h-9 w-full rounded-md" />
@@ -112,10 +118,10 @@ export function ProposalForm({ proposal, onSuccess, onCancel }: ProposalFormProp
 
   const steps = [
     {
-      id: "details",
-      label: "Details",
+      id: "client",
+      label: "Client",
       fields: (
-        <FormSection title="Proposal Information">
+        <FormSection title="Who is this for?">
           <Field label="Title" required error={errors.title}>
             <Input
               value={title}
@@ -127,30 +133,15 @@ export function ProposalForm({ proposal, onSuccess, onCancel }: ProposalFormProp
               className="bg-white/5 border-white/10"
             />
           </Field>
-          <FormGrid>
-            <Field label="Client">{clientSelect}</Field>
-            <Field label="Value ($)" error={errors.value}>
-              <Input
-                value={value}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  if (errors.value) setErrors((prev) => ({ ...prev, value: undefined }));
-                }}
-                type="number"
-                min="0"
-                placeholder="75000"
-                className="bg-white/5 border-white/10"
-              />
-            </Field>
-          </FormGrid>
+          <Field label="Client">{clientSelect}</Field>
         </FormSection>
       ),
     },
     {
-      id: "content",
-      label: "Content",
+      id: "scope",
+      label: "Scope",
       fields: (
-        <FormSection title="Proposal Content">
+        <FormSection title="Proposal scope">
           <Field label="Proposal Details" required error={errors.content}>
             <Textarea
               value={content}
@@ -172,6 +163,59 @@ export function ProposalForm({ proposal, onSuccess, onCancel }: ProposalFormProp
               className="bg-white/5 border-white/10"
             />
           </Field>
+        </FormSection>
+      ),
+    },
+    {
+      id: "pricing",
+      label: "Pricing",
+      fields: (
+        <FormSection title="Pricing">
+          <FormGrid>
+            <Field label="Value ($)" error={errors.value}>
+              <Input
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  if (errors.value) setErrors((prev) => ({ ...prev, value: undefined }));
+                }}
+                type="number"
+                min="0"
+                placeholder="75000"
+                className="bg-white/5 border-white/10"
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review",
+      fields: (
+        <FormSection title="Review before saving">
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Title</dt>
+              <dd className="text-right text-white">{title || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Client</dt>
+              <dd className="text-right text-white">{selectedClient?.name ?? "None"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Value</dt>
+              <dd className="text-right text-white">
+                {value.trim() ? `$${Number(value).toLocaleString()}` : "—"}
+              </dd>
+            </div>
+            <div className="py-2">
+              <dt className="mb-1 text-slate-500">Scope preview</dt>
+              <dd className="line-clamp-4 whitespace-pre-wrap text-xs text-slate-300">
+                {content || "—"}
+              </dd>
+            </div>
+          </dl>
         </FormSection>
       ),
     },

@@ -5,7 +5,7 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import { EmptyState, PageShell } from "@/components/dashboard/kit";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 
 type Contract = Doc<"contracts">;
@@ -177,21 +177,19 @@ export function ContractList({ onEdit, onView, onAdd }: ContractListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-white">Contracts</h2>
-          <p className="text-sm text-slate-500">
-            {contracts === undefined
-              ? "Loading..."
-              : `${contracts.length} contract${contracts.length !== 1 ? "s" : ""}`}
-          </p>
-        </div>
-        <Button type="button" size="sm" onClick={onAdd} className="self-start">
+    <PageShell
+      title="Contracts"
+      description={
+        contracts === undefined
+          ? "Loading..."
+          : `${contracts.length} contract${contracts.length !== 1 ? "s" : ""}`
+      }
+      action={
+        <Button type="button" size="sm" onClick={onAdd}>
           + New Contract
         </Button>
-      </div>
-
+      }
+    >
       {contracts === undefined ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
@@ -221,6 +219,6 @@ export function ContractList({ onEdit, onView, onAdd }: ContractListProps) {
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

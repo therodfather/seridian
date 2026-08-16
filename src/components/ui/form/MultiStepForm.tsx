@@ -1,8 +1,13 @@
 "use client";
 
+/**
+ * Multi-step form wizard used by Clients, Deals, Proposals, Bookings, etc.
+ * Step chrome comes from the dashboard kit FlowSteps so every wizard looks the same.
+ */
 import { useState, useCallback, ReactNode } from "react";
 import { Button } from "@bytecats/ui-kit";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { FlowSteps } from "@/components/dashboard/kit";
 
 export interface FormStep {
   id: string;
@@ -39,39 +44,19 @@ export function MultiStepForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        {steps.map((step, i) => (
-          <button
-            key={step.id}
-            type="button"
-            onClick={() => setCurrentStep(i)}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              i === currentStep
-                ? "bg-seridian-500/15 text-seridian-400"
-                : i < currentStep
-                  ? "text-emerald-400"
-                  : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {i < currentStep ? (
-              <Check className="h-3 w-3" />
-            ) : (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px]">
-                {i + 1}
-              </span>
-            )}
-            <span className="hidden sm:inline">{step.label}</span>
-          </button>
-        ))}
-      </div>
+      <FlowSteps
+        steps={steps.map(({ id, label }) => ({ id, label }))}
+        current={currentStep}
+        onStepChange={setCurrentStep}
+      />
 
-      <div className="min-h-[200px]">{steps[currentStep].fields}</div>
+      <div className="min-h-[200px]">{steps[currentStep]?.fields}</div>
 
       <div className="flex items-center justify-between border-t border-white/[0.06] pt-3">
         <div>
           {!isFirst && (
             <Button type="button" variant="ghost" onClick={goPrev} className="text-slate-400">
-              <ChevronLeft className="mr-1 h-3.5 w-3.5" /> Back
+              <ChevronLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Back
             </Button>
           )}
         </div>
@@ -84,15 +69,19 @@ export function MultiStepForm({
           {isLast ? (
             <Button
               type="button"
-              onClick={onSubmit}
+              onClick={() => void onSubmit()}
               disabled={submitting}
-              className="bg-seridian-500 text-white hover:bg-seridian-400"
+              className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold"
             >
               {submitting ? "Saving..." : submitLabel}
             </Button>
           ) : (
-            <Button type="button" onClick={goNext} className="bg-seridian-500 text-white hover:bg-seridian-400">
-              Next <ChevronRight className="ml-1 h-3.5 w-3.5" />
+            <Button
+              type="button"
+              onClick={goNext}
+              className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold"
+            >
+              Next <ChevronRight className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
             </Button>
           )}
         </div>

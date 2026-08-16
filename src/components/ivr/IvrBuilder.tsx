@@ -1,7 +1,10 @@
 "use client";
 
+/**
+ * IVR builder — guided steps: Name → Tree → Publish → Assign number.
+ * Change step labels in IVR_FLOW_STEPS below.
+ */
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
@@ -17,8 +20,16 @@ import {
   SelectValue,
   Skeleton,
 } from "@bytecats/ui-kit";
-import { ArrowLeft, PhoneCall, Save, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, PhoneCall, Save, Upload } from "lucide-react";
 import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
+import {
+  BackLink,
+  FlowSteps,
+  LoadingBlock,
+  PageShell,
+  PageSection,
+  StatusBadge,
+} from "@/components/dashboard/kit";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { AddNodeMenu, IvrNodeInspector } from "./IvrNodeInspector";
@@ -29,6 +40,13 @@ import {
   type IvrNode,
   type IvrNodeType,
 } from "./ivrTypes";
+
+const IVR_FLOW_STEPS = [
+  { id: "name", label: "Name", description: "Name the flow and add a short description." },
+  { id: "tree", label: "Tree", description: "Build the menu tree callers will hear." },
+  { id: "publish", label: "Publish", description: "Save a draft, then publish so Telnyx can run it." },
+  { id: "assign", label: "Assign number", description: "Wire a Telnyx DID to this published flow." },
+];
 
 interface IvrBuilderProps {
   flowId: Id<"ivrFlows">;
@@ -50,6 +68,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
   const assignNumber = useAction(api.telnyx.assignNumber);
   const listNumbers = useAction(api.telnyx.listPhoneNumbers);
 
+  const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [graph, setGraph] = useState<IvrGraph | null>(null);
@@ -151,6 +170,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
       }
       const result = await publish({ currentUserId, flowId });
       setMessage(`Published v${result.version}`);
+      setStep(3);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Publish failed");
     } finally {
@@ -200,74 +220,43 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
   };
 
   if (flow === undefined) {
-    return (
-      <div className="space-y-4" aria-busy="true" aria-label="Loading IVR builder">
-        <Skeleton className="h-10 w-64 bg-white/[0.04]" />
-        <Skeleton className="h-96 w-full rounded-xl bg-white/[0.04]" />
-      </div>
-    );
+    return <LoadingBlock rows={4} withHeader label="Loading IVR builder" />;
   }
 
   if (flow === null || !graph) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-slate-400">Flow not found.</p>
-        <Button asChild variant="outline" className="border-white/10">
-          <Link href={ROUTES.dashboard.ivr}>Back to IVR list</Link>
-        </Button>
+        <BackLink href={ROUTES.dashboard.ivr} label="Back to IVR list" />
       </div>
     );
   }
 
+  const isFirst = step === 0;
+  const isLast = step === IVR_FLOW_STEPS.length - 1;
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 border-b border-white/[0.08] pb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-3">
-          <Link
-            href={ROUTES.dashboard.ivr}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            All flows
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
-              <PhoneCall className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold tracking-tight text-white">
-                IVR builder
-              </h1>
-              <p className="mt-0.5 text-xs text-slate-400">
-                Edit the tree, save a draft, publish, then assign a Telnyx number.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge
-              className={
-                flow.status === "published"
-                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                  : "border-white/10 bg-white/[0.04] text-slate-400"
-              }
-            >
-              {flow.status === "published"
-                ? `Live v${flow.publishedVersion}`
-                : "Draft only"}
+    <PageShell
+      title="IVR builder"
+      description="Edit the tree, save a draft, publish, then assign a Telnyx number."
+      icon={<PhoneCall className="h-5 w-5" aria-hidden="true" />}
+      badge={
+        <>
+          <StatusBadge tone={flow.status === "published" ? "success" : "neutral"}>
+            {flow.status === "published"
+              ? `Live v${flow.publishedVersion}`
+              : "Draft only"}
+          </StatusBadge>
+          {dirty && <StatusBadge tone="warning">Unsaved changes</StatusBadge>}
+          {flow.phoneNumber && (
+            <Badge className="border-cyan-500/20 bg-cyan-500/10 font-mono text-cyan-300">
+              {flow.phoneNumber}
+              {flow.numberActive ? " · active" : ""}
             </Badge>
-            {dirty && (
-              <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-300">
-                Unsaved changes
-              </Badge>
-            )}
-            {flow.phoneNumber && (
-              <Badge className="border-cyan-500/20 bg-cyan-500/10 font-mono text-cyan-300">
-                {flow.phoneNumber}
-                {flow.numberActive ? " · active" : ""}
-              </Badge>
-            )}
-          </div>
-        </div>
+          )}
+        </>
+      }
+      action={
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -291,7 +280,18 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
             {busy === "publish" ? "Publishing…" : "Publish"}
           </Button>
         </div>
-      </div>
+      }
+    >
+      <BackLink href={ROUTES.dashboard.ivr} label="All flows" />
+
+      <FlowSteps
+        steps={IVR_FLOW_STEPS}
+        current={step}
+        onStepChange={setStep}
+      />
+      {IVR_FLOW_STEPS[step]?.description && (
+        <p className="text-xs text-slate-500">{IVR_FLOW_STEPS[step].description}</p>
+      )}
 
       {message && (
         <p
@@ -302,153 +302,215 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="ivr-flow-name">Name</Label>
-          <Input
-            id="ivr-flow-name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setDirty(true);
-            }}
-            className="bg-[#070b14] border-white/10"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="ivr-flow-desc">Description</Label>
-          <Input
-            id="ivr-flow-desc"
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              setDirty(true);
-            }}
-            className="bg-[#070b14] border-white/10"
-          />
-        </div>
-      </div>
-
-      <section
-        aria-label="Assign Telnyx number"
-        className="space-y-3 rounded-xl border border-white/[0.08] bg-[#070b14]/60 p-4"
-      >
-        <h2 className="text-sm font-semibold text-white">Assign number</h2>
-        <p className="text-xs text-slate-500">
-          Publish first, then wire a Telnyx DID to this flow&apos;s Call Control app
-          (webhook: <code className="text-slate-400">/telnyx/webhook</code>).
-        </p>
-        <div className="flex flex-wrap items-end gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="border-white/10"
-            disabled={!!busy}
-            onClick={() => void handleLoadNumbers()}
-          >
-            {busy === "numbers" ? "Loading…" : "Load Telnyx numbers"}
-          </Button>
-          {numbers.length > 0 && (
-            <>
-              <Select value={pickedNumberId} onValueChange={setPickedNumberId}>
-                <SelectTrigger className="w-56 bg-[#0c1222] border-white/10">
-                  <SelectValue placeholder="Pick a number" />
-                </SelectTrigger>
-                <SelectContent>
-                  {numbers.map((n) => (
-                    <SelectItem key={n.id} value={n.id}>
-                      {n.phoneNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                size="sm"
-                disabled={!!busy || !pickedNumberId}
-                onClick={() => void handleAssign()}
-              >
-                {busy === "assign" ? "Assigning…" : "Assign & activate"}
-              </Button>
-            </>
-          )}
-        </div>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section
-          aria-label="IVR node tree"
-          className="space-y-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-4"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-white">Flow tree</h2>
-            <p className="text-[11px] text-slate-600">
-              Entry:{" "}
-              <span className="font-mono text-slate-400">{graph.entryNodeId}</span>
-            </p>
-          </div>
-          <AddNodeMenu onAdd={handleAddNode} />
-          <ul className="space-y-2" role="listbox" aria-label="Nodes">
-            {graph.nodes.map((node) => {
-              const isSelected = node.id === selectedId;
-              const isEntry = node.id === graph.entryNodeId;
-              return (
-                <li key={node.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => setSelectedId(node.id)}
-                    className={cn(
-                      "w-full rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      isSelected
-                        ? "border-cyan-500/40 bg-cyan-500/10"
-                        : "border-white/[0.06] bg-[#070b14]/80 hover:border-white/15",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-white">
-                        {node.label}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                        {NODE_TYPE_LABELS[node.type]}
-                        {isEntry ? " · entry" : ""}
-                      </span>
-                    </div>
-                    {node.edges.length > 0 && (
-                      <p className="mt-1 truncate text-[11px] text-slate-600">
-                        {node.edges
-                          .map((e) => `${e.key}→${e.targetNodeId}`)
-                          .join(" · ")}
-                      </p>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <aside className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-4">
-          {selected ? (
-            <IvrNodeInspector
-              graph={graph}
-              node={selected}
-              onChange={handleNodeChange}
-              onDelete={handleDeleteNode}
-              onSetEntry={() =>
-                updateGraph({ ...graph, entryNodeId: selected.id })
-              }
+      {step === 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="ivr-flow-name">Name</Label>
+            <Input
+              id="ivr-flow-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setDirty(true);
+              }}
+              className="bg-[#070b14] border-white/10"
             />
-          ) : (
-            <p className="text-xs text-slate-500">Select a node to edit.</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ivr-flow-desc">Description</Label>
+            <Input
+              id="ivr-flow-desc"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setDirty(true);
+              }}
+              className="bg-[#070b14] border-white/10"
+            />
+          </div>
+        </div>
+      )}
+
+      {step === 1 && (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section
+            aria-label="IVR node tree"
+            className="space-y-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-white">Flow tree</h2>
+              <p className="text-[11px] text-slate-600">
+                Entry:{" "}
+                <span className="font-mono text-slate-400">{graph.entryNodeId}</span>
+              </p>
+            </div>
+            <AddNodeMenu onAdd={handleAddNode} />
+            <ul className="space-y-2" role="listbox" aria-label="Nodes">
+              {graph.nodes.map((node) => {
+                const isSelected = node.id === selectedId;
+                const isEntry = node.id === graph.entryNodeId;
+                return (
+                  <li key={node.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => setSelectedId(node.id)}
+                      className={cn(
+                        "w-full rounded-lg border px-3 py-2.5 text-left transition-colors",
+                        isSelected
+                          ? "border-cyan-500/40 bg-cyan-500/10"
+                          : "border-white/[0.06] bg-[#070b14]/80 hover:border-white/15",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-white">
+                          {node.label}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                          {NODE_TYPE_LABELS[node.type]}
+                          {isEntry ? " · entry" : ""}
+                        </span>
+                      </div>
+                      {node.edges.length > 0 && (
+                        <p className="mt-1 truncate text-[11px] text-slate-600">
+                          {node.edges
+                            .map((e) => `${e.key}→${e.targetNodeId}`)
+                            .join(" · ")}
+                        </p>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          <aside className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-4">
+            {selected ? (
+              <IvrNodeInspector
+                graph={graph}
+                node={selected}
+                onChange={handleNodeChange}
+                onDelete={handleDeleteNode}
+                onSetEntry={() =>
+                  updateGraph({ ...graph, entryNodeId: selected.id })
+                }
+              />
+            ) : (
+              <p className="text-xs text-slate-500">Select a node to edit.</p>
+            )}
+          </aside>
+        </div>
+      )}
+
+      {step === 2 && (
+        <PageSection
+          title="Publish this flow"
+          description="Telnyx only runs the published version. Save first if you have unsaved edits."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-white/10"
+              disabled={!!busy}
+              onClick={() => void handleSave()}
+            >
+              <Save className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              {busy === "save" ? "Saving…" : "Save draft"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-cyan-500 font-semibold text-slate-950 hover:bg-cyan-400"
+              disabled={!!busy}
+              onClick={() => void handlePublish()}
+            >
+              <Upload className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              {busy === "publish" ? "Publishing…" : "Publish"}
+            </Button>
+          </div>
+        </PageSection>
+      )}
+
+      {step === 3 && (
+        <PageSection
+          title="Assign number"
+          description={
+            <>
+              Publish first, then wire a Telnyx DID to this flow&apos;s Call Control app
+              (webhook: <code className="text-slate-400">/telnyx/webhook</code>).
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-white/10"
+              disabled={!!busy}
+              onClick={() => void handleLoadNumbers()}
+            >
+              {busy === "numbers" ? "Loading…" : "Load Telnyx numbers"}
+            </Button>
+            {numbers.length > 0 && (
+              <>
+                <Select value={pickedNumberId} onValueChange={setPickedNumberId}>
+                  <SelectTrigger className="w-56 bg-[#0c1222] border-white/10">
+                    <SelectValue placeholder="Pick a number" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {numbers.map((n) => (
+                      <SelectItem key={n.id} value={n.id}>
+                        {n.phoneNumber}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!!busy || !pickedNumberId}
+                  onClick={() => void handleAssign()}
+                >
+                  {busy === "assign" ? "Assigning…" : "Assign & activate"}
+                </Button>
+              </>
+            )}
+          </div>
+        </PageSection>
+      )}
+
+      <div className="flex items-center justify-between border-t border-white/[0.06] pt-3">
+        <div>
+          {!isFirst && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-slate-400"
+              onClick={() => setStep((s) => s - 1)}
+            >
+              <ChevronLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Back
+            </Button>
           )}
-        </aside>
+        </div>
+        <div>
+          {!isLast && (
+            <Button
+              type="button"
+              className="bg-cyan-500 font-semibold text-slate-950 hover:bg-cyan-400"
+              onClick={() => setStep((s) => s + 1)}
+            >
+              Next <ChevronRight className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <section aria-label="Recent calls" className="space-y-3">
-        <h2 className="text-sm font-semibold text-white">Recent calls</h2>
+      <PageSection title="Recent calls">
         {!callLogs ? (
           <Skeleton className="h-24 w-full rounded-xl bg-white/[0.04]" />
         ) : callLogs.length === 0 ? (
@@ -473,7 +535,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
                     key={log._id}
                     className="border-b border-white/[0.04] text-slate-300"
                   >
-                    <td className="px-3 py-2 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-3 py-2">
                       {new Date(log.startedAt).toLocaleString()}
                     </td>
                     <td className="px-3 py-2 font-mono">{log.fromNumber}</td>
@@ -488,7 +550,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
             </table>
           </div>
         )}
-      </section>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 }

@@ -29,6 +29,10 @@ Convex database schema for Seridian. Source: [`convex/schema.ts`](../convex/sche
   - [linearProjects](#linearprojects)
   - [linearLabels](#linearlabels)
   - [linearUsers](#linearusers)
+- [Voice / IVR Tables](#voice--ivr-tables)
+  - [businesses](#businesses)
+  - [ivrFlows](#ivrflows)
+  - [ivrFlowVersions](#ivrflowversions)
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [Common Query Patterns](#common-query-patterns)
 
@@ -233,7 +237,11 @@ Task/ticket tracking. Supports Linear sync, drag-and-drop reordering, and client
 | `order` | `number` | Yes | Sort order within status column |
 | `linearCreatedAt` | `string` | No | Linear creation timestamp |
 | `linearUpdatedAt` | `string` | No | Linear update timestamp |
-| `lastSyncedAt` | `number` | No | Last Linear sync timestamp (ms) |
+| `lastSyncedAt` | `number` | No | Last sync timestamp (ms), Linear or GitHub |
+| `githubIssueNumber` | `number` | No | Linked GitHub Issue number |
+| `githubIssueNodeId` | `string` | No | GitHub Issue GraphQL node ID (needed for mutations) |
+| `githubProjectItemId` | `string` | No | GitHub Projects v2 item ID (needed to set the item's Status field) |
+| `githubUpdatedAt` | `string` | No | GitHub Issue's `updatedAt`, as returned by the pull |
 
 **Indexes:**
 
@@ -243,6 +251,8 @@ Task/ticket tracking. Supports Linear sync, drag-and-drop reordering, and client
 | `by_status` | `status` | Filter by kanban column |
 | `by_clientId` | `clientId` | Filter by associated client |
 | `by_status_and_clientId` | `status`, `clientId` | Compound filter: status + client |
+| `by_githubIssueNumber` | `githubIssueNumber` | Lookup by GitHub Issue number |
+| `by_githubProjectItemId` | `githubProjectItemId` | Lookup by GitHub Projects v2 item (sync dedup) |
 
 **Relationships:**
 - Belongs to `clients` (via `clientId`, optional)
@@ -250,7 +260,8 @@ Task/ticket tracking. Supports Linear sync, drag-and-drop reordering, and client
 **Key patterns:**
 - **Reorder:** `reorder` mutation moves issues within/between status columns, recalculating `order` values for siblings.
 - **Create:** Auto-assigns `order` as max order in target status + 1.
-- **Linear sync:** `linearId` is set when synced from Linear; `lastSyncedAt` tracks sync freshness.
+- **Linear sync (legacy, being phased out):** `linearId` is set when synced from Linear; `lastSyncedAt` tracks sync freshness.
+- **GitHub Projects v2 sync (current source of truth):** see `convex/githubProjectsSync.ts`. Pull (`pullFromGitHubProjects`) fetches every item on the configured board and upserts by `githubProjectItemId`, overwriting local title/description/status — GitHub wins on conflict. Push (`pushIssueChange`) is scheduled fire-and-forget from `create`/`update` in `convex/issues.ts`: creates the GitHub Issue + adds it to the project the first time an issue has no `githubProjectItemId` yet, then just re-sets the Status field on later status changes. Pulls write via `ctx.db.patch`/`insert` directly (bypassing `create`/`update`), so pull can never re-trigger a push — no sync loop.
 
 ---
 
@@ -458,11 +469,13 @@ GitHub issue data synced via `githubIngest.ts`.
 
 ### `githubProjects`
 
-GitHub project data synced via `githubIngest.ts`.
+Lightweight stats mirror of the account's Projects v2 boards (title/description/state only — a listing, not board *items*). Populated by `githubSync.ts`'s `syncGitHubProjects`, read by `githubIngest.ts` for the Settings → Sync dashboard's "X GitHub projects" count. **Not** the bidirectional kanban sync — that lives on `issues` directly (see above) via `convex/githubProjectsSync.ts`, a separate, unrelated module despite the similar name.
+
+Uses `user(login).projectsV2` (GraphQL) — GitHub's classic Projects API (`organization.projects`) was sunset in 2024 and no longer works.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `githubId` | `number` | Yes | GitHub project node ID |
+| `githubId` | `string` | Yes | GitHub Projects v2 node ID — an opaque string (e.g. `"PVT_..."`), not numeric |
 | `number` | `number` | Yes | Project number |
 | `title` | `string` | Yes | Project title |
 | `description` | `string` | No | Project description |
@@ -553,6 +566,82 @@ Linear user data synced via `linearIngest.ts`.
 | Index | Fields | Purpose |
 |---|---|---|
 | `by_linearId` | `linearId` | Deduplication / lookup by Linear ID |
+
+---
+
+## Voice / IVR Tables
+
+Inbound programmable IVR (interactive voice response) via Telnyx Call Control. Full node-type/edge semantics live as inline comments in `convex/schema.ts` — this is the field-level shape, not the execution logic (see `convex/ivr.ts`, `convex/lib/ivrGraph.ts`, `convex/lib/telnyxExecutor.ts`).
+
+### `businesses`
+
+Optional tenant registry. An `ivrFlows` row can point at a business so one Telnyx account can run a separate number + flow per business; the rest of the app (clients, deals, wiki, etc.) is still single-tenant.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | Yes | Business name |
+| `slug` | `string` | Yes | URL-safe identifier |
+| `createdBy` | `string` | Yes | Creator's pubkey or identifier |
+| `createdAt` / `updatedAt` | `number` | Yes | Timestamps (ms) |
+
+**Indexes:** `by_slug` (`slug`).
+
+---
+
+### `ivrFlows`
+
+One inbound call flow. `draftGraph` is what the dashboard flow builder edits live; Telnyx only ever executes an immutable **published** snapshot (see `ivrFlowVersions`), so in-progress edits can't affect live calls.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` / `description` | `string` | Name required | Flow label |
+| `businessId` | `id("businesses")` | No | Owning business, if multi-tenant |
+| `draftGraph` | `{ entryNodeId, nodes[] }` | Yes | Editable node graph — see node `type` union below |
+| `publishedVersionId` / `publishedVersion` | `id("ivrFlowVersions")` / `number` | No | Currently live snapshot |
+| `phoneNumber` / `phoneNumberId` | `string` | No | Assigned Telnyx number (E.164) and its Telnyx ID |
+| `callControlAppId` / `connectionId` | `string` | No | Telnyx Call Control Application wired to this flow |
+| `numberActive` | `boolean` | Yes | True once a Telnyx number is actually wired to this flow's Call Control app |
+| `status` | `"draft" \| "published" \| "archived"` | Yes | Flow lifecycle state |
+| `createdBy` / `updatedBy` | `string` | Yes | Attribution |
+| `createdAt` / `updatedAt` | `number` | Yes | Timestamps (ms) |
+
+**Graph node `type`:** `speak` \| `gather` \| `transfer` \| `voicemail` \| `hours` \| `hangup` \| `webhook`. Each node's `edges[]` routes on a `key` — a DTMF digit (`"0"`-`"9"`, `"*"`, `"#"`), or a control outcome (`timeout`, `invalid`, `no_input`, `next`, `open`, `closed`) — to a `targetNodeId`.
+
+**Indexes:**
+
+| Index | Fields | Purpose |
+|---|---|---|
+| `by_status` | `status` | Filter draft/published/archived |
+| `by_phoneNumber` | `phoneNumber` | Find the flow owning an inbound number |
+| `by_business` | `businessId` | List a business's flows |
+
+**Relationships:**
+- Belongs to `businesses` (via `businessId`, optional)
+- Has a live snapshot in `ivrFlowVersions` (via `publishedVersionId`)
+
+---
+
+### `ivrFlowVersions`
+
+Immutable published snapshot of a flow's graph — what the Telnyx webhook handler actually executes for live calls. Same node/edge shape as `ivrFlows.draftGraph`.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `flowId` | `id("ivrFlows")` | Yes | Owning flow |
+| `version` | `number` | Yes | Monotonic version number |
+| `graph` | `{ entryNodeId, nodes[] }` | Yes | Snapshot of the graph at publish time |
+| `publishedBy` | `string` | Yes | Who published this version |
+| `publishedAt` | `number` | Yes | Publish timestamp (ms) |
+
+**Indexes:**
+
+| Index | Fields | Purpose |
+|---|---|---|
+| `by_flow` | `flowId` | List a flow's version history |
+| `by_flow_and_version` | `flowId`, `version` | Fetch a specific version |
+
+**Relationships:**
+- Belongs to `ivrFlows` (via `flowId`)
 
 ---
 

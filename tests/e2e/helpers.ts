@@ -25,3 +25,9 @@ export async function navigateTo(page: Page, section: string) {
   await link.click();
   await page.waitForLoadState("domcontentloaded");
 }
+
+/** Click a hub card by its title (Business / Knowledge hubs). */
+export async function openHubCard(page: Page, title: string) {
+  await page.locator("main").getByRole("link", { name: title }).first().click();
+  await page.waitForLoadState("domcontentloaded");
+}

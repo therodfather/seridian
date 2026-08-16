@@ -1,10 +1,11 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { CreditCard, ExternalLink, GitBranch, Globe, Landmark } from "lucide-react";
+import { CreditCard, ExternalLink, GitBranch, Globe, Landmark, PhoneCall } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
 import { IntegrationsSetupWizard } from "./IntegrationsSetupWizard";
 import { SecretConnectCard } from "./SecretConnectCard";
+import { TelnyxConnectCard } from "./TelnyxConnectCard";
 import {
   GITHUB_ACTIONS,
   GITHUB_REPO,
@@ -197,6 +198,21 @@ export function PlatformConnections({
             currentUserId={currentUserId}
           />
         </div>
+      </WizardBoundary>
+
+      <div>
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <PhoneCall className="h-4 w-4 text-cyan-400" />
+          Voice
+        </h3>
+        <p className="text-xs text-slate-400 mt-1">
+          Telnyx Call Control powers inbound IVR. Keys stay in the Convex vault;
+          flows live under IVR / Voice.
+        </p>
+      </div>
+
+      <WizardBoundary>
+        <TelnyxConnectCard currentUserId={currentUserId} />
       </WizardBoundary>
     </div>
   );

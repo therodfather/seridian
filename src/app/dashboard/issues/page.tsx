@@ -25,6 +25,7 @@ import {
   Badge,
 } from "@bytecats/ui-kit";
 import { IssueCard } from "@/components/kanban/IssueCard";
+import { PageShell } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/contexts/NotificationContext";
 
@@ -275,21 +276,15 @@ export default function IssuesPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-5 p-1">
-      {/* ── Header ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            Issues
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Track tasks, bugs, and client deliverables. Board and table share the same filters.
-          </p>
-        </div>
+    <PageShell
+      className="p-1"
+      title="Issues"
+      description="Track tasks, bugs, and client deliverables. Board and table share the same filters."
+      action={
         <Button
           type="button"
           size="sm"
-          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5 self-start sm:self-auto"
+          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5"
           onClick={() => openCreateForStatus("todo")}
         >
           <svg
@@ -308,7 +303,8 @@ export default function IssuesPage() {
           </svg>
           New Issue
         </Button>
-      </div>
+      }
+    >
 
       {/* ── Metric Summary Cards ───────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -1010,6 +1006,6 @@ export default function IssuesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

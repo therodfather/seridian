@@ -69,6 +69,13 @@ export function SecretConnectCard({
   }
 
   async function handleDisconnect() {
+    if (
+      !window.confirm(
+        `Disconnect ${title}? Stored credentials will be removed from the vault.`,
+      )
+    ) {
+      return;
+    }
     setDisconnecting(true);
     try {
       if (provider === "stripe") {

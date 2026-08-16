@@ -15,7 +15,10 @@ import {
   Kbd,
   KbdGroup,
 } from "@bytecats/ui-kit";
-import { DASHBOARD_NAV, NAV_GROUP_LABELS, entityHref } from "@/lib/dashboardNav";
+import {
+  DASHBOARD_SEARCH_NAV,
+  entityHref,
+} from "@/lib/dashboardNav";
 import { ROUTES, settingsTabHref } from "@/lib/routes";
 
 interface SearchResult {
@@ -39,10 +42,12 @@ const extraNavItems: SearchResult[] = [
 ];
 
 const navigationItems: SearchResult[] = [
-  ...DASHBOARD_NAV.map((item) => ({
+  ...DASHBOARD_SEARCH_NAV.map((item) => ({
     id: `nav-${item.href}`,
     title: item.label,
-    subtitle: NAV_GROUP_LABELS[item.group],
+    subtitle: item.href.includes("/business") || item.href.includes("/knowledge")
+      ? "Hub"
+      : "Page",
     href: item.href,
     group: "navigation" as const,
   })),

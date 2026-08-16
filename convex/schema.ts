@@ -193,6 +193,7 @@ export default defineSchema({
       v.literal("netlify"),
       v.literal("stripe"),
       v.literal("mercury"),
+      v.literal("telnyx"),
     ),
     enabled: v.boolean(),
     /** Honest setup state — not a live OAuth health check. */
@@ -209,6 +210,193 @@ export default defineSchema({
     configuredAt: v.number(),
     updatedAt: v.number(),
   }).index("by_provider", ["provider"]),
+
+  /**
+   * Optional tenant registry for multi-business workspaces. IVR flows can
+   * optionally point at a business; the rest of the app remains single-tenant.
+   */
+  businesses: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_slug", ["slug"]),
+
+  /**
+   * Telnyx-backed inbound IVR flow. Draft graph is edited in the dashboard;
+   * Telnyx executes the published version snapshot only.
+   */
+  ivrFlows: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    businessId: v.optional(v.id("businesses")),
+    /** Editable draft; published copy lives in ivrFlowVersions. */
+    draftGraph: v.object({
+      entryNodeId: v.string(),
+      nodes: v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("speak"),
+            v.literal("gather"),
+            v.literal("transfer"),
+            v.literal("voicemail"),
+            v.literal("hours"),
+            v.literal("hangup"),
+            v.literal("webhook"),
+          ),
+          label: v.string(),
+          text: v.optional(v.string()),
+          voice: v.optional(v.string()),
+          language: v.optional(v.string()),
+          transferTo: v.optional(v.string()),
+          webhookUrl: v.optional(v.string()),
+          timezone: v.optional(v.string()),
+          openHour: v.optional(v.number()),
+          closeHour: v.optional(v.number()),
+          openDays: v.optional(v.array(v.number())),
+          maxRecordingSecs: v.optional(v.number()),
+          edges: v.array(
+            v.object({
+              key: v.union(
+                v.literal("0"),
+                v.literal("1"),
+                v.literal("2"),
+                v.literal("3"),
+                v.literal("4"),
+                v.literal("5"),
+                v.literal("6"),
+                v.literal("7"),
+                v.literal("8"),
+                v.literal("9"),
+                v.literal("*"),
+                v.literal("#"),
+                v.literal("timeout"),
+                v.literal("invalid"),
+                v.literal("no_input"),
+                v.literal("next"),
+                v.literal("open"),
+                v.literal("closed"),
+              ),
+              targetNodeId: v.string(),
+            }),
+          ),
+        }),
+      ),
+    }),
+    publishedVersionId: v.optional(v.id("ivrFlowVersions")),
+    publishedVersion: v.optional(v.number()),
+    phoneNumber: v.optional(v.string()),
+    phoneNumberId: v.optional(v.string()),
+    callControlAppId: v.optional(v.string()),
+    connectionId: v.optional(v.string()),
+    /** True when a Telnyx number is wired to this flow's Call Control app. */
+    numberActive: v.boolean(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    createdBy: v.string(),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_phoneNumber", ["phoneNumber"])
+    .index("by_business", ["businessId"]),
+
+  /** Immutable published snapshots executed by the Telnyx webhook. */
+  ivrFlowVersions: defineTable({
+    flowId: v.id("ivrFlows"),
+    version: v.number(),
+    graph: v.object({
+      entryNodeId: v.string(),
+      nodes: v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("speak"),
+            v.literal("gather"),
+            v.literal("transfer"),
+            v.literal("voicemail"),
+            v.literal("hours"),
+            v.literal("hangup"),
+            v.literal("webhook"),
+          ),
+          label: v.string(),
+          text: v.optional(v.string()),
+          voice: v.optional(v.string()),
+          language: v.optional(v.string()),
+          transferTo: v.optional(v.string()),
+          webhookUrl: v.optional(v.string()),
+          timezone: v.optional(v.string()),
+          openHour: v.optional(v.number()),
+          closeHour: v.optional(v.number()),
+          openDays: v.optional(v.array(v.number())),
+          maxRecordingSecs: v.optional(v.number()),
+          edges: v.array(
+            v.object({
+              key: v.union(
+                v.literal("0"),
+                v.literal("1"),
+                v.literal("2"),
+                v.literal("3"),
+                v.literal("4"),
+                v.literal("5"),
+                v.literal("6"),
+                v.literal("7"),
+                v.literal("8"),
+                v.literal("9"),
+                v.literal("*"),
+                v.literal("#"),
+                v.literal("timeout"),
+                v.literal("invalid"),
+                v.literal("no_input"),
+                v.literal("next"),
+                v.literal("open"),
+                v.literal("closed"),
+              ),
+              targetNodeId: v.string(),
+            }),
+          ),
+        }),
+      ),
+    }),
+    publishedBy: v.string(),
+    publishedAt: v.number(),
+  })
+    .index("by_flow", ["flowId"])
+    .index("by_flow_and_version", ["flowId", "version"]),
+
+  /** Inbound call events handled by the Telnyx IVR webhook (admin-only reads). */
+  ivrCallLogs: defineTable({
+    flowId: v.id("ivrFlows"),
+    versionId: v.optional(v.id("ivrFlowVersions")),
+    callControlId: v.string(),
+    fromNumber: v.string(),
+    toNumber: v.string(),
+    digitPressed: v.optional(v.string()),
+    currentNodeId: v.optional(v.string()),
+    routedTo: v.optional(v.string()),
+    status: v.union(
+      v.literal("ringing"),
+      v.literal("answered"),
+      v.literal("in_progress"),
+      v.literal("transferred"),
+      v.literal("recorded"),
+      v.literal("no_input"),
+      v.literal("hangup"),
+      v.literal("error"),
+    ),
+    lastEventType: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    startedAt: v.number(),
+    endedAt: v.optional(v.number()),
+  })
+    .index("by_callControlId", ["callControlId"])
+    .index("by_flow", ["flowId"]),
 
   caseStudies: defineTable({
     title: v.string(),

@@ -160,7 +160,7 @@ export function DealForm({ deal, onSuccess, onCancel }: DealFormProps) {
     },
     {
       id: "value",
-      label: "Value",
+      label: "Value & stage",
       fields: (
         <FormSection title="Deal Value">
           <FormGrid>
@@ -214,6 +214,36 @@ export function DealForm({ deal, onSuccess, onCancel }: DealFormProps) {
               className="bg-white/5 border-white/10"
             />
           </Field>
+        </FormSection>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review",
+      fields: (
+        <FormSection title="Review before saving">
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Deal</dt>
+              <dd className="text-right text-white">{name || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Value</dt>
+              <dd className="text-right text-white">
+                {value.trim() ? `$${Number(value).toLocaleString()}` : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-white/[0.06] py-2">
+              <dt className="text-slate-500">Probability</dt>
+              <dd className="text-right text-white">{probability || "—"}%</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2">
+              <dt className="text-slate-500">Stage</dt>
+              <dd className="text-right capitalize text-white">
+                {stage.replace(/_/g, " ")}
+              </dd>
+            </div>
+          </dl>
         </FormSection>
       ),
     },

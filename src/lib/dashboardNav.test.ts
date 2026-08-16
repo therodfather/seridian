@@ -3,8 +3,10 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import {
   DASHBOARD_NAV,
+  DASHBOARD_NESTED_NAV,
   DASHBOARD_REDIRECT_ONLY_HREFS,
   DASHBOARD_ROUTE_NAMES,
+  DASHBOARD_SEARCH_NAV,
   KNOWLEDGE_NAV_HREFS,
   NUMBER_KEY_NAV,
   entityHref,
@@ -42,22 +44,22 @@ function collectDashboardPageHrefs(
 
 describe("dashboard nav", () => {
   test("includes knowledge surfaces that already exist as routes", () => {
-    const hrefs = DASHBOARD_NAV.map((item) => item.href);
+    const hrefs = DASHBOARD_SEARCH_NAV.map((item) => item.href);
     for (const href of KNOWLEDGE_NAV_HREFS) {
       expect(hrefs).toContain(href);
     }
   });
 
   test("labels wiki, arena, and second brain for the sidebar", () => {
-    const labels = DASHBOARD_NAV.map((item) => item.label);
+    const labels = DASHBOARD_SEARCH_NAV.map((item) => item.label);
     expect(labels).toContain("Wiki");
     expect(labels).toContain("LLM Arena");
     expect(labels).toContain("Second Brain");
   });
 
-  test("keeps existing core and tools entries without Sync sidebar tab", () => {
-    const hrefs = DASHBOARD_NAV.map((item) => item.href);
-    const labels = DASHBOARD_NAV.map((item) => item.label);
+  test("keeps existing core and tools entries reachable without a Sync sidebar tab", () => {
+    const hrefs = DASHBOARD_SEARCH_NAV.map((item) => item.href);
+    const labels = DASHBOARD_SEARCH_NAV.map((item) => item.label);
     expect(hrefs).toContain("/dashboard");
     expect(hrefs).toContain("/dashboard/settings");
     expect(hrefs).toContain("/dashboard/chat");
@@ -69,10 +71,19 @@ describe("dashboard nav", () => {
     expect(settingsTabHref("sync")).toBe("/dashboard/settings?tab=sync");
   });
 
-  test("route names cover every nav slug", () => {
+  test("hub activeFor entries are all reachable nested destinations", () => {
+    const nestedHrefs = new Set<string>(DASHBOARD_NESTED_NAV.map((item) => item.href));
     for (const item of DASHBOARD_NAV) {
+      for (const child of item.activeFor ?? []) {
+        expect(nestedHrefs.has(child), `${child} (hub: ${item.label})`).toBe(true);
+      }
+    }
+  });
+
+  test("route names cover every hub and nested nav slug", () => {
+    for (const item of DASHBOARD_SEARCH_NAV) {
       const slug = navSlug(item.href);
-      expect(DASHBOARD_ROUTE_NAMES[slug]).toBe(item.label);
+      expect(DASHBOARD_ROUTE_NAMES[slug], item.href).toBe(item.label);
     }
   });
 
@@ -119,7 +130,7 @@ describe("dashboard nav", () => {
   });
 
   test("every nav href maps to a page.tsx (no dead links)", () => {
-    for (const item of DASHBOARD_NAV) {
+    for (const item of DASHBOARD_SEARCH_NAV) {
       const pagePath = pagePathForHref(item.href);
       // Contracts page is landed in parallel; keep the nav entry either way.
       if (item.href === ROUTES.dashboard.contracts && !existsSync(pagePath)) {
@@ -130,14 +141,14 @@ describe("dashboard nav", () => {
   });
 
   test("nav hrefs never leak route-group segments", () => {
-    for (const item of DASHBOARD_NAV) {
+    for (const item of DASHBOARD_SEARCH_NAV) {
       expect(item.href).not.toMatch(ROUTE_GROUP_RE);
       expect(item.href.startsWith("/dashboard")).toBe(true);
     }
   });
 
-  test("sidebar nav covers every static dashboard page except redirects", () => {
-    const navHrefs = new Set<string>(DASHBOARD_NAV.map((item) => item.href));
+  test("sidebar nav (hubs + nested) covers every static dashboard page except redirects", () => {
+    const navHrefs = new Set<string>(DASHBOARD_SEARCH_NAV.map((item) => item.href));
     const redirectOnly = new Set<string>(DASHBOARD_REDIRECT_ONLY_HREFS);
     for (const href of collectDashboardPageHrefs()) {
       if (redirectOnly.has(href)) continue;

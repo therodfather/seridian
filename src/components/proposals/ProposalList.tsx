@@ -6,7 +6,12 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  EmptyState,
+  MetricCards,
+  PageShell,
+  Toolbar,
+} from "@/components/dashboard/kit";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import {
   FileText,
@@ -314,68 +319,55 @@ export function ProposalList({ onEdit, onView, onAdd }: ProposalListProps) {
   }, [proposals, search, statusFilter, sortBy, clientMap]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/[0.08] pb-4">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Proposals</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Create, track, and manage commercial proposals, quote statuses, and accepted client values.
-          </p>
-        </div>
+    <PageShell
+      title="Proposals"
+      description="Create, track, and manage commercial proposals, quote statuses, and accepted client values."
+      action={
         <Button
           type="button"
           size="sm"
           onClick={onAdd}
-          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5 self-start sm:self-auto"
+          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5"
         >
           <Plus className="w-4 h-4" aria-hidden="true" /> New Proposal
         </Button>
-      </div>
+      }
+    >
+      <MetricCards
+        loading={proposals === undefined}
+        items={[
+          {
+            label: "Active Proposals",
+            value: metrics.total,
+            hint: `${metrics.draftCount} drafts · ${metrics.sentCount} sent`,
+            icon: <FileText className="w-4 h-4 text-cyan-400" aria-hidden="true" />,
+          },
+          {
+            label: "Pending Pipeline",
+            value: formatCurrency(metrics.pipelineVal),
+            hint: "Draft & Sent proposal value",
+            valueClassName: "text-blue-400",
+            icon: <DollarSign className="w-4 h-4 text-blue-400" aria-hidden="true" />,
+          },
+          {
+            label: "Accepted Revenue",
+            value: formatCurrency(metrics.acceptedVal),
+            hint: "Closed winning proposals",
+            valueClassName: "text-emerald-400",
+            icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />,
+          },
+          {
+            label: "Awaiting Client",
+            value: metrics.sentCount,
+            hint: "Outbound pending decision",
+            valueClassName: "text-amber-400",
+            icon: <Clock className="w-4 h-4 text-amber-400" aria-hidden="true" />,
+          },
+        ]}
+      />
 
-      {/* KPI Metrics Summary Bar */}
-      {proposals === undefined ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Active Proposals <FileText className="w-4 h-4 text-cyan-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-white tabular-nums">{metrics.total}</p>
-            <p className="text-[11px] text-slate-500">{metrics.draftCount} drafts · {metrics.sentCount} sent</p>
-          </div>
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Pending Pipeline <DollarSign className="w-4 h-4 text-blue-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-blue-400 tabular-nums">{formatCurrency(metrics.pipelineVal)}</p>
-            <p className="text-[11px] text-slate-500">Draft & Sent proposal value</p>
-          </div>
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Accepted Revenue <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-emerald-400 tabular-nums">{formatCurrency(metrics.acceptedVal)}</p>
-            <p className="text-[11px] text-slate-500">Closed winning proposals</p>
-          </div>
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Awaiting Client <Clock className="w-4 h-4 text-amber-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-amber-400 tabular-nums">{metrics.sentCount}</p>
-            <p className="text-[11px] text-slate-500">Outbound pending decision</p>
-          </div>
-        </div>
-      )}
-
-      {/* Filters & Control Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-xl border border-white/[0.08] bg-[#0c1222]/80">
-        <div className="relative flex-1 w-full">
+      <Toolbar>
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
           <Input
             type="search"
@@ -387,41 +379,38 @@ export function ProposalList({ onEdit, onView, onAdd }: ProposalListProps) {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger
-              aria-label="Filter by status"
-              className="h-9 w-[130px] border-white/10 bg-white/5 text-xs text-slate-300"
-            >
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#0c1222] border-white/10">
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="sent">Sent</SelectItem>
-              <SelectItem value="accepted">Accepted</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger
+            aria-label="Filter by status"
+            className="h-9 w-[130px] border-white/10 bg-white/5 text-xs text-slate-300"
+          >
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#0c1222] border-white/10">
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="sent">Sent</SelectItem>
+            <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
+          </SelectContent>
+        </Select>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger
-              aria-label="Sort proposals"
-              className="h-9 w-[140px] border-white/10 bg-white/5 text-xs text-slate-300"
-            >
-              <SelectValue placeholder="Sort By" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#0c1222] border-white/10">
-              <SelectItem value="newest">Sort: Newest First</SelectItem>
-              <SelectItem value="highest_value">Sort: Highest Value</SelectItem>
-              <SelectItem value="title">Sort: Title (A-Z)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger
+            aria-label="Sort proposals"
+            className="h-9 w-[140px] border-white/10 bg-white/5 text-xs text-slate-300"
+          >
+            <SelectValue placeholder="Sort By" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#0c1222] border-white/10">
+            <SelectItem value="newest">Sort: Newest First</SelectItem>
+            <SelectItem value="highest_value">Sort: Highest Value</SelectItem>
+            <SelectItem value="title">Sort: Title (A-Z)</SelectItem>
+          </SelectContent>
+        </Select>
+      </Toolbar>
 
-      {/* Proposal List */}
       {filteredProposals === null ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -460,7 +449,7 @@ export function ProposalList({ onEdit, onView, onAdd }: ProposalListProps) {
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
 

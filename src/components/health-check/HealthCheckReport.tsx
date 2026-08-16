@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Input, Textarea } from "@bytecats/ui-kit";
-import { ClipboardCheck, Plus, Printer, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardCheck, Plus, Printer, Trash2 } from "lucide-react";
 import { Field, FormGrid } from "@/components/ui/form";
 import { FlowSteps, PageShell } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
@@ -109,6 +109,28 @@ export function HealthCheckReport() {
         {HEALTH_STEPS[step]?.description && (
           <p className="mt-2 text-xs text-slate-500">{HEALTH_STEPS[step].description}</p>
         )}
+        <div className="mt-3 flex items-center justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={step === 0}
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white disabled:opacity-40"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+            Back
+          </Button>
+          {step < HEALTH_STEPS.length - 1 && (
+            <Button
+              type="button"
+              onClick={() => setStep((s) => Math.min(HEALTH_STEPS.length - 1, s + 1))}
+              className="bg-seridian-500 text-slate-950 hover:bg-seridian-400"
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <article className="health-check-report space-y-6 rounded-2xl border border-white/[0.08] bg-[#0c1222] p-5 sm:p-8 print:border-0 print:bg-white print:p-0">

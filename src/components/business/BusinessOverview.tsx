@@ -28,7 +28,10 @@ import {
 } from "lucide-react";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { DealForm } from "@/components/sales/DealForm";
+import { SetupChecklist } from "@/components/business/SetupChecklist";
+import { PageShell, StatusBadge } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/lib/routes";
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -244,7 +247,7 @@ export function BusinessOverview() {
             : deal.stage === "closed_lost"
             ? { label: "Lost", color: "bg-red-500/10 text-red-400 border-red-500/20" }
             : { label: deal.stage, color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
-        href: "/dashboard/sales",
+        href: ROUTES.dashboard.sales,
       });
     });
 
@@ -285,7 +288,7 @@ export function BusinessOverview() {
           label: "Scheduled",
           color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
         },
-        href: "/dashboard/bookings",
+        href: ROUTES.dashboard.bookings,
       });
     });
 
@@ -332,68 +335,60 @@ export function BusinessOverview() {
       : 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Top Welcome & Actions Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              {getGreeting()}, Executive
-            </h1>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              Live Workspace
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5 text-slate-500" />
-            <span>{dateFormatted}</span>
-            <span>•</span>
-            <span>Real-time operations & pipeline health</span>
-          </p>
-        </div>
-
-        {/* Action Button Group */}
+    <PageShell
+      title={`${getGreeting()}, Executive`}
+      description={
+        <span className="flex flex-wrap items-center gap-2">
+          <Calendar className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+          <span>{dateFormatted}</span>
+          <span aria-hidden="true">•</span>
+          <span>Real-time operations & pipeline health</span>
+        </span>
+      }
+      badge={<StatusBadge tone="info">Live Workspace</StatusBadge>}
+      action={
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             onClick={() => setDealModalOpen(true)}
-            className="bg-cyan-500 text-black hover:bg-cyan-400 font-semibold text-xs gap-1.5"
+            className="gap-1.5 bg-cyan-500 text-xs font-semibold text-black hover:bg-cyan-400"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             New Deal
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={() => setClientModalOpen(true)}
-            className="border-white/10 bg-[#0c1222] text-slate-200 hover:border-cyan-500/30 hover:text-white text-xs gap-1.5"
+            className="gap-1.5 border-white/10 bg-[#0c1222] text-xs text-slate-200 hover:border-cyan-500/30 hover:text-white"
           >
-            <Users className="h-3.5 w-3.5 text-cyan-400" />
+            <Users className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
             Add Client
           </Button>
-          <Link href="/dashboard/issues">
+          <Link href={ROUTES.dashboard.issues}>
             <Button
               size="sm"
               variant="ghost"
-              className="text-slate-300 hover:text-white hover:bg-white/5 text-xs gap-1.5"
+              className="gap-1.5 text-xs text-slate-300 hover:bg-white/5 hover:text-white"
             >
-              <CheckCircle className="h-3.5 w-3.5 text-slate-400" />
+              <CheckCircle className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
               New Issue
             </Button>
           </Link>
-          <Link href="/dashboard/proposals">
+          <Link href={ROUTES.dashboard.proposals}>
             <Button
               size="sm"
               variant="ghost"
-              className="text-slate-300 hover:text-white hover:bg-white/5 text-xs gap-1.5"
+              className="gap-1.5 text-xs text-slate-300 hover:bg-white/5 hover:text-white"
             >
-              <FileText className="h-3.5 w-3.5 text-slate-400" />
+              <FileText className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
               Proposals
             </Button>
           </Link>
         </div>
-      </div>
+      }
+    >
+      <SetupChecklist />
 
       {/* Primary KPI Metrics Grid */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
@@ -403,7 +398,7 @@ export function BusinessOverview() {
           subtext="Verified business relationships"
           icon={Users}
           loading={clients === undefined}
-          href="/dashboard/clients"
+          href={ROUTES.dashboard.clients}
           accentColor="text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
         />
         <StatCard
@@ -412,7 +407,7 @@ export function BusinessOverview() {
           subtext={`Weighted: ${formatCurrency(weightedPipeline)} (${activeDeals.length} deals)`}
           icon={DollarSign}
           loading={deals === undefined}
-          href="/dashboard/sales"
+          href={ROUTES.dashboard.sales}
           accentColor="text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
           badge={`${activeDeals.length} Active`}
         />
@@ -426,7 +421,7 @@ export function BusinessOverview() {
           }
           icon={CheckCircle}
           loading={issues === undefined}
-          href="/dashboard/issues"
+          href={ROUTES.dashboard.issues}
           accentColor="text-amber-400 bg-amber-500/10 border-amber-500/20"
         />
         <StatCard
@@ -435,7 +430,7 @@ export function BusinessOverview() {
           subtext={`Accepted value: ${formatCurrency(acceptedProposalsValue)}`}
           icon={FileText}
           loading={proposals === undefined}
-          href="/dashboard/proposals"
+          href={ROUTES.dashboard.proposals}
           accentColor="text-purple-400 bg-purple-500/10 border-purple-500/20"
           badge={`${sentProposals.length} Sent`}
         />
@@ -445,7 +440,7 @@ export function BusinessOverview() {
           subtext="Upcoming meetings & demos"
           icon={Calendar}
           loading={bookings === undefined}
-          href="/dashboard/bookings"
+          href={ROUTES.dashboard.bookings}
           accentColor="text-blue-400 bg-blue-500/10 border-blue-500/20"
         />
       </div>
@@ -620,7 +615,7 @@ export function BusinessOverview() {
                 </h3>
               </div>
               <Link
-                href="/dashboard/bookings"
+                href={ROUTES.dashboard.bookings}
                 className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
               >
                 Calendar <ArrowRight className="h-3 w-3" />
@@ -637,7 +632,7 @@ export function BusinessOverview() {
               ) : upcomingBookings.length === 0 ? (
                 <div className="py-6 text-center text-xs text-slate-500 space-y-2">
                   <p>No upcoming meetings in the next 7 days.</p>
-                  <Link href="/dashboard/bookings" className="text-cyan-400 hover:text-cyan-300 font-medium">
+                  <Link href={ROUTES.dashboard.bookings} className="text-cyan-400 hover:text-cyan-300 font-medium">
                     Open calendar
                   </Link>
                 </div>
@@ -742,7 +737,7 @@ export function BusinessOverview() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }
 

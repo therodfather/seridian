@@ -1,7 +1,9 @@
 "use client";
 
+import { MessageSquare } from "lucide-react";
 import { ChatLayout } from "@/components/chat/ChatLayout";
 import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
+import { EmptyState, PageShell } from "@/components/dashboard/kit";
 import { Skeleton } from "@bytecats/ui-kit";
 
 function ChatSkeleton() {
@@ -46,22 +48,53 @@ export default function ChatPage() {
   const { user, loading } = useDashboardAuth();
 
   if (loading) {
-    return <ChatSkeleton />;
+    return (
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <PageShell
+          className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-3 pt-2 lg:px-4"
+          title="Chat"
+          description="Team channels and messages"
+          icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
+        >
+          <div className="-mx-3 flex min-h-0 flex-1 flex-col overflow-hidden lg:-mx-4">
+            <ChatSkeleton />
+          </div>
+        </PageShell>
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-        <p className="text-sm text-slate-400">
-          Sign in required to use dashboard chat.
-        </p>
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <PageShell
+          className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-3 pt-2 lg:px-4"
+          title="Chat"
+          description="Team channels and messages"
+          icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
+        >
+          <EmptyState
+            className="flex-1 border-0"
+            title="Sign in required"
+            description="Sign in required to use dashboard chat."
+          />
+        </PageShell>
       </div>
     );
   }
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <ChatLayout currentUserId={user.pubkey} currentUserName={user.name} />
+      <PageShell
+        className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-3 pt-2 lg:px-4"
+        title="Chat"
+        description="Team channels and messages"
+        icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
+      >
+        <div className="-mx-3 flex min-h-0 flex-1 flex-col overflow-hidden lg:-mx-4">
+          <ChatLayout currentUserId={user.pubkey} currentUserName={user.name} />
+        </div>
+      </PageShell>
     </div>
   );
 }

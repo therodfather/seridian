@@ -8,6 +8,7 @@ import { Badge, Button, Skeleton } from "@bytecats/ui-kit";
 import { BookOpen, Plus, AlertCircle, Sparkles, FileText, Code2, ShieldAlert, Eye, Edit3 } from "lucide-react";
 import { WikiSidebar } from "@/components/wiki/WikiSidebar";
 import { WikiPage } from "@/components/wiki/WikiPage";
+import { PageShell } from "@/components/dashboard/kit";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
 import { cn } from "@/lib/utils";
 
@@ -160,25 +161,17 @@ export default function WikiDashboardPage() {
   }, [showCreateDialog]);
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
-      <div className="flex flex-col justify-between gap-4 border-b border-white/[0.08] pb-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-lg shadow-cyan-950/40">
-            <BookOpen className="h-6 w-6" aria-hidden="true" />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-white">Wiki</h1>
-              <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[10px] text-cyan-400">
-                Knowledge Base
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-400">
-              Central documentation, process guides, and internal SOPs
-            </p>
-          </div>
-        </div>
-
+    <PageShell
+      className="h-[calc(100vh-6rem)]"
+      title="Wiki"
+      description="Central documentation, process guides, and internal SOPs"
+      icon={<BookOpen className="h-6 w-6" aria-hidden="true" />}
+      badge={
+        <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[10px] text-cyan-400">
+          Knowledge Base
+        </Badge>
+      }
+      action={
         <div className="flex flex-wrap items-center gap-3">
           <div className="hidden items-center gap-2 rounded-lg border border-white/[0.08] bg-[#0c1222] px-3 py-1.5 text-xs text-slate-400 sm:flex">
             <Sparkles className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
@@ -203,7 +196,8 @@ export default function WikiDashboardPage() {
             Create Wiki Page
           </Button>
         </div>
-      </div>
+      }
+    >
 
       <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#070b14] shadow-2xl">
         {!selectedBankId ? (
@@ -435,6 +429,6 @@ export default function WikiDashboardPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

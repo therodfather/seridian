@@ -8,7 +8,6 @@ import { Id } from "convex/_generated/dataModel";
 import {
   Badge,
   Button,
-  Skeleton,
   Input,
   Label,
   Select,
@@ -24,6 +23,14 @@ import {
 } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
+import { ROUTES } from "@/lib/routes";
+import {
+  BackLink,
+  EmptyState,
+  LoadingBlock,
+  PageShell,
+  StatusBadge,
+} from "@/components/dashboard/kit";
 
 const PRIORITY_CONFIG = {
   urgent: { color: "bg-red-500/15 text-red-400 border-red-500/20", label: "Urgent" },
@@ -117,34 +124,17 @@ export default function IssueDetailPage({
   }
 
   if (issue === undefined) {
-    return (
-      <div className="space-y-6 p-1" aria-busy="true" aria-live="polite">
-        <div className="flex items-center justify-between gap-4">
-          <Skeleton className="h-8 w-40 rounded-lg" />
-          <Skeleton className="h-8 w-24 rounded-lg" />
-        </div>
-        <Skeleton className="h-48 rounded-xl" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-lg" />
-          ))}
-        </div>
-        <Skeleton className="h-32 rounded-xl" />
-      </div>
-    );
+    return <LoadingBlock rows={4} withHeader label="Loading issue" />;
   }
 
   if (issue === null) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.08] text-center p-6">
-        <p className="text-sm font-medium text-slate-300">Issue not found</p>
-        <p className="text-xs text-slate-500">This issue may have been deleted or the link is invalid.</p>
-        <Link
-          href="/dashboard/issues"
-          className="text-xs font-semibold text-cyan-400 hover:underline"
-        >
-          Back to Issues
-        </Link>
+      <div className="space-y-4">
+        <EmptyState
+          title="Issue not found"
+          description="This issue may have been deleted or the link is invalid."
+          action={<BackLink href={ROUTES.dashboard.issues} label="Back to Issues" />}
+        />
       </div>
     );
   }
@@ -166,38 +156,49 @@ export default function IssueDetailPage({
   }
 
   return (
-    <div className="space-y-6 p-1">
-      {/* Top Header Navigation */}
-      <div className="flex items-center justify-between gap-4">
-        <Link
-          href="/dashboard/issues"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-cyan-500/20 hover:text-white"
+    <PageShell
+      title={issue.title}
+      description="Issue details, status, and linked client context."
+      badge={<StatusBadge tone={issue.status === "done" ? "success" : "info"}>{status.label}</StatusBadge>}
+      action={
+        <Button
+          type="button"
+          size="sm"
+          onClick={openEdit}
+          className="bg-cyan-500 text-xs font-semibold text-black hover:bg-cyan-400"
         >
-          &larr; Back to Issues Board
-        </Link>
-        <Button type="button" size="sm" onClick={openEdit} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs">
           Edit Issue
         </Button>
-      </div>
+      }
+    >
+      <BackLink href={ROUTES.dashboard.issues} label="Back to Issues Board" />
 
       {/* Main Issue Card Banner */}
-      <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-6 space-y-6">
+      <div className="space-y-6 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-6">
         <div className="flex items-start gap-4">
           <span
             className={cn(
               "inline-flex h-8 min-w-[32px] shrink-0 items-center justify-center rounded-lg border px-2 text-xs font-bold tabular-nums",
-              priority.color
+              priority.color,
             )}
           >
-            {issue.priority === "urgent" ? "!!" : issue.priority === "high" ? "!" : issue.priority === "medium" ? "~" : issue.priority === "low" ? "\u2193" : "\u2014"}
+            {issue.priority === "urgent"
+              ? "!!"
+              : issue.priority === "high"
+                ? "!"
+                : issue.priority === "medium"
+                  ? "~"
+                  : issue.priority === "low"
+                    ? "\u2193"
+                    : "\u2014"}
           </span>
           <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-bold text-white leading-snug">{issue.title}</h1>
-              <Badge variant="secondary" className={cn("text-xs px-2.5 py-0.5 border font-semibold", status.color)}>
-                {status.label}
-              </Badge>
-            </div>
+            <Badge
+              variant="secondary"
+              className={cn("text-xs border px-2.5 py-0.5 font-semibold", priority.color)}
+            >
+              {priority.label}
+            </Badge>
             {issue.identifier && (
               <p className="text-xs font-mono text-cyan-400">{issue.identifier}</p>
             )}
@@ -419,6 +420,6 @@ export default function IssueDetailPage({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

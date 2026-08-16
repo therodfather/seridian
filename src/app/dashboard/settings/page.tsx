@@ -38,6 +38,7 @@ import { SecretsVault } from "@/components/settings/SecretsVault";
 import { AuditLogViewer } from "@/components/settings/AuditLogViewer";
 import { AvatarUpload } from "@/components/settings/AvatarUpload";
 import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
+import { PageShell } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
 
 const VALID_TABS = new Set([
@@ -280,25 +281,12 @@ function SettingsContent() {
   ];
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* OS-Grade Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-5">
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-            <Settings className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              Settings
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Workspace preferences, team access, integrations, and secrets.
-            </p>
-          </div>
-        </div>
-
-        {/* Active Session Info Badge */}
-        <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 px-3 py-2 self-start sm:self-auto">
+    <PageShell
+      title="Settings"
+      description="Workspace preferences, team access, integrations, and secrets."
+      icon={<Settings className="h-5 w-5" aria-hidden="true" />}
+      action={
+        <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#0c1222]/80 px-3 py-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 font-bold text-xs font-mono">
             {authUser?.name ? authUser.name.charAt(0).toUpperCase() : "A"}
           </div>
@@ -311,8 +299,8 @@ function SettingsContent() {
             </p>
           </div>
         </div>
-      </div>
-
+      }
+    >
       {/* Mobile Horizontal Module Navigation (Shown on small screens) */}
       <div className="flex md:hidden items-center gap-2 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-none" aria-label="Settings sections">
         {SETTINGS_SECTIONS.map((sec) => {
@@ -689,7 +677,7 @@ function SettingsContent() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }
 

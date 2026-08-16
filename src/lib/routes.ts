@@ -17,12 +17,17 @@ export const ROUTES = {
   expertise: "/#expertise",
   dashboard: {
     root: "/dashboard",
+    /** Hub: clients, sales, proposals, contracts, bookings, health-check */
+    business: "/dashboard/business",
+    /** Hub: wiki, brain, files, templates, arena, chat */
+    knowledge: "/dashboard/knowledge",
     issues: "/dashboard/issues",
     clients: "/dashboard/clients",
     bookings: "/dashboard/bookings",
     sales: "/dashboard/sales",
     proposals: "/dashboard/proposals",
     contracts: "/dashboard/contracts",
+    ivr: "/dashboard/ivr",
     healthCheck: "/dashboard/health-check",
     wiki: "/dashboard/wiki",
     arena: "/dashboard/arena",
@@ -86,4 +91,8 @@ export function proposalHref(id: string): string {
 
 export function contractHref(id: string): string {
   return `${ROUTES.dashboard.contracts}/${id}`;
+}
+
+export function ivrFlowHref(id: string): string {
+  return `${ROUTES.dashboard.ivr}/${id}`;
 }

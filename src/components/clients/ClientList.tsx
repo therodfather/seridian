@@ -6,7 +6,12 @@ import { api } from "convex/_generated/api";
 import { Doc, Id } from "convex/_generated/dataModel";
 import { Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  EmptyState,
+  MetricCards,
+  PageShell,
+  Toolbar,
+} from "@/components/dashboard/kit";
 import Link from "next/link";
 import {
   Building2,
@@ -293,136 +298,122 @@ export function ClientList({ onEdit, onAdd }: ClientListProps) {
   }, [clients, search, statusFilter, sortBy, issueCountByClient]);
 
   return (
-    <div className="space-y-6">
-      {/* Header & Primary Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/[0.08] pb-4">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Clients</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage corporate client accounts, key personnel dossiers, downstream networks, and active deals.
-          </p>
-        </div>
+    <PageShell
+      title="Clients"
+      description="Manage corporate client accounts, key personnel dossiers, downstream networks, and active deals."
+      action={
         <Button
           type="button"
           size="sm"
           onClick={onAdd}
-          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5 self-start sm:self-auto"
+          className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-lg shadow-cyan-500/10 gap-1.5"
         >
           <Plus className="w-4 h-4" aria-hidden="true" /> Add Client
         </Button>
-      </div>
+      }
+    >
+      <MetricCards
+        loading={clients === undefined}
+        items={[
+          {
+            label: "Total Accounts",
+            value: metrics.total,
+            hint: `${metrics.active} active accounts`,
+            icon: <Building2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />,
+          },
+          {
+            label: "Active Accounts",
+            value: metrics.active,
+            hint: `${metrics.inactive} inactive`,
+            valueClassName: "text-emerald-400",
+            icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />,
+          },
+          {
+            label: "Personnel Tracked",
+            value: metrics.personnel,
+            hint: "Key contacts & dossiers",
+            valueClassName: "text-purple-400",
+            icon: <Users className="w-4 h-4 text-purple-400" aria-hidden="true" />,
+          },
+          {
+            label: "Downstream Network",
+            value: metrics.downstream,
+            hint: "Client customer accounts",
+            valueClassName: "text-cyan-400",
+            icon: <Share2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />,
+          },
+        ]}
+      />
 
-      {/* KPI Metric Summary Bar */}
-      {clients === undefined ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Total Accounts <Building2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-white tabular-nums">{metrics.total}</p>
-            <p className="text-[11px] text-slate-500">{metrics.active} active accounts</p>
-          </div>
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Active Accounts <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-emerald-400 tabular-nums">{metrics.active}</p>
-            <p className="text-[11px] text-slate-500">{metrics.inactive} inactive</p>
-          </div>
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Personnel Tracked <Users className="w-4 h-4 text-purple-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-purple-400 tabular-nums">{metrics.personnel}</p>
-            <p className="text-[11px] text-slate-500">Key contacts & dossiers</p>
-          </div>
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              Downstream Network <Share2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />
-            </span>
-            <p className="text-2xl font-extrabold text-cyan-400 tabular-nums">{metrics.downstream}</p>
-            <p className="text-[11px] text-slate-500">Client customer accounts</p>
-          </div>
-        </div>
-      )}
-
-      {/* Search, Filter & Control Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-xl border border-white/[0.08] bg-[#0c1222]/80">
-        <div className="flex flex-1 flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[180px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-            <Input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search clients by name, company, industry, or email..."
-              aria-label="Search clients"
-              className="pl-9 h-9 border-white/10 bg-white/5 text-xs text-white placeholder:text-slate-500 focus:border-cyan-500/40"
-            />
-          </div>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger
-              aria-label="Filter by status"
-              className="h-9 w-[130px] border-white/10 bg-white/5 text-xs text-slate-300"
+      <Toolbar
+        end={
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+              className={cn("h-8 px-2.5 text-xs", viewMode === "list" ? "bg-white/10 text-cyan-400" : "text-slate-400")}
             >
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#0c1222] border-white/10">
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active Only</SelectItem>
-              <SelectItem value="inactive">Inactive Only</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger
-              aria-label="Sort clients"
-              className="h-9 w-[140px] border-white/10 bg-white/5 text-xs text-slate-300"
+              <ListIcon className="w-4 h-4" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+              className={cn("h-8 px-2.5 text-xs", viewMode === "grid" ? "bg-white/10 text-cyan-400" : "text-slate-400")}
             >
-              <SelectValue placeholder="Sort By" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#0c1222] border-white/10">
-              <SelectItem value="name">Sort: Name (A-Z)</SelectItem>
-              <SelectItem value="issues">Sort: Most Issues</SelectItem>
-              <SelectItem value="personnel">Sort: Most Personnel</SelectItem>
-            </SelectContent>
-          </Select>
+              <Grid className="w-4 h-4" aria-hidden="true" />
+            </Button>
+          </>
+        }
+      >
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search clients by name, company, industry, or email..."
+            aria-label="Search clients"
+            className="pl-9 h-9 border-white/10 bg-white/5 text-xs text-white placeholder:text-slate-500 focus:border-cyan-500/40"
+          />
         </div>
 
-        <div className="flex items-center gap-1 border-t border-white/[0.06] pt-2 md:pt-0 md:border-t-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode("list")}
-            aria-label="List view"
-            aria-pressed={viewMode === "list"}
-            className={cn("h-8 px-2.5 text-xs", viewMode === "list" ? "bg-white/10 text-cyan-400" : "text-slate-400")}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger
+            aria-label="Filter by status"
+            className="h-9 w-[130px] border-white/10 bg-white/5 text-xs text-slate-300"
           >
-            <ListIcon className="w-4 h-4" aria-hidden="true" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode("grid")}
-            aria-label="Grid view"
-            aria-pressed={viewMode === "grid"}
-            className={cn("h-8 px-2.5 text-xs", viewMode === "grid" ? "bg-white/10 text-cyan-400" : "text-slate-400")}
-          >
-            <Grid className="w-4 h-4" aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#0c1222] border-white/10">
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="active">Active Only</SelectItem>
+            <SelectItem value="inactive">Inactive Only</SelectItem>
+          </SelectContent>
+        </Select>
 
-      {/* Client List / Grid View */}
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger
+            aria-label="Sort clients"
+            className="h-9 w-[140px] border-white/10 bg-white/5 text-xs text-slate-300"
+          >
+            <SelectValue placeholder="Sort By" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#0c1222] border-white/10">
+            <SelectItem value="name">Sort: Name (A-Z)</SelectItem>
+            <SelectItem value="issues">Sort: Most Issues</SelectItem>
+            <SelectItem value="personnel">Sort: Most Personnel</SelectItem>
+          </SelectContent>
+        </Select>
+      </Toolbar>
+
       {filteredClients === null ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
@@ -471,7 +462,7 @@ export function ClientList({ onEdit, onAdd }: ClientListProps) {
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
 

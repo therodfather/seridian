@@ -8,52 +8,14 @@ import { Button } from "@bytecats/ui-kit";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   DASHBOARD_NAV,
-  NAV_GROUP_LABELS,
+  isNavItemActive,
   type DashboardNavItem,
-  type NavGroup,
 } from "@/lib/dashboardNav";
 
 const ConstellationS = dynamic(
   () => import("@/components/three/ConstellationS").then((m) => m.ConstellationS),
   { ssr: false, loading: () => <span className="font-display text-sm font-bold text-seridian-400">S</span> },
 );
-
-function NavGroupList({
-  group,
-  items,
-  pathname,
-  collapsed,
-}: {
-  group: NavGroup;
-  items: DashboardNavItem[];
-  pathname: string;
-  collapsed: boolean;
-}) {
-  return (
-    <div className="mb-3">
-      {!collapsed && (
-        <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-          {NAV_GROUP_LABELS[group]}
-        </div>
-      )}
-      <div className="space-y-0.5">
-        {items.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          return (
-            <NavLink
-              key={item.href}
-              item={item}
-              isActive={isActive}
-              collapsed={collapsed}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function NavLink({
   item,
@@ -92,14 +54,6 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
 
-  const grouped = DASHBOARD_NAV.reduce(
-    (acc, item) => {
-      (acc[item.group] ??= []).push(item);
-      return acc;
-    },
-    {} as Record<NavGroup, DashboardNavItem[]>,
-  );
-
   return (
     <aside
       className={cn(
@@ -124,15 +78,16 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       <nav role="navigation" aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
-        {(Object.keys(NAV_GROUP_LABELS) as NavGroup[]).map((group) => (
-          <NavGroupList
-            key={group}
-            group={group}
-            items={grouped[group] ?? []}
-            pathname={pathname}
-            collapsed={collapsed}
-          />
-        ))}
+        <div className="space-y-0.5">
+          {DASHBOARD_NAV.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={isNavItemActive(pathname, item)}
+              collapsed={collapsed}
+            />
+          ))}
+        </div>
       </nav>
 
       <div className="border-t border-white/[0.06] p-2">

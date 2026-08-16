@@ -53,6 +53,13 @@ export function TelnyxConnectCard({ currentUserId }: { currentUserId: string }) 
   };
 
   const handleDisconnect = async () => {
+    if (
+      !window.confirm(
+        "Disconnect Telnyx? Inbound IVR numbers will stop working until you reconnect.",
+      )
+    ) {
+      return;
+    }
     setDisconnecting(true);
     try {
       await disconnect({ currentUserId });

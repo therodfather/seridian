@@ -22,3 +22,4 @@ export {
 } from "./FlowSteps";
 export { StatusBadge, type StatusBadgeProps, type StatusBadgeTone } from "./StatusBadge";
 export { BackLink, type BackLinkProps } from "./BackLink";
+export { HubCard, type HubCardProps } from "./HubCard";

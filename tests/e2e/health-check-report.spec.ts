@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { gotoDashboard, navigateTo } from "./helpers";
+import { gotoDashboard, navigateTo, openHubCard } from "./helpers";
 
 test.describe("health check report", { tag: "@smoke" }, () => {
-  test("opens the one-page report template from the sidebar", async ({
+  test("opens the one-page report template from the business hub", async ({
     page,
   }) => {
     await gotoDashboard(page);
-    await navigateTo(page, "Health Check");
+    await navigateTo(page, "Business");
+    await openHubCard(page, "Health Check");
     await expect(page).toHaveURL(/\/dashboard\/health-check/);
     await expect(
       page.getByRole("heading", { name: "Health Check", level: 1 }),

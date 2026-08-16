@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { DASHBOARD_NAV } from "@/lib/dashboardNav";
+import { DASHBOARD_NAV, isNavItemActive } from "@/lib/dashboardNav";
 
 interface MobileNavProps {
   open: boolean;
@@ -53,7 +53,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
 
         <div className="px-2 py-3">
           {DASHBOARD_NAV.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            const isActive = isNavItemActive(pathname, item);
             const Icon = item.icon;
             return (
               <Link

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { gotoDashboard, navigateTo } from "./helpers";
+import { gotoDashboard, navigateTo, openHubCard } from "./helpers";
 
 test.describe("dashboard chat", { tag: "@smoke" }, () => {
   test("requires login before chat loads", async ({ page }) => {
@@ -9,7 +9,8 @@ test.describe("dashboard chat", { tag: "@smoke" }, () => {
 
   test("authenticated session shows channel sidebar", async ({ page }) => {
     await gotoDashboard(page);
-    await navigateTo(page, "Chat");
+    await navigateTo(page, "Knowledge");
+    await openHubCard(page, "Chat");
     await expect(page).toHaveURL(/\/dashboard\/chat/);
     await expect(page.getByRole("heading", { name: "Channels" })).toBeVisible({
       timeout: 15_000,
@@ -18,7 +19,8 @@ test.describe("dashboard chat", { tag: "@smoke" }, () => {
 
   test("chat fills viewport above the status bar", async ({ page }) => {
     await gotoDashboard(page);
-    await navigateTo(page, "Chat");
+    await navigateTo(page, "Knowledge");
+    await openHubCard(page, "Chat");
     await expect(page.getByRole("heading", { name: "Channels" })).toBeVisible({
       timeout: 15_000,
     });

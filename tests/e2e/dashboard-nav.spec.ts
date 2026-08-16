@@ -1,34 +1,47 @@
 import { expect, test } from "@playwright/test";
-import { gotoDashboard, navigateTo } from "./helpers";
+import { gotoDashboard, navigateTo, openHubCard } from "./helpers";
 
 test.describe("dashboard navigation", { tag: "@smoke" }, () => {
-  test("sidebar lists core business sections", async ({ page }) => {
+  test("sidebar lists calm primary hubs only", async ({ page }) => {
     await gotoDashboard(page);
     const nav = page.locator("aside nav");
     for (const label of [
       "Overview",
-      "Issues",
+      "Work",
+      "Business",
+      "Knowledge",
+      "Voice",
+      "Settings",
+    ]) {
+      await expect(nav.getByRole("link", { name: label })).toBeVisible();
+    }
+    // Nested laundry-list items must not appear in the primary sidebar
+    for (const label of [
       "Clients",
       "Bookings",
       "Sales",
       "Proposals",
       "Contracts",
       "Health Check",
-      "IVR / Voice",
       "Files",
       "Chat",
-      "Settings",
+      "Wiki",
+      "LLM Arena",
+      "Second Brain",
+      "Templates",
+      "Sync",
     ]) {
-      await expect(nav.getByRole("link", { name: label })).toBeVisible();
+      await expect(nav.getByRole("link", { name: label })).toHaveCount(0);
     }
-    await expect(nav.getByRole("link", { name: "Sync" })).toHaveCount(0);
   });
 
-  test("navigates to settings and chat", async ({ page }) => {
+  test("navigates to settings and chat via knowledge hub", async ({ page }) => {
     await gotoDashboard(page);
     await navigateTo(page, "Settings");
     await expect(page).toHaveURL(/\/dashboard\/settings/);
-    await navigateTo(page, "Chat");
+    await navigateTo(page, "Knowledge");
+    await expect(page).toHaveURL(/\/dashboard\/knowledge/);
+    await openHubCard(page, "Chat");
     await expect(page).toHaveURL(/\/dashboard\/chat/);
   });
 

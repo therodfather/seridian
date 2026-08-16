@@ -16,57 +16,98 @@ import {
   Bot,
   Brain,
   PhoneCall,
+  Briefcase,
+  Library,
 } from "lucide-react";
 import { ROUTES, type DashboardRoute } from "./routes";
 
-export type NavGroup = "core" | "business" | "knowledge" | "tools";
+export type NavGroup = "primary";
 
 export interface DashboardNavItem {
   href: DashboardRoute;
   label: string;
   icon: LucideIcon;
   group: NavGroup;
+  /** Child paths that should light this hub link in the sidebar. */
+  activeFor?: readonly string[];
 }
 
 const d = ROUTES.dashboard;
 
-/** Sync lives under Settings → Integrations & Sync (not a sidebar tab). */
+/**
+ * Calm primary sidebar — hubs + daily work only.
+ * Nested pages live under Business / Knowledge hubs (or Overview / Settings).
+ */
 export const DASHBOARD_NAV: DashboardNavItem[] = [
-  { href: d.root, label: "Overview", icon: Home, group: "core" },
-  { href: d.issues, label: "Issues", icon: CheckCircle, group: "core" },
-  { href: d.clients, label: "Clients", icon: Users, group: "core" },
-  { href: d.bookings, label: "Bookings", icon: Calendar, group: "business" },
-  { href: d.sales, label: "Sales", icon: DollarSign, group: "business" },
-  { href: d.proposals, label: "Proposals", icon: FileText, group: "business" },
-  { href: d.contracts, label: "Contracts", icon: PenLine, group: "business" },
-  { href: d.wiki, label: "Wiki", icon: BookOpen, group: "knowledge" },
-  { href: d.arena, label: "LLM Arena", icon: Bot, group: "knowledge" },
-  { href: d.brain, label: "Second Brain", icon: Brain, group: "knowledge" },
-  { href: d.templates, label: "Templates", icon: Mail, group: "tools" },
-  { href: d.files, label: "Files", icon: Folder, group: "tools" },
-  { href: d.chat, label: "Chat", icon: MessageSquare, group: "tools" },
-  { href: d.settings, label: "Settings", icon: Settings, group: "tools" },
-  // Appended so NUMBER_KEY_NAV (first 9) keeps Wiki / Arena on 8–9.
-  { href: d.healthCheck, label: "Health Check", icon: ClipboardCheck, group: "business" },
-  { href: d.ivr, label: "IVR / Voice", icon: PhoneCall, group: "business" },
+  { href: d.root, label: "Overview", icon: Home, group: "primary" },
+  { href: d.issues, label: "Work", icon: CheckCircle, group: "primary" },
+  {
+    href: d.business,
+    label: "Business",
+    icon: Briefcase,
+    group: "primary",
+    activeFor: [
+      d.clients,
+      d.bookings,
+      d.sales,
+      d.proposals,
+      d.contracts,
+      d.healthCheck,
+    ],
+  },
+  {
+    href: d.knowledge,
+    label: "Knowledge",
+    icon: Library,
+    group: "primary",
+    activeFor: [d.wiki, d.brain, d.files, d.templates, d.arena, d.chat],
+  },
+  { href: d.ivr, label: "Voice", icon: PhoneCall, group: "primary" },
+  { href: d.settings, label: "Settings", icon: Settings, group: "primary" },
+];
+
+/** Nested destinations reachable from hubs / Overview — not top-level sidebar. */
+export const DASHBOARD_NESTED_NAV: DashboardNavItem[] = [
+  { href: d.clients, label: "Clients", icon: Users, group: "primary" },
+  { href: d.bookings, label: "Bookings", icon: Calendar, group: "primary" },
+  { href: d.sales, label: "Sales", icon: DollarSign, group: "primary" },
+  { href: d.proposals, label: "Proposals", icon: FileText, group: "primary" },
+  { href: d.contracts, label: "Contracts", icon: PenLine, group: "primary" },
+  {
+    href: d.healthCheck,
+    label: "Health Check",
+    icon: ClipboardCheck,
+    group: "primary",
+  },
+  { href: d.wiki, label: "Wiki", icon: BookOpen, group: "primary" },
+  { href: d.brain, label: "Second Brain", icon: Brain, group: "primary" },
+  { href: d.files, label: "Files", icon: Folder, group: "primary" },
+  { href: d.templates, label: "Templates", icon: Mail, group: "primary" },
+  { href: d.arena, label: "LLM Arena", icon: Bot, group: "primary" },
+  { href: d.chat, label: "Chat", icon: MessageSquare, group: "primary" },
+];
+
+/** Command palette + search: primary hubs + nested pages. */
+export const DASHBOARD_SEARCH_NAV: DashboardNavItem[] = [
+  ...DASHBOARD_NAV,
+  ...DASHBOARD_NESTED_NAV,
 ];
 
 export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
-  core: "Core",
-  business: "Business",
-  knowledge: "Knowledge",
-  tools: "Tools",
+  primary: "Navigate",
 };
 
 export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   overview: "Overview",
-  issues: "Issues",
+  business: "Business",
+  knowledge: "Knowledge",
+  issues: "Work",
   clients: "Clients",
   bookings: "Bookings",
   sales: "Sales",
   proposals: "Proposals",
   contracts: "Contracts",
-  ivr: "IVR / Voice",
+  ivr: "Voice",
   "health-check": "Health Check",
   wiki: "Wiki",
   arena: "LLM Arena",
@@ -80,7 +121,74 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
 /** Redirect-only dashboard paths that must not appear in the sidebar. */
 export const DASHBOARD_REDIRECT_ONLY_HREFS = [d.sync] as const;
 
+export const BUSINESS_HUB_LINKS = [
+  {
+    href: d.clients,
+    label: "Clients",
+    description: "Companies and contacts you work with",
+  },
+  {
+    href: d.sales,
+    label: "Sales",
+    description: "Pipeline deals and stages",
+  },
+  {
+    href: d.proposals,
+    label: "Proposals",
+    description: "Scopes and pricing for clients",
+  },
+  {
+    href: d.contracts,
+    label: "Contracts",
+    description: "Agreements and signatures",
+  },
+  {
+    href: d.bookings,
+    label: "Bookings",
+    description: "Meetings and demos",
+  },
+  {
+    href: d.healthCheck,
+    label: "Health Check",
+    description: "One-page infrastructure report",
+  },
+] as const;
+
+export const KNOWLEDGE_HUB_LINKS = [
+  {
+    href: d.wiki,
+    label: "Wiki",
+    description: "Company docs and SOPs",
+  },
+  {
+    href: d.brain,
+    label: "Second Brain",
+    description: "Memory banks and retained facts",
+  },
+  {
+    href: d.files,
+    label: "Files",
+    description: "Uploaded documents",
+  },
+  {
+    href: d.templates,
+    label: "Templates",
+    description: "Reusable email and content templates",
+  },
+  {
+    href: d.arena,
+    label: "LLM Arena",
+    description: "Compare models side by side",
+  },
+  {
+    href: d.chat,
+    label: "Chat",
+    description: "Team channels",
+  },
+] as const;
+
 export const KNOWLEDGE_NAV_HREFS = [
+  d.knowledge,
   d.wiki,
   d.arena,
   d.brain,
@@ -88,6 +196,18 @@ export const KNOWLEDGE_NAV_HREFS = [
 
 export function navSlug(href: string): string {
   return href.replace(ROUTES.dashboard.root, "").replace(/^\//, "") || "overview";
+}
+
+export function isNavItemActive(pathname: string, item: DashboardNavItem): boolean {
+  if (item.href === ROUTES.dashboard.root) {
+    return pathname === ROUTES.dashboard.root;
+  }
+  if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+    return true;
+  }
+  return (item.activeFor ?? []).some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 }
 
 export function entityHref(
@@ -105,6 +225,10 @@ export const NUMBER_KEY_NAV = DASHBOARD_NAV.slice(0, 9).map((item, index) => ({
 }));
 
 export function newItemHref(section: string): string {
-  const match = DASHBOARD_NAV.find((item) => navSlug(item.href) === section);
-  return match?.href ?? ROUTES.dashboard.root;
+  const fromPrimary = DASHBOARD_NAV.find((item) => navSlug(item.href) === section);
+  if (fromPrimary) return fromPrimary.href;
+  const fromNested = DASHBOARD_NESTED_NAV.find(
+    (item) => navSlug(item.href) === section,
+  );
+  return fromNested?.href ?? ROUTES.dashboard.root;
 }

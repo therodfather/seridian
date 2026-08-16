@@ -29,6 +29,7 @@ Source folder: [`src/components/dashboard/kit/`](../../src/components/dashboard/
 | `Toolbar` | Search + filters | Put controls as children |
 | `FlowSteps` / `PageFlow` | Guided multi-step journeys | Change step `label`s |
 | `StatusBadge` | Draft / live / active pills | Change `tone` |
+| `HubCard` | Hub page link tiles | Change `title` / `description` / `href` |
 | `BackLink` | Detail → list | Change `href` / `label` |
 
 Form wizards (Clients, Deals, Proposals, Bookings, Contracts) use `MultiStepForm` from `@/components/ui/form`, which renders `FlowSteps` for the step chrome.

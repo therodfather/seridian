@@ -17,6 +17,10 @@ export const ROUTES = {
   expertise: "/#expertise",
   dashboard: {
     root: "/dashboard",
+    /** Hub: clients, sales, proposals, contracts, bookings, health-check */
+    business: "/dashboard/business",
+    /** Hub: wiki, brain, files, templates, arena, chat */
+    knowledge: "/dashboard/knowledge",
     issues: "/dashboard/issues",
     clients: "/dashboard/clients",
     bookings: "/dashboard/bookings",

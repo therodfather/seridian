@@ -35,7 +35,9 @@ import { cn } from "@/lib/utils";
 import { AddNodeMenu, IvrNodeInspector } from "./IvrNodeInspector";
 import {
   createBlankNode,
+  hasReachableExitPath,
   NODE_TYPE_LABELS,
+  transferDestinationsReady,
   type IvrGraph,
   type IvrNode,
   type IvrNodeType,
@@ -118,6 +120,13 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
       setMessage("Keep at least one node");
       return;
     }
+    if (
+      !window.confirm(
+        `Delete node "${selected.label}"? Connected edges to it will be removed.`,
+      )
+    ) {
+      return;
+    }
     const nextNodes = graph.nodes
       .filter((n) => n.id !== selected.id)
       .map((n) => ({
@@ -134,6 +143,10 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
 
   const handleSave = async () => {
     if (!currentUserId || !graph) return;
+    if (!name.trim()) {
+      setMessage("Name is required before saving");
+      return;
+    }
     setBusy("save");
     setMessage(null);
     try {
@@ -155,6 +168,23 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
 
   const handlePublish = async () => {
     if (!currentUserId || !graph) return;
+    if (!name.trim()) {
+      setMessage("Name the flow before publishing");
+      setStep(0);
+      return;
+    }
+    if (!hasReachableExitPath(graph)) {
+      setMessage(
+        "Add a reachable transfer, hangup, or voicemail path before publishing",
+      );
+      setStep(1);
+      return;
+    }
+    if (!transferDestinationsReady(graph)) {
+      setMessage("Every transfer node needs a destination number");
+      setStep(1);
+      return;
+    }
     setBusy("publish");
     setMessage(null);
     try {
@@ -200,6 +230,11 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
 
   const handleAssign = async () => {
     if (!currentUserId || !pickedNumberId) return;
+    if (flow?.status !== "published") {
+      setMessage("Publish the flow before assigning a number");
+      setStep(2);
+      return;
+    }
     const picked = numbers.find((n) => n.id === pickedNumberId);
     if (!picked) return;
     setBusy("assign");
@@ -234,6 +269,55 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
 
   const isFirst = step === 0;
   const isLast = step === IVR_FLOW_STEPS.length - 1;
+  const canPublish =
+    Boolean(name.trim()) &&
+    hasReachableExitPath(graph) &&
+    transferDestinationsReady(graph);
+  const isPublished = flow.status === "published";
+
+  const tryAdvance = () => {
+    if (step === 0 && !name.trim()) {
+      setMessage("Name is required before continuing");
+      return;
+    }
+    if (step === 1 && !hasReachableExitPath(graph)) {
+      setMessage(
+        "Add a reachable transfer, hangup, or voicemail before publish",
+      );
+      return;
+    }
+    if (step === 1 && !transferDestinationsReady(graph)) {
+      setMessage("Fill transfer destinations before continuing");
+      return;
+    }
+    if (step === 2 && !isPublished) {
+      setMessage("Publish before assigning a number");
+      return;
+    }
+    setMessage(null);
+    setStep((s) => s + 1);
+  };
+
+  const handleStepChange = (next: number) => {
+    if (next > step) {
+      if (step === 0 && !name.trim()) {
+        setMessage("Name is required before continuing");
+        return;
+      }
+      if (next >= 2 && !hasReachableExitPath(graph)) {
+        setMessage(
+          "Add a reachable transfer, hangup, or voicemail before publish",
+        );
+        return;
+      }
+      if (next >= 3 && !isPublished) {
+        setMessage("Publish before assigning a number");
+        return;
+      }
+    }
+    setMessage(null);
+    setStep(next);
+  };
 
   return (
     <PageShell
@@ -273,8 +357,13 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
             type="button"
             size="sm"
             className="bg-cyan-500 font-semibold text-slate-950 hover:bg-cyan-400"
-            disabled={!!busy}
+            disabled={!!busy || !canPublish}
             onClick={() => void handlePublish()}
+            title={
+              canPublish
+                ? undefined
+                : "Need a name and a reachable transfer, hangup, or voicemail"
+            }
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
             {busy === "publish" ? "Publishing…" : "Publish"}
@@ -287,7 +376,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
       <FlowSteps
         steps={IVR_FLOW_STEPS}
         current={step}
-        onStepChange={setStep}
+        onStepChange={handleStepChange}
       />
       {IVR_FLOW_STEPS[step]?.description && (
         <p className="text-xs text-slate-500">{IVR_FLOW_STEPS[step].description}</p>
@@ -407,8 +496,14 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
       {step === 2 && (
         <PageSection
           title="Publish this flow"
-          description="Telnyx only runs the published version. Save first if you have unsaved edits."
+          description="Telnyx only runs the published version. Requires a reachable transfer, hangup, or voicemail."
         >
+          {!canPublish && (
+            <p role="status" className="mb-3 text-xs text-amber-400">
+              Finish the tree: name the flow and ensure callers can reach a transfer,
+              hangup, or voicemail (with transfer numbers filled in).
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -425,7 +520,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
               type="button"
               size="sm"
               className="bg-cyan-500 font-semibold text-slate-950 hover:bg-cyan-400"
-              disabled={!!busy}
+              disabled={!!busy || !canPublish}
               onClick={() => void handlePublish()}
             >
               <Upload className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
@@ -445,13 +540,18 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
             </>
           }
         >
+          {!isPublished && (
+            <p role="status" className="mb-3 text-xs text-amber-400">
+              Publish a version before assigning a number.
+            </p>
+          )}
           <div className="flex flex-wrap items-end gap-2">
             <Button
               type="button"
               size="sm"
               variant="outline"
               className="border-white/10"
-              disabled={!!busy}
+              disabled={!!busy || !isPublished}
               onClick={() => void handleLoadNumbers()}
             >
               {busy === "numbers" ? "Loading…" : "Load Telnyx numbers"}
@@ -473,7 +573,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
                 <Button
                   type="button"
                   size="sm"
-                  disabled={!!busy || !pickedNumberId}
+                  disabled={!!busy || !pickedNumberId || !isPublished}
                   onClick={() => void handleAssign()}
                 >
                   {busy === "assign" ? "Assigning…" : "Assign & activate"}
@@ -491,6 +591,7 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
               type="button"
               variant="ghost"
               className="text-slate-400"
+              disabled={!!busy}
               onClick={() => setStep((s) => s - 1)}
             >
               <ChevronLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Back
@@ -502,7 +603,8 @@ export function IvrBuilder({ flowId }: IvrBuilderProps) {
             <Button
               type="button"
               className="bg-cyan-500 font-semibold text-slate-950 hover:bg-cyan-400"
-              onClick={() => setStep((s) => s + 1)}
+              disabled={!!busy}
+              onClick={tryAdvance}
             >
               Next <ChevronRight className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
             </Button>

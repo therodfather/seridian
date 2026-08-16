@@ -219,6 +219,39 @@ export function assertValidGraph(graph: IvrGraph): void {
   }
 }
 
+const EXIT_NODE_TYPES: ReadonlySet<IvrNodeType> = new Set([
+  "transfer",
+  "hangup",
+  "voicemail",
+]);
+
+/** True when a transfer / hangup / voicemail node is reachable from entry. */
+export function hasReachableExitPath(graph: IvrGraph): boolean {
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  const seen = new Set<string>();
+  const queue = [graph.entryNodeId];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const node = byId.get(id);
+    if (!node) continue;
+    if (EXIT_NODE_TYPES.has(node.type)) return true;
+    for (const edge of node.edges) {
+      if (!seen.has(edge.targetNodeId)) queue.push(edge.targetNodeId);
+    }
+  }
+  return false;
+}
+
+export function assertHasExitPath(graph: IvrGraph): void {
+  if (!hasReachableExitPath(graph)) {
+    throw new Error(
+      "Add a reachable transfer, hangup, or voicemail path before publishing",
+    );
+  }
+}
+
 /** Evaluate a business-hours node against the current instant. */
 export function isWithinBusinessHours(
   node: IvrNode,

@@ -12,6 +12,7 @@ import { v } from "convex/values";
 import { requireAdmin } from "./lib/admin";
 import {
   assertValidGraph,
+  assertHasExitPath,
   defaultIvrGraph,
   ivrGraphValidator,
   type IvrGraph,
@@ -191,6 +192,7 @@ export const publish = mutation({
       throw new Error("Flow not found");
     }
     assertValidGraph(flow.draftGraph as IvrGraph);
+    assertHasExitPath(flow.draftGraph as IvrGraph);
 
     const transferNodes = flow.draftGraph.nodes.filter(
       (n) => n.type === "transfer",

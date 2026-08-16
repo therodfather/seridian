@@ -138,3 +138,34 @@ export function createBlankNode(type: IvrNodeType): IvrNode {
       return base;
   }
 }
+
+const EXIT_TYPES: ReadonlySet<IvrNodeType> = new Set([
+  "transfer",
+  "hangup",
+  "voicemail",
+]);
+
+/** Client mirror of convex `hasReachableExitPath` — gate Publish / Next. */
+export function hasReachableExitPath(graph: IvrGraph): boolean {
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  const seen = new Set<string>();
+  const queue = [graph.entryNodeId];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const node = byId.get(id);
+    if (!node) continue;
+    if (EXIT_TYPES.has(node.type)) return true;
+    for (const edge of node.edges) {
+      if (!seen.has(edge.targetNodeId)) queue.push(edge.targetNodeId);
+    }
+  }
+  return false;
+}
+
+export function transferDestinationsReady(graph: IvrGraph): boolean {
+  return graph.nodes
+    .filter((n) => n.type === "transfer")
+    .every((n) => Boolean(n.transferTo?.trim()));
+}

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   assertValidGraph,
+  assertHasExitPath,
   defaultIvrGraph,
+  hasReachableExitPath,
   isWithinBusinessHours,
   resolveEdge,
   type IvrNode,
@@ -11,7 +13,26 @@ describe("ivrGraph", () => {
   it("ships a valid default graph", () => {
     const graph = defaultIvrGraph();
     expect(() => assertValidGraph(graph)).not.toThrow();
+    expect(() => assertHasExitPath(graph)).not.toThrow();
+    expect(hasReachableExitPath(graph)).toBe(true);
     expect(graph.entryNodeId).toBe("welcome");
+  });
+
+  it("rejects graphs with no reachable exit", () => {
+    expect(() =>
+      assertHasExitPath({
+        entryNodeId: "only",
+        nodes: [
+          {
+            id: "only",
+            type: "speak",
+            label: "Loop",
+            text: "Hello",
+            edges: [{ key: "next", targetNodeId: "only" }],
+          },
+        ],
+      }),
+    ).toThrow(/transfer, hangup, or voicemail/);
   });
 
   it("resolves digit and timeout edges", () => {

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { DealForm } from "@/components/sales/DealForm";
+import { SetupChecklist } from "@/components/business/SetupChecklist";
 import { PageShell, StatusBadge } from "@/components/dashboard/kit";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/routes";
@@ -387,6 +388,8 @@ export function BusinessOverview() {
         </div>
       }
     >
+      <SetupChecklist />
+
       {/* Primary KPI Metrics Grid */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard

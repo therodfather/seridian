@@ -16,14 +16,14 @@ How the Seridian dashboard is built so a careful non-expert can edit it.
 |-------|-------|--------|
 | Overview | `/dashboard` | Get-started checklist + KPIs |
 | Work | `/dashboard/issues` | Issues / ops board |
-| Business | `/dashboard/business` | **Hub** → clients, sales, proposals, contracts, bookings, health-check |
+| Business | `/dashboard/business` | **Hub** → clients, sales, proposals, contracts, bookings, health-check, workflows |
 | Knowledge | `/dashboard/knowledge` | **Hub** → wiki, brain, files, templates, arena, chat |
 | Voice | `/dashboard/ivr` | IVR builder |
 | Settings | `/dashboard/settings` | Tabs include Integrations & Sync |
 
 **Not in the sidebar** (deep links still work; open from hubs, Overview, or Cmd+K):
 
-Clients, Bookings, Sales, Proposals, Contracts, Health Check, Wiki, Second Brain, Files, Templates, LLM Arena, Chat. Legacy `/dashboard/sync` redirects into Settings → Integrations.
+Clients, Bookings, Sales, Proposals, Contracts, Health Check, Workflows, Wiki, Second Brain, Files, Templates, LLM Arena, Chat. Legacy `/dashboard/sync` redirects into Settings → Integrations.
 
 ## Layout rule (simple)
 

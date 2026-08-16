@@ -18,6 +18,7 @@ import type * as clients from "../clients.js";
 import type * as collaboration from "../collaboration.js";
 import type * as consolidation from "../consolidation.js";
 import type * as contracts from "../contracts.js";
+import type * as crons from "../crons.js";
 import type * as deals from "../deals.js";
 import type * as emailTemplates from "../emailTemplates.js";
 import type * as files from "../files.js";
@@ -33,6 +34,7 @@ import type * as lib_githubProjectsMapping from "../lib/githubProjectsMapping.js
 import type * as lib_ivrGraph from "../lib/ivrGraph.js";
 import type * as lib_telnyxExecutor from "../lib/telnyxExecutor.js";
 import type * as lib_telnyxSignature from "../lib/telnyxSignature.js";
+import type * as lib_workflowGraph from "../lib/workflowGraph.js";
 import type * as linearIngest from "../linearIngest.js";
 import type * as linearSync from "../linearSync.js";
 import type * as memory from "../memory.js";
@@ -45,6 +47,8 @@ import type * as telnyx from "../telnyx.js";
 import type * as users from "../users.js";
 import type * as wiki from "../wiki.js";
 import type * as wikiSeed from "../wikiSeed.js";
+import type * as workflowExecutor from "../workflowExecutor.js";
+import type * as workflows from "../workflows.js";
 
 import type {
   ApiFromModules,
@@ -63,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   collaboration: typeof collaboration;
   consolidation: typeof consolidation;
   contracts: typeof contracts;
+  crons: typeof crons;
   deals: typeof deals;
   emailTemplates: typeof emailTemplates;
   files: typeof files;
@@ -78,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   "lib/ivrGraph": typeof lib_ivrGraph;
   "lib/telnyxExecutor": typeof lib_telnyxExecutor;
   "lib/telnyxSignature": typeof lib_telnyxSignature;
+  "lib/workflowGraph": typeof lib_workflowGraph;
   linearIngest: typeof linearIngest;
   linearSync: typeof linearSync;
   memory: typeof memory;
@@ -90,6 +96,8 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   wiki: typeof wiki;
   wikiSeed: typeof wikiSeed;
+  workflowExecutor: typeof workflowExecutor;
+  workflows: typeof workflows;
 }>;
 
 /**

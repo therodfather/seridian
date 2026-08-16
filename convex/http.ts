@@ -357,4 +357,80 @@ http.route({
   }),
 });
 
+/**
+ * Workflow webhook trigger — POST /workflows/webhook/{token}
+ * Token is the secret path segment stored on the workflow document.
+ */
+http.route({
+  pathPrefix: "/workflows/webhook/",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url);
+    const parts = url.pathname.split("/").filter(Boolean);
+    // ["workflows", "webhook", "{token}"]
+    const token = parts[2] ?? "";
+    if (!token || token.length < 16) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const match = await ctx.runQuery(internal.workflows.getByWebhookToken, {
+      token,
+    });
+    if (!match || match.status !== "live") {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    let payloadText = "";
+    try {
+      payloadText = await req.text();
+    } catch {
+      payloadText = "";
+    }
+    if (payloadText.length > 50_000) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Prefer valid JSON object; otherwise wrap raw text.
+    let stored = payloadText;
+    if (payloadText.trim()) {
+      try {
+        const parsed: unknown = JSON.parse(payloadText);
+        stored = JSON.stringify(parsed);
+      } catch {
+        stored = JSON.stringify({ raw: payloadText });
+      }
+    } else {
+      stored = "{}";
+    }
+
+    try {
+      const runId = await ctx.runMutation(internal.workflows.beginRun, {
+        workflowId: match.workflowId,
+        trigger: "webhook",
+        triggerPayload: stored,
+      });
+      return new Response(JSON.stringify({ ok: true, runId }), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to start run";
+      const status = message.includes("already in progress") ? 409 : 400;
+      return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }),
+});
+
 export default http;

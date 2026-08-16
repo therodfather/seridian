@@ -583,21 +583,9 @@ function SettingsContent() {
 
           {/* TAB 3: INTEGRATIONS & SYNC */}
           {activeTab === "sync" && (
-            <div className="space-y-4">
-              <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6">
-                <PlatformConnections currentUserId={authUser?.pubkey ?? "admin"} />
-              </div>
-              <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6 space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 text-slate-500" /> Linear sync (trial)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Legacy issue sync while we finish moving SoT to GitHub. Prefer GitHub issues for new work.
-                  </p>
-                </div>
-                <SyncDashboard />
-              </div>
+            <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/80 p-6 space-y-6">
+              <PlatformConnections currentUserId={authUser?.pubkey ?? "admin"} />
+              <SyncDashboard />
             </div>
           )}
 

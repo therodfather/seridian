@@ -73,6 +73,11 @@ export function HealthCheckReport() {
     { id: "print", label: "Print", description: "Review the full page, then print." },
   ];
 
+  const showAllSteps = step === 3;
+  const showClient = showAllSteps || step === 0;
+  const showFindings = showAllSteps || step === 1;
+  const showPlan = showAllSteps || step === 2;
+
   return (
     <PageShell
       title="Health Check"
@@ -119,7 +124,10 @@ export function HealthCheckReport() {
           </p>
         </header>
 
-        <section aria-labelledby="sow-lite-heading" className="space-y-3">
+        <section
+          aria-labelledby="sow-lite-heading"
+          className={cn("space-y-3", !showClient && "hidden print:block")}
+        >
           <h3
             id="sow-lite-heading"
             className="font-mono text-xs font-medium uppercase tracking-wider text-slate-500"
@@ -136,113 +144,119 @@ export function HealthCheckReport() {
           </dl>
         </section>
 
-        <FormGrid cols={2}>
-          <Field label="Client">
-            <Input
-              value={draft.clientName}
-              onChange={(event) => handleMeta("clientName", event.target.value)}
-              placeholder="Company name"
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="Contact">
-            <Input
-              value={draft.contactName}
-              onChange={(event) => handleMeta("contactName", event.target.value)}
-              placeholder="Primary contact"
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="Prepared by">
-            <Input
-              value={draft.preparedBy}
-              onChange={(event) => handleMeta("preparedBy", event.target.value)}
-              placeholder="Reviewer"
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="Date">
-            <Input
-              type="date"
-              value={draft.date}
-              onChange={(event) => handleMeta("date", event.target.value)}
-              className={fieldClass}
-            />
-          </Field>
-        </FormGrid>
+        <div className={cn(!showClient && "hidden print:block")}>
+          <FormGrid cols={2}>
+            <Field label="Client">
+              <Input
+                value={draft.clientName}
+                onChange={(event) => handleMeta("clientName", event.target.value)}
+                placeholder="Company name"
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Contact">
+              <Input
+                value={draft.contactName}
+                onChange={(event) => handleMeta("contactName", event.target.value)}
+                placeholder="Primary contact"
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Prepared by">
+              <Input
+                value={draft.preparedBy}
+                onChange={(event) => handleMeta("preparedBy", event.target.value)}
+                placeholder="Reviewer"
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Date">
+              <Input
+                type="date"
+                value={draft.date}
+                onChange={(event) => handleMeta("date", event.target.value)}
+                className={fieldClass}
+              />
+            </Field>
+          </FormGrid>
 
-        <Field label="Access reviewed">
-          <Input
-            value={draft.accessNotes}
-            onChange={(event) => handleMeta("accessNotes", event.target.value)}
-            placeholder="Cloud account, repo, staging URL"
-            className={fieldClass}
-          />
-        </Field>
+          <Field label="Access reviewed" className="mt-4">
+            <Input
+              value={draft.accessNotes}
+              onChange={(event) => handleMeta("accessNotes", event.target.value)}
+              placeholder="Cloud account, repo, staging URL"
+              className={fieldClass}
+            />
+          </Field>
+        </div>
 
-        {FINDING_SECTIONS.map((section) => (
-          <FindingList
-            key={section.key}
-            section={section}
-            findings={draft[section.key]}
-            onChange={(rows) => handleFindings(section.key, rows)}
-          />
-        ))}
+        <div className={cn("space-y-6", !showFindings && "hidden print:block")}>
+          {FINDING_SECTIONS.map((section) => (
+            <FindingList
+              key={section.key}
+              section={section}
+              findings={draft[section.key]}
+              onChange={(rows) => handleFindings(section.key, rows)}
+            />
+          ))}
+        </div>
 
-        <section
-          aria-labelledby="cost-savings-heading"
-          className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4"
-        >
-          <h3
-            id="cost-savings-heading"
-            className="font-mono text-xs font-medium uppercase tracking-wider text-cyan-300"
+        <div className={cn("space-y-6", !showPlan && "hidden print:block")}>
+          <section
+            aria-labelledby="cost-savings-heading"
+            className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4"
           >
-            💰 Cost savings
-          </h3>
-          <Textarea
-            value={draft.costSavings}
-            onChange={(event) => handleMeta("costSavings", event.target.value)}
-            placeholder="Idle resources, over-provisioned SKUs, unused reserved capacity…"
-            rows={3}
-            className={fieldClass}
-          />
-        </section>
+            <h3
+              id="cost-savings-heading"
+              className="font-mono text-xs font-medium uppercase tracking-wider text-cyan-300"
+            >
+              💰 Cost savings
+            </h3>
+            <Textarea
+              value={draft.costSavings}
+              onChange={(event) => handleMeta("costSavings", event.target.value)}
+              placeholder="Idle resources, over-provisioned SKUs, unused reserved capacity…"
+              rows={3}
+              className={fieldClass}
+            />
+          </section>
 
-        <section aria-labelledby="plan-heading" className="space-y-3">
-          <h3
-            id="plan-heading"
-            className="font-mono text-xs font-medium uppercase tracking-wider text-slate-500"
-          >
-            📋 30 / 60 / 90-day remediation plan
-          </h3>
-          <Field label="Next 30 days">
-            <Textarea
-              value={draft.plan30}
-              onChange={(event) => handleMeta("plan30", event.target.value)}
-              placeholder="Critical fixes and the first High items"
-              rows={3}
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="Days 31–60">
-            <Textarea
-              value={draft.plan60}
-              onChange={(event) => handleMeta("plan60", event.target.value)}
-              placeholder="Remaining High items and CI/CD or backup work"
-              rows={3}
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="Days 61–90">
-            <Textarea
-              value={draft.plan90}
-              onChange={(event) => handleMeta("plan90", event.target.value)}
-              placeholder="Recommended hygiene and cost work"
-              rows={3}
-              className={fieldClass}
-            />
-          </Field>
-        </section>
+          <section aria-labelledby="plan-heading" className="space-y-3">
+            <h3
+              id="plan-heading"
+              className="font-mono text-xs font-medium uppercase tracking-wider text-slate-500"
+            >
+              📋 30 / 60 / 90-day remediation plan
+            </h3>
+            <Field label="Next 30 days">
+              <Textarea
+                value={draft.plan30}
+                onChange={(event) => handleMeta("plan30", event.target.value)}
+                placeholder="Critical fixes and the first High items"
+                rows={3}
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Days 31–60">
+              <Textarea
+                value={draft.plan60}
+                onChange={(event) => handleMeta("plan60", event.target.value)}
+                placeholder="Remaining High items and CI/CD or backup work"
+                rows={3}
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Days 61–90">
+              <Textarea
+                value={draft.plan90}
+                onChange={(event) => handleMeta("plan90", event.target.value)}
+                placeholder="Recommended hygiene and cost work"
+                rows={3}
+                className={fieldClass}
+              />
+            </Field>
+          </section>
+        </div>
 
         <p className="text-xs leading-relaxed text-slate-500 print:text-slate-600">
           Implementing fixes is out of scope for this Health Check. Remediation

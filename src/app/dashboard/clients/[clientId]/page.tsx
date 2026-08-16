@@ -28,8 +28,16 @@ import {
 import { cn } from "@/lib/utils";
 import { isConvexId } from "@/lib/convexId";
 import { toastMutationError, toastMutationSuccess } from "@/lib/mutationToast";
+import { ROUTES } from "@/lib/routes";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { ClientDealOpsPanels } from "@/components/clients/ClientDealOpsPanels";
+import {
+  BackLink,
+  EmptyState,
+  LoadingBlock,
+  PageShell,
+  StatusBadge,
+} from "@/components/dashboard/kit";
 import {
   Building2,
   DollarSign,
@@ -48,7 +56,6 @@ import {
   Folder,
   FileText,
   PenLine,
-  ArrowLeft,
   Search,
   Trash2,
 } from "lucide-react";
@@ -117,37 +124,28 @@ export default function ClientDetailPage({
 
   if (!validClientId) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        <p>Invalid client link.</p>
-        <Link href="/dashboard/clients" className="text-cyan-400 hover:underline">
-          Back to Clients
-        </Link>
+      <div className="space-y-4">
+        <EmptyState
+          title="Invalid client link"
+          description="That client ID is not valid."
+          action={<BackLink href={ROUTES.dashboard.clients} label="Back to Clients" />}
+        />
       </div>
     );
   }
 
   if (client === undefined) {
-    return (
-      <div className="space-y-6 p-1">
-        <Skeleton className="h-10 w-48 rounded-lg" />
-        <Skeleton className="h-48 rounded-xl" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
-          ))}
-        </div>
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    );
+    return <LoadingBlock rows={4} withHeader label="Loading client" />;
   }
 
   if (client === null) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.06] text-sm text-slate-600">
-        <p>Client record not found.</p>
-        <Link href="/dashboard/clients" className="text-cyan-400 hover:underline">
-          Back to Clients
-        </Link>
+      <div className="space-y-4">
+        <EmptyState
+          title="Client not found"
+          description="This client record no longer exists."
+          action={<BackLink href={ROUTES.dashboard.clients} label="Back to Clients" />}
+        />
       </div>
     );
   }
@@ -298,47 +296,51 @@ export default function ClientDetailPage({
   }
 
   return (
-    <div className="space-y-6 p-1">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between gap-4">
-        <Link
-          href="/dashboard/clients"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-cyan-500/20 hover:text-white"
+    <PageShell
+      title={client.name}
+      description={
+        <>
+          {client.company}
+          {client.industry ? ` · ${client.industry}` : ""}
+        </>
+      }
+      icon={
+        <span className="text-lg font-bold uppercase" aria-hidden="true">
+          {client.name.charAt(0)}
+        </span>
+      }
+      badge={
+        <StatusBadge tone={client.status === "active" ? "success" : "neutral"}>
+          {status.label}
+        </StatusBadge>
+      }
+      action={
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setEditOpen(true)}
+          className="bg-cyan-500 font-semibold text-black hover:bg-cyan-400"
         >
-          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to Clients
-        </Link>
-        <Button type="button" size="sm" onClick={() => setEditOpen(true)} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold">
           Edit Corporate Profile
         </Button>
-      </div>
+      }
+    >
+      <BackLink href={ROUTES.dashboard.clients} label="Back to Clients" />
 
       {/* Main Corporate Intelligence Card */}
-      <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-6 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-2xl font-bold text-cyan-400 uppercase border border-cyan-500/20">
-              {client.name.charAt(0)}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold text-white">{client.name}</h1>
-                <Badge variant="secondary" className={cn("text-[10px] px-2 py-0.5", status.color)}>
-                  {status.label}
-                </Badge>
-              </div>
-              <p className="text-sm font-medium text-slate-400 mt-0.5">{client.company} {client.industry && `· ${client.industry}`}</p>
-            </div>
-          </div>
-
+      <div className="space-y-6 rounded-xl border border-white/[0.08] bg-[#0c1222]/90 p-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div className="flex flex-wrap gap-2 text-xs text-slate-300">
             {client.annualRevenue && (
-              <Badge variant="outline" className="border-white/10 bg-white/5 py-1 px-2.5">
-                <DollarSign className="w-3.5 h-3.5 mr-1 text-emerald-400" /> Revenue: {client.annualRevenue}
+              <Badge variant="outline" className="border-white/10 bg-white/5 px-2.5 py-1">
+                <DollarSign className="mr-1 h-3.5 w-3.5 text-emerald-400" aria-hidden="true" /> Revenue:{" "}
+                {client.annualRevenue}
               </Badge>
             )}
             {client.companySize && (
-              <Badge variant="outline" className="border-white/10 bg-white/5 py-1 px-2.5">
-                <Building2 className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Size: {client.companySize}
+              <Badge variant="outline" className="border-white/10 bg-white/5 px-2.5 py-1">
+                <Building2 className="mr-1 h-3.5 w-3.5 text-cyan-400" aria-hidden="true" /> Size:{" "}
+                {client.companySize}
               </Badge>
             )}
           </div>
@@ -686,7 +688,7 @@ export default function ClientDetailPage({
           ) : deals.length === 0 ? (
             <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.06] text-xs text-slate-500">
               <p>No deals linked to this client yet.</p>
-              <Link href="/dashboard/sales" className="text-cyan-400 hover:underline">
+              <Link href={ROUTES.dashboard.sales} className="text-cyan-400 hover:underline">
                 Open sales pipeline
               </Link>
             </div>
@@ -844,6 +846,6 @@ export default function ClientDetailPage({
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

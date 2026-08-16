@@ -21,6 +21,8 @@ export interface FlowStepsProps {
   current: number;
   /** Allow clicking earlier steps to jump back */
   onStepChange?: (index: number) => void;
+  /** Jump to any step (studio / review UIs); default is only current + earlier */
+  allowJump?: boolean;
   className?: string;
 }
 
@@ -28,6 +30,7 @@ export function FlowSteps({
   steps,
   current,
   onStepChange,
+  allowJump = false,
   className,
 }: FlowStepsProps) {
   return (
@@ -38,7 +41,8 @@ export function FlowSteps({
       {steps.map((step, i) => {
         const done = i < current;
         const active = i === current;
-        const clickable = Boolean(onStepChange) && i <= current;
+        const clickable =
+          Boolean(onStepChange) && (allowJump || i <= current);
 
         return (
           <button

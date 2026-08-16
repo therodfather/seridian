@@ -4,8 +4,10 @@
 
 **What it does:** Local model arena + wiki engine tab.
 
-**Edit here:** `src/app/dashboard/arena/page.tsx`, `src/components/arena/`
+**Edit here**
+- Page frame / tabs: `src/app/dashboard/arena/page.tsx` (`PageShell`)
+- Arena UI: `src/components/arena/`
 
-**E2E must keep:** heading `LLM Arena`, Model Manager strings, `arena-composer` test id
+**E2E must keep:** heading `LLM Arena`, Model Manager strings, `arena-composer` / `arena-page` test ids
 
 ← [All pages](./index.md)

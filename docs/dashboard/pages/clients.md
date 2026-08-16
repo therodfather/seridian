@@ -7,7 +7,7 @@
 **Edit here**
 - List frame / empty / metrics: `src/components/clients/ClientList.tsx` (`PageShell`, `MetricCards`, `Toolbar`)
 - Create/edit wizard: `src/components/clients/ClientForm.tsx`
-- Detail: `src/app/dashboard/clients/[clientId]/page.tsx`
+- Detail: `src/app/dashboard/clients/[clientId]/page.tsx` (`PageShell`, `BackLink`, `StatusBadge`)
 - Route: `src/app/dashboard/clients/page.tsx`
 
 **Multi-step flow:** Basics → Contacts → Review ([flow doc](../flows/clients.md))

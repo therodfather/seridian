@@ -5,11 +5,11 @@
 **What it does:** Business snapshot — KPIs, recent activity, quick create client/deal.
 
 **Edit here**
-- Frame / greeting copy: `src/components/business/BusinessOverview.tsx`
+- Frame / greeting / actions: `src/components/business/BusinessOverview.tsx` (`PageShell`)
 - Route (thin): `src/app/dashboard/page.tsx`
 
 **Multi-step flow:** Uses `ClientForm` / `DealForm` dialogs (see [flows](../flows/index.md)).
 
-**Kit:** Prefer wrapping future header chrome in `PageShell`.
+**Kit:** `PageShell` + `StatusBadge` for the live workspace header.
 
 ← [All pages](./index.md)

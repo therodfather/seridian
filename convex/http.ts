@@ -433,4 +433,141 @@ http.route({
   }),
 });
 
+/**
+ * Formspree-style public submit — POST /forms/{slug}
+ * Accepts JSON or application/x-www-form-urlencoded.
+ */
+http.route({
+  pathPrefix: "/forms/",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const slug = parts[1] ?? "";
+    if (!slug || slug.length > 80) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    const live = await ctx.runQuery(internal.forms.internalGetLiveBySlug, {
+      slug,
+    });
+    if (!live) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    const contentType = req.headers.get("content-type") ?? "";
+    let values: Record<string, unknown> = {};
+    try {
+      if (contentType.includes("application/json")) {
+        const body: unknown = await req.json();
+        if (body && typeof body === "object" && !Array.isArray(body)) {
+          values = body as Record<string, unknown>;
+        }
+      } else {
+        const text = await req.text();
+        const params = new URLSearchParams(text);
+        params.forEach((v, k) => {
+          values[k] = v;
+        });
+      }
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid body" }), {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    if (typeof values.website === "string" && values.website.trim()) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    try {
+      const result = await ctx.runMutation(internal.forms.recordSubmission, {
+        formId: live.formId,
+        formSlug: live.slug,
+        payloadJson: JSON.stringify(values),
+        source: "api",
+        userAgent: req.headers.get("user-agent") ?? undefined,
+      });
+
+      if (result.notifyWebhookUrl) {
+        try {
+          await fetch(result.notifyWebhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              form: live.slug,
+              data: values,
+              submittedAt: Date.now(),
+            }),
+          });
+        } catch {
+          // Don't fail the submission if notify webhook is down.
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          submissionId: result.submissionId,
+          message: result.successMessage,
+          redirectUrl: result.redirectUrl,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Submit failed";
+      return new Response(JSON.stringify({ error: message }), {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+  }),
+});
+
+http.route({
+  pathPrefix: "/forms/",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  }),
+});
+
 export default http;

@@ -1,6 +1,10 @@
 /** Client-side workflow graph types mirroring convex/lib/workflowGraph.ts */
 
-export type WorkflowTriggerType = "manual" | "webhook" | "schedule";
+export type WorkflowTriggerType =
+  | "manual"
+  | "webhook"
+  | "schedule"
+  | "form_submission";
 
 export type WorkflowStepType =
   | "http_request"
@@ -32,6 +36,8 @@ export type WorkflowGraph = {
   trigger: {
     type: WorkflowTriggerType;
     intervalMinutes?: number;
+    formId?: string;
+    formSlug?: string;
   };
   steps: WorkflowStep[];
 };
@@ -49,6 +55,7 @@ export const TRIGGER_LABELS: Record<WorkflowTriggerType, string> = {
   manual: "Manual (Run now)",
   webhook: "Webhook URL",
   schedule: "Schedule (interval)",
+  form_submission: "Form submission",
 };
 
 export function newStepId(type: WorkflowStepType): string {

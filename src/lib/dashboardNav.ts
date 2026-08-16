@@ -19,6 +19,8 @@ import {
   Briefcase,
   Library,
   Workflow,
+  ClipboardList,
+  Landmark,
 } from "lucide-react";
 import { ROUTES, type DashboardRoute } from "./routes";
 
@@ -53,8 +55,10 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
       d.sales,
       d.proposals,
       d.contracts,
+      d.finance,
       d.healthCheck,
       d.workflows,
+      d.forms,
     ],
   },
   {
@@ -75,6 +79,7 @@ export const DASHBOARD_NESTED_NAV: DashboardNavItem[] = [
   { href: d.sales, label: "Sales", icon: DollarSign, group: "primary" },
   { href: d.proposals, label: "Proposals", icon: FileText, group: "primary" },
   { href: d.contracts, label: "Contracts", icon: PenLine, group: "primary" },
+  { href: d.finance, label: "Finance", icon: Landmark, group: "primary" },
   {
     href: d.healthCheck,
     label: "Health Check",
@@ -82,6 +87,7 @@ export const DASHBOARD_NESTED_NAV: DashboardNavItem[] = [
     group: "primary",
   },
   { href: d.workflows, label: "Workflows", icon: Workflow, group: "primary" },
+  { href: d.forms, label: "Forms", icon: ClipboardList, group: "primary" },
   { href: d.wiki, label: "Wiki", icon: BookOpen, group: "primary" },
   { href: d.brain, label: "Second Brain", icon: Brain, group: "primary" },
   { href: d.files, label: "Files", icon: Folder, group: "primary" },
@@ -111,8 +117,10 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   proposals: "Proposals",
   contracts: "Contracts",
   ivr: "Voice",
+  finance: "Finance",
   "health-check": "Health Check",
   workflows: "Workflows",
+  forms: "Forms",
   wiki: "Wiki",
   arena: "LLM Arena",
   brain: "Second Brain",
@@ -152,6 +160,11 @@ export const BUSINESS_HUB_LINKS = [
     description: "Meetings and demos",
   },
   {
+    href: d.finance,
+    label: "Finance",
+    description: "Mercury banking, Ramp spend, Gusto payroll",
+  },
+  {
     href: d.healthCheck,
     label: "Health Check",
     description: "One-page infrastructure report",
@@ -160,6 +173,11 @@ export const BUSINESS_HUB_LINKS = [
     href: d.workflows,
     label: "Workflows",
     description: "Automate triggers and sequential actions",
+  },
+  {
+    href: d.forms,
+    label: "Forms",
+    description: "Build, publish, and collect responses in-house",
   },
 ] as const;
 

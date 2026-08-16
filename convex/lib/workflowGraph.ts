@@ -13,6 +13,8 @@ export const workflowTriggerTypeValidator = v.union(
   v.literal("manual"),
   v.literal("webhook"),
   v.literal("schedule"),
+  /** Fires when a Seridian Form (Business → Forms) receives a submission. */
+  v.literal("form_submission"),
 );
 
 export const workflowStepTypeValidator = v.union(
@@ -68,11 +70,18 @@ export const workflowGraphValidator = v.object({
     type: workflowTriggerTypeValidator,
     /** Minutes between schedule fires (required when type=schedule) */
     intervalMinutes: v.optional(v.number()),
+    /** Optional form filter when type=form_submission */
+    formId: v.optional(v.string()),
+    formSlug: v.optional(v.string()),
   }),
   steps: v.array(workflowStepValidator),
 });
 
-export type WorkflowTriggerType = "manual" | "webhook" | "schedule";
+export type WorkflowTriggerType =
+  | "manual"
+  | "webhook"
+  | "schedule"
+  | "form_submission";
 export type WorkflowStepType =
   | "http_request"
   | "create_issue"
@@ -103,6 +112,8 @@ export type WorkflowGraph = {
   trigger: {
     type: WorkflowTriggerType;
     intervalMinutes?: number;
+    formId?: string;
+    formSlug?: string;
   };
   steps: WorkflowStep[];
 };

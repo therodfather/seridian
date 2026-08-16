@@ -28,8 +28,11 @@ export const ROUTES = {
     proposals: "/dashboard/proposals",
     contracts: "/dashboard/contracts",
     ivr: "/dashboard/ivr",
+    finance: "/dashboard/finance",
     /** Nested under Business hub — workflow automation */
     workflows: "/dashboard/workflows",
+    /** Nested under Business hub — Formspree/Jotform-style forms */
+    forms: "/dashboard/forms",
     healthCheck: "/dashboard/health-check",
     wiki: "/dashboard/wiki",
     arena: "/dashboard/arena",
@@ -101,4 +104,12 @@ export function ivrFlowHref(id: string): string {
 
 export function workflowHref(id: string): string {
   return `${ROUTES.dashboard.workflows}/${id}`;
+}
+
+export function formHref(id: string): string {
+  return `${ROUTES.dashboard.forms}/${id}`;
+}
+
+export function publicFormHref(slug: string): string {
+  return `/f/${slug}`;
 }

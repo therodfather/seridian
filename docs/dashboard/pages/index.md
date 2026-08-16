@@ -24,6 +24,7 @@ Each page has a short doc: what it does, which files to edit, which flow it uses
 | Bookings | [bookings.md](./bookings.md) |
 | Health Check | [health-check.md](./health-check.md) |
 | Workflows | [workflows.md](./workflows.md) |
+| Forms | [forms.md](./forms.md) |
 
 ## Nested under Knowledge (not in sidebar)
 

@@ -53,10 +53,11 @@ const summaryValidator = v.object({
   lastRunAt: v.optional(v.number()),
   lastRunStatus: v.optional(runStatusValidator),
   triggerType: v.union(
-    v.literal("manual"),
-    v.literal("webhook"),
-    v.literal("schedule"),
-  ),
+      v.literal("manual"),
+      v.literal("webhook"),
+      v.literal("schedule"),
+      v.literal("form_submission"),
+    ),
   updatedAt: v.number(),
 });
 
@@ -150,10 +151,11 @@ export const listRuns = query({
     v.object({
       _id: v.id("workflowRuns"),
       trigger: v.union(
-        v.literal("manual"),
-        v.literal("webhook"),
-        v.literal("schedule"),
-      ),
+      v.literal("manual"),
+      v.literal("webhook"),
+      v.literal("schedule"),
+      v.literal("form_submission"),
+    ),
       status: runStatusValidator,
       errorMessage: v.optional(v.string()),
       startedAt: v.number(),
@@ -429,6 +431,7 @@ export const beginRun = internalMutation({
       v.literal("manual"),
       v.literal("webhook"),
       v.literal("schedule"),
+      v.literal("form_submission"),
     ),
     startedBy: v.optional(v.string()),
     triggerPayload: v.optional(v.string()),

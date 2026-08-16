@@ -35,6 +35,8 @@ describe("routes", () => {
     expect(ROUTES.dashboard.knowledge).toBe("/dashboard/knowledge");
     expect(ROUTES.dashboard.healthCheck).toBe("/dashboard/health-check");
     expect(ROUTES.dashboard.ivr).toBe("/dashboard/ivr");
+    expect(ROUTES.dashboard.workflows).toBe("/dashboard/workflows");
+    expect(ROUTES.dashboard.forms).toBe("/dashboard/forms");
     expect(ROUTES.dashboard.settings).toBe("/dashboard/settings");
     expect(ROUTES.dashboard.sync).toBe("/dashboard/sync");
     expect(settingsTabHref("sync")).toBe("/dashboard/settings?tab=sync");

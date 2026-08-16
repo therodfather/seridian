@@ -775,8 +775,11 @@ export default defineSchema({
           v.literal("manual"),
           v.literal("webhook"),
           v.literal("schedule"),
+          v.literal("form_submission"),
         ),
         intervalMinutes: v.optional(v.number()),
+        formId: v.optional(v.string()),
+        formSlug: v.optional(v.string()),
       }),
       steps: v.array(
         v.object({
@@ -861,8 +864,11 @@ export default defineSchema({
           v.literal("manual"),
           v.literal("webhook"),
           v.literal("schedule"),
+          v.literal("form_submission"),
         ),
         intervalMinutes: v.optional(v.number()),
+        formId: v.optional(v.string()),
+        formSlug: v.optional(v.string()),
       }),
       steps: v.array(
         v.object({
@@ -920,6 +926,7 @@ export default defineSchema({
       v.literal("manual"),
       v.literal("webhook"),
       v.literal("schedule"),
+      v.literal("form_submission"),
     ),
     status: v.union(
       v.literal("pending"),
@@ -958,5 +965,108 @@ export default defineSchema({
     startedAt: v.optional(v.number()),
     finishedAt: v.optional(v.number()),
   }).index("by_run", ["runId"]),
+
+  /**
+   * Forms — Formspree/Jotform-style builders.
+   * Public submit uses slug + published fields only (never draft).
+   */
+  forms: defineTable({
+    name: v.string(),
+    /** URL-safe public id, unique among non-archived forms. */
+    slug: v.string(),
+    description: v.optional(v.string()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("live"),
+      v.literal("archived"),
+    ),
+    draftFields: v.array(
+      v.object({
+        id: v.string(),
+        type: v.union(
+          v.literal("text"),
+          v.literal("email"),
+          v.literal("phone"),
+          v.literal("textarea"),
+          v.literal("number"),
+          v.literal("select"),
+          v.literal("checkbox"),
+          v.literal("url"),
+          v.literal("date"),
+        ),
+        label: v.string(),
+        name: v.string(),
+        placeholder: v.optional(v.string()),
+        helpText: v.optional(v.string()),
+        required: v.boolean(),
+        options: v.optional(v.array(v.string())),
+        showIfFieldId: v.optional(v.string()),
+        showIfEquals: v.optional(v.string()),
+      }),
+    ),
+    /** Snapshot published for public submit. */
+    publishedFields: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("text"),
+            v.literal("email"),
+            v.literal("phone"),
+            v.literal("textarea"),
+            v.literal("number"),
+            v.literal("select"),
+            v.literal("checkbox"),
+            v.literal("url"),
+            v.literal("date"),
+          ),
+          label: v.string(),
+          name: v.string(),
+          placeholder: v.optional(v.string()),
+          helpText: v.optional(v.string()),
+          required: v.boolean(),
+          options: v.optional(v.array(v.string())),
+          showIfFieldId: v.optional(v.string()),
+          showIfEquals: v.optional(v.string()),
+        }),
+      ),
+    ),
+    publishedVersion: v.optional(v.number()),
+    submitButtonLabel: v.string(),
+    successMessage: v.string(),
+    /** Optional redirect after successful browser submit. */
+    redirectUrl: v.optional(v.string()),
+    /** Optional webhook notified on each submission (Formspree-style). */
+    notifyWebhookUrl: v.optional(v.string()),
+    submissionCount: v.number(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    publishedAt: v.optional(v.number()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"])
+    .index("by_updatedAt", ["updatedAt"]),
+
+  formSubmissions: defineTable({
+    formId: v.id("forms"),
+    formSlug: v.string(),
+    /** JSON string of validated field values. */
+    payloadJson: v.string(),
+    /** Truncated plain-text preview for list UI. */
+    preview: v.string(),
+    source: v.union(
+      v.literal("public_page"),
+      v.literal("embed"),
+      v.literal("api"),
+    ),
+    ipHash: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    read: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_form", ["formId"])
+    .index("by_form_and_createdAt", ["formId", "createdAt"])
+    .index("by_form_and_read", ["formId", "read"]),
 });
 

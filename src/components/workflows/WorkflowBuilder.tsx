@@ -416,6 +416,31 @@ export function WorkflowBuilder({ workflowId }: WorkflowBuilderProps) {
                 </Button>
               </div>
             )}
+
+            {graph.trigger.type === "form_submission" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="wf-form-slug">Form slug (optional)</Label>
+                <Input
+                  id="wf-form-slug"
+                  value={graph.trigger.formSlug ?? ""}
+                  placeholder="Leave empty to match any form"
+                  onChange={(e) =>
+                    updateGraph({
+                      ...graph,
+                      trigger: {
+                        ...graph.trigger,
+                        formSlug: e.target.value.trim() || undefined,
+                      },
+                    })
+                  }
+                  className="border-white/10 bg-[#0c1222] font-mono text-xs"
+                />
+                <p className="text-[11px] text-slate-500">
+                  Fires when a published form under Business → Forms receives a
+                  submission. Payload is the validated field map.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

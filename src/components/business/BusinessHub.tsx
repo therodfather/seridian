@@ -15,6 +15,7 @@ import {
   Briefcase,
   Plus,
   Workflow,
+  ClipboardList,
 } from "lucide-react";
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-kit";
 import {
@@ -33,6 +34,7 @@ const ICONS = {
   Bookings: Calendar,
   "Health Check": ClipboardCheck,
   Workflows: Workflow,
+  Forms: ClipboardList,
 } as const;
 
 export function BusinessHub() {
@@ -41,7 +43,7 @@ export function BusinessHub() {
   return (
     <PageShell
       title="Business"
-      description="Clients, pipeline, proposals, contracts, bookings, health checks, and workflows — one place to start."
+      description="Clients, pipeline, proposals, contracts, bookings, health checks, workflows, and forms — one place to start."
       icon={<Briefcase className="h-5 w-5" aria-hidden="true" />}
       action={
         <Button

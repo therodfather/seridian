@@ -50,3 +50,11 @@ android-client/build/
 android-client/**/build/
 *.iml
 .idea/
+
+# internal company docs — never push to a public repo
+docs/MRR*.md
+docs/PRICING*.md
+docs/PROJECTS*.md
+docs/internal/
+RESEARCH/
+.mrr/

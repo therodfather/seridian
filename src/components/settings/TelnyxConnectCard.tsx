@@ -20,6 +20,12 @@ const TELNYX_STEPS = [
   { id: "confirm", label: "Confirm" },
 ];
 
+/** Always a string — guards mixed-branch HMR where `ROUTES.dashboard.ivr` can be missing. */
+const IVR_LIST_HREF =
+  typeof ROUTES.dashboard.ivr === "string"
+    ? ROUTES.dashboard.ivr
+    : "/dashboard/ivr";
+
 export function TelnyxConnectCard({ currentUserId }: { currentUserId: string }) {
   const statuses = useQuery(api.integrations.listStatuses, {});
   const completeSetup = useMutation(api.telnyx.completeTelnyxSetup);
@@ -150,7 +156,7 @@ export function TelnyxConnectCard({ currentUserId }: { currentUserId: string }) 
             <div className="space-y-3">
               <p className="text-[11px] text-slate-500">
                 Portal → Auth → API Keys, and Account → Public Key. Build flows under{" "}
-                <Link href={ROUTES.dashboard.ivr} className="text-cyan-400 hover:underline">
+                <Link href={IVR_LIST_HREF} className="text-cyan-400 hover:underline">
                   IVR / Voice
                 </Link>
                 .
@@ -212,7 +218,7 @@ export function TelnyxConnectCard({ currentUserId }: { currentUserId: string }) 
             {connected ? "Update keys" : "Connect Telnyx"}
           </Button>
           <Button asChild size="sm" variant="outline" className="border-white/10 text-xs">
-            <Link href={ROUTES.dashboard.ivr}>Open IVR builder</Link>
+            <Link href={IVR_LIST_HREF}>Open IVR builder</Link>
           </Button>
           {connected && (
             <Button

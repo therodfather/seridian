@@ -217,7 +217,26 @@ export function entityHref(
   return `${ROUTES.dashboard.root}/${group}/${id}`;
 }
 
-export const NUMBER_KEY_NAV = DASHBOARD_NAV.slice(0, 9).map((item, index) => ({
+/**
+ * The 9 highest-priority destinations for number-key shortcuts (1-9) —
+ * independent of the hub sidebar's 6 top-level entries, since hubs alone
+ * don't leave room for quick access to daily-work pages. Labels here are
+ * shortcut-legend labels, not necessarily the hub's sidebar label (e.g.
+ * "Issues" here vs. the "Work" hub).
+ */
+const NUMBER_KEY_PRIORITY: ReadonlyArray<{ href: DashboardRoute; label: string }> = [
+  { href: d.root, label: "Overview" },
+  { href: d.issues, label: "Issues" },
+  { href: d.clients, label: "Clients" },
+  { href: d.bookings, label: "Bookings" },
+  { href: d.sales, label: "Sales" },
+  { href: d.proposals, label: "Proposals" },
+  { href: d.contracts, label: "Contracts" },
+  { href: d.wiki, label: "Wiki" },
+  { href: d.arena, label: "LLM Arena" },
+];
+
+export const NUMBER_KEY_NAV = NUMBER_KEY_PRIORITY.map((item, index) => ({
   key: String(index + 1),
   href: item.href,
   label: item.label,

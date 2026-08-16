@@ -760,5 +760,203 @@ export default defineSchema({
   })
     .index("by_slug", ["slug"])
     .index("by_bank", ["bankId"]),
+
+  /**
+   * First-party workflow automation (n8n/Pipedream-style capability, not a fork).
+   * Draft graph is edited in the dashboard; executor runs published snapshots only
+   * (manual / webhook / schedule triggers).
+   */
+  workflows: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    draftGraph: v.object({
+      trigger: v.object({
+        type: v.union(
+          v.literal("manual"),
+          v.literal("webhook"),
+          v.literal("schedule"),
+        ),
+        intervalMinutes: v.optional(v.number()),
+      }),
+      steps: v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("http_request"),
+            v.literal("create_issue"),
+            v.literal("create_linear_issue"),
+            v.literal("append_client_note"),
+            v.literal("delay"),
+            v.literal("filter"),
+          ),
+          label: v.string(),
+          url: v.optional(v.string()),
+          method: v.optional(
+            v.union(
+              v.literal("GET"),
+              v.literal("POST"),
+              v.literal("PUT"),
+              v.literal("PATCH"),
+              v.literal("DELETE"),
+            ),
+          ),
+          headersJson: v.optional(v.string()),
+          bodyTemplate: v.optional(v.string()),
+          issueTitle: v.optional(v.string()),
+          issueDescription: v.optional(v.string()),
+          issuePriority: v.optional(
+            v.union(
+              v.literal("urgent"),
+              v.literal("high"),
+              v.literal("medium"),
+              v.literal("low"),
+              v.literal("none"),
+            ),
+          ),
+          clientId: v.optional(v.string()),
+          noteText: v.optional(v.string()),
+          delaySeconds: v.optional(v.number()),
+          filterField: v.optional(v.string()),
+          filterEquals: v.optional(v.string()),
+        }),
+      ),
+    }),
+    publishedVersionId: v.optional(v.id("workflowVersions")),
+    publishedVersion: v.optional(v.number()),
+    /** Secret path token for /workflows/webhook/{token} */
+    webhookToken: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("live"),
+      v.literal("archived"),
+    ),
+    lastRunAt: v.optional(v.number()),
+    lastRunStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("running"),
+        v.literal("succeeded"),
+        v.literal("failed"),
+        v.literal("cancelled"),
+      ),
+    ),
+    /** Next scheduled fire (ms); only meaningful when live + schedule trigger */
+    nextRunAt: v.optional(v.number()),
+    createdBy: v.string(),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_webhookToken", ["webhookToken"])
+    .index("by_status_and_nextRunAt", ["status", "nextRunAt"]),
+
+  /** Immutable published snapshots executed by webhook / schedule / Run now. */
+  workflowVersions: defineTable({
+    workflowId: v.id("workflows"),
+    version: v.number(),
+    graph: v.object({
+      trigger: v.object({
+        type: v.union(
+          v.literal("manual"),
+          v.literal("webhook"),
+          v.literal("schedule"),
+        ),
+        intervalMinutes: v.optional(v.number()),
+      }),
+      steps: v.array(
+        v.object({
+          id: v.string(),
+          type: v.union(
+            v.literal("http_request"),
+            v.literal("create_issue"),
+            v.literal("create_linear_issue"),
+            v.literal("append_client_note"),
+            v.literal("delay"),
+            v.literal("filter"),
+          ),
+          label: v.string(),
+          url: v.optional(v.string()),
+          method: v.optional(
+            v.union(
+              v.literal("GET"),
+              v.literal("POST"),
+              v.literal("PUT"),
+              v.literal("PATCH"),
+              v.literal("DELETE"),
+            ),
+          ),
+          headersJson: v.optional(v.string()),
+          bodyTemplate: v.optional(v.string()),
+          issueTitle: v.optional(v.string()),
+          issueDescription: v.optional(v.string()),
+          issuePriority: v.optional(
+            v.union(
+              v.literal("urgent"),
+              v.literal("high"),
+              v.literal("medium"),
+              v.literal("low"),
+              v.literal("none"),
+            ),
+          ),
+          clientId: v.optional(v.string()),
+          noteText: v.optional(v.string()),
+          delaySeconds: v.optional(v.number()),
+          filterField: v.optional(v.string()),
+          filterEquals: v.optional(v.string()),
+        }),
+      ),
+    }),
+    publishedBy: v.string(),
+    publishedAt: v.number(),
+  })
+    .index("by_workflow", ["workflowId"])
+    .index("by_workflow_and_version", ["workflowId", "version"]),
+
+  workflowRuns: defineTable({
+    workflowId: v.id("workflows"),
+    versionId: v.id("workflowVersions"),
+    trigger: v.union(
+      v.literal("manual"),
+      v.literal("webhook"),
+      v.literal("schedule"),
+    ),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("running"),
+      v.literal("succeeded"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    /** Truncated JSON string of trigger payload — never secrets vault material. */
+    triggerPayload: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    startedBy: v.optional(v.string()),
+  })
+    .index("by_workflow", ["workflowId"])
+    .index("by_workflow_and_startedAt", ["workflowId", "startedAt"])
+    .index("by_status", ["status"]),
+
+  workflowRunSteps: defineTable({
+    runId: v.id("workflowRuns"),
+    stepId: v.string(),
+    stepType: v.string(),
+    stepLabel: v.string(),
+    order: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("running"),
+      v.literal("succeeded"),
+      v.literal("failed"),
+      v.literal("skipped"),
+    ),
+    inputSummary: v.optional(v.string()),
+    outputSummary: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    startedAt: v.optional(v.number()),
+    finishedAt: v.optional(v.number()),
+  }).index("by_run", ["runId"]),
 });
 

@@ -13,6 +13,7 @@ Guided flows appear only where create / setup / publish is multi-part. List page
 | [Booking create/edit](./bookings.md) | Details → Schedule | `BookingForm` |
 | [Contract create/edit](./contracts.md) | (existing MultiStepForm steps) | `ContractForm` |
 | [IVR builder](./ivr.md) | Name → Tree → Publish → Assign number (gated) | `IvrBuilder` |
+| [Workflow builder](./workflows.md) | Name → Trigger → Steps → Review → Publish | `WorkflowBuilder` |
 | [Telnyx connect](./telnyx.md) | API key → Public key → Confirm | `TelnyxConnectCard` |
 | [Health Check report](./health-check.md) | Client → Findings → 30/60/90 → Print | `HealthCheckReport` |
 | Channel / Template / Case study | existing MultiStepForm | respective forms |

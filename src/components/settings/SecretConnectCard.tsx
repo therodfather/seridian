@@ -23,7 +23,7 @@ interface SecretConnectCardProps {
 /**
  * One-field connect/disconnect card for integrations that only need a single
  * pasted credential (no OAuth, no multi-step wizard) — the value is stored
- * in the same Convex secrets vault the Linear integration uses.
+ * in the Convex secrets vault.
  */
 export function SecretConnectCard({
   provider,

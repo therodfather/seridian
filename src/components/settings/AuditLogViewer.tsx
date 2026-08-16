@@ -168,7 +168,7 @@ export function AuditLogViewer() {
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-white font-mono">{stats.sync}</span>
             <span className="text-[10px] text-purple-400 font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
-              Linear / GitHub
+              GitHub
             </span>
           </div>
           <p className="mt-1 text-[11px] text-slate-500">Manual & automated dispatches</p>

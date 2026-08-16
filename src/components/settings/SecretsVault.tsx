@@ -30,7 +30,6 @@ const CATEGORIES = [
 ] as const;
 
 const PRESET_SECRETS = [
-  { name: "LINEAR_API_KEY", category: "api", description: "Linear API key for issue sync" },
   { name: "GITHUB_TOKEN", category: "api", description: "GitHub Personal Access Token" },
   { name: "CONVEX_DEPLOY_KEY", category: "api", description: "Convex deployment key" },
   { name: "NETLIFY_AUTH_TOKEN", category: "token", description: "Netlify deploy token" },

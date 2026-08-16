@@ -147,11 +147,9 @@ src/components/
 │   ├── KanbanBoard.tsx
 │   └── IssueCard.tsx
 │
-├── sync/                         # Linear/GitHub sync UI
+├── sync/                         # GitHub sync UI (Linear via Convex only)
 │   ├── SyncDashboard.tsx
 │   ├── SyncCard.tsx
-│   ├── SyncStatus.tsx
-│   ├── LinearSyncSection.tsx
 │   └── GitHubSyncSection.tsx
 │
 ├── clients/                      # Client management

@@ -3,7 +3,6 @@
 import { Component, type ReactNode } from "react";
 import { CreditCard, ExternalLink, GitBranch, Globe, Landmark, PhoneCall } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
-import { IntegrationsSetupWizard } from "./IntegrationsSetupWizard";
 import { SecretConnectCard } from "./SecretConnectCard";
 import { TelnyxConnectCard } from "./TelnyxConnectCard";
 import {
@@ -111,7 +110,7 @@ class WizardBoundary extends Component<
 }
 
 /**
- * Platform links always render (e2e-stable). Admin multi-step Linear setup is
+ * Platform links always render (e2e-stable). Money and Voice cards are
  * Convex-backed and isolated so query/schema lag cannot blank the tab.
  */
 export function PlatformConnections({
@@ -157,10 +156,6 @@ export function PlatformConnections({
           secondaryLabel="View site"
         />
       </div>
-
-      <WizardBoundary>
-        <IntegrationsSetupWizard currentUserId={currentUserId} />
-      </WizardBoundary>
 
       <div>
         <h3 className="text-sm font-bold text-white flex items-center gap-2">

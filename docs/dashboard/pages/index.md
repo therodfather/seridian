@@ -23,6 +23,7 @@ Each page has a short doc: what it does, which files to edit, which flow it uses
 | Contracts | [contracts.md](./contracts.md) |
 | Bookings | [bookings.md](./bookings.md) |
 | Health Check | [health-check.md](./health-check.md) |
+| Workflows | [workflows.md](./workflows.md) |
 
 ## Nested under Knowledge (not in sidebar)
 

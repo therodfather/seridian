@@ -28,6 +28,8 @@ export const ROUTES = {
     proposals: "/dashboard/proposals",
     contracts: "/dashboard/contracts",
     ivr: "/dashboard/ivr",
+    /** Nested under Business hub — workflow automation */
+    workflows: "/dashboard/workflows",
     healthCheck: "/dashboard/health-check",
     wiki: "/dashboard/wiki",
     arena: "/dashboard/arena",
@@ -95,4 +97,8 @@ export function contractHref(id: string): string {
 
 export function ivrFlowHref(id: string): string {
   return `${ROUTES.dashboard.ivr}/${id}`;
+}
+
+export function workflowHref(id: string): string {
+  return `${ROUTES.dashboard.workflows}/${id}`;
 }

@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   Briefcase,
   Plus,
+  Workflow,
 } from "lucide-react";
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from "@bytecats/ui-kit";
 import {
@@ -31,6 +32,7 @@ const ICONS = {
   Contracts: PenLine,
   Bookings: Calendar,
   "Health Check": ClipboardCheck,
+  Workflows: Workflow,
 } as const;
 
 export function BusinessHub() {

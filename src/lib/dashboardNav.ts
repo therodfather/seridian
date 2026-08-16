@@ -18,6 +18,7 @@ import {
   PhoneCall,
   Briefcase,
   Library,
+  Workflow,
 } from "lucide-react";
 import { ROUTES, type DashboardRoute } from "./routes";
 
@@ -53,6 +54,7 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
       d.proposals,
       d.contracts,
       d.healthCheck,
+      d.workflows,
     ],
   },
   {
@@ -79,6 +81,7 @@ export const DASHBOARD_NESTED_NAV: DashboardNavItem[] = [
     icon: ClipboardCheck,
     group: "primary",
   },
+  { href: d.workflows, label: "Workflows", icon: Workflow, group: "primary" },
   { href: d.wiki, label: "Wiki", icon: BookOpen, group: "primary" },
   { href: d.brain, label: "Second Brain", icon: Brain, group: "primary" },
   { href: d.files, label: "Files", icon: Folder, group: "primary" },
@@ -109,6 +112,7 @@ export const DASHBOARD_ROUTE_NAMES: Record<string, string> = {
   contracts: "Contracts",
   ivr: "Voice",
   "health-check": "Health Check",
+  workflows: "Workflows",
   wiki: "Wiki",
   arena: "LLM Arena",
   brain: "Second Brain",
@@ -151,6 +155,11 @@ export const BUSINESS_HUB_LINKS = [
     href: d.healthCheck,
     label: "Health Check",
     description: "One-page infrastructure report",
+  },
+  {
+    href: d.workflows,
+    label: "Workflows",
+    description: "Automate triggers and sequential actions",
   },
 ] as const;
 

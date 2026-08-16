@@ -185,7 +185,6 @@ function SettingsContent() {
   const { user: authUser } = useDashboardAuth();
   const users = useQuery(api.chat.getUsers, {});
   const githubStats = useQuery(api.githubIngest.getGitHubStats);
-  const linearStats = useQuery(api.linearIngest.getLinearStats);
   const deleteUser = useMutation(api.users.remove);
   const initialTab =
     tabParam && VALID_TABS.has(tabParam) ? tabParam : "general";
@@ -266,10 +265,6 @@ function SettingsContent() {
     (!!githubStats.lastIssueSync ||
       !!githubStats.lastProjectSync ||
       githubStats.totalIssues > 0);
-  const linearSynced =
-    !!linearStats &&
-    ((linearStats.lastSync?.all ?? 0) > 0 ||
-      (linearStats.counts?.issues ?? 0) > 0);
 
   const SETTINGS_SECTIONS = [
     { id: "general", label: "General & Org", icon: Sliders },
@@ -277,7 +272,7 @@ function SettingsContent() {
     { id: "users", label: "Team & Access", icon: Users, badge: users ? String(users.length) : undefined },
     { id: "sync", label: "Integrations & Sync", icon: RefreshCw, badge: githubSynced ? "Active" : undefined },
     { id: "secrets", label: "API Keys & Vault", icon: Key },
-    { id: "agents", label: "AI Agent Studio", icon: Bot, badge: "3" },
+    { id: "agents", label: "AI Agent Studio", icon: Bot, badge: "2" },
   ];
 
   return (
@@ -388,16 +383,6 @@ function SettingsContent() {
                       : "Not synced"}
                 </span>
               </div>
-              <div className="flex justify-between gap-2">
-                <span>Linear (trial):</span>
-                <span className={linearSynced ? "text-amber-400" : "text-slate-400"}>
-                  {linearStats === undefined
-                    ? "…"
-                    : linearSynced
-                      ? "Data present"
-                      : "Not synced"}
-                </span>
-              </div>
             </div>
           </div>
         </div>
@@ -451,7 +436,7 @@ function SettingsContent() {
                       <div className="text-xs font-semibold text-white flex items-center gap-1.5">
                         <Bell className="h-3.5 w-3.5 text-cyan-400" /> Live Integration Dispatch Alerts
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Receive instant dispatches on Linear sync and agent updates.</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Receive instant dispatches on GitHub sync and agent updates.</p>
                     </div>
                     <input
                       id="notify-on-sync"
@@ -485,7 +470,7 @@ function SettingsContent() {
                     <Shield className="h-4 w-4 text-cyan-400" /> Immutable Audit Log Viewer
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    System activity, secret updates, user revocations, and Linear manual sync triggers.
+                    System activity, secret updates, user revocations, and sync triggers.
                   </p>
                 </div>
                 <AuditLogViewer />
@@ -595,7 +580,7 @@ function SettingsContent() {
                 </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">@SeridianAI</span>
@@ -605,17 +590,6 @@ function SettingsContent() {
                   </div>
                   <div className="text-sm font-bold text-white">Executive Architect Agent</div>
                   <p className="text-xs text-slate-400 leading-relaxed">Orchestrates multi-agent subtasks, codebase queries, layout optimization, and workflow planning.</p>
-                </div>
-
-                <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">@LinearSyncBot</span>
-                    <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-                      Trial sync UI
-                    </span>
-                  </div>
-                  <div className="text-sm font-bold text-white">Sprint & Issue Orchestrator</div>
-                  <p className="text-xs text-slate-400 leading-relaxed">Manual Linear sync lives under Integrations. Prefer GitHub issues for new work.</p>
                 </div>
 
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2">

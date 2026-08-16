@@ -45,10 +45,9 @@
 
 ## Env / Linear & Convex integration
 - `.env.example` & `.env.local`: legacy local hints only. **Do not rely on Netlify env vars for Linear.**
-- **Preferred (admin UI):** Settings → Integrations & Sync → **Start setup** → enable Linear → paste API key (and optional team/project IDs). Key is stored in Convex `secrets.ciphertext` + `integrationConfigs`; sync reads the vault first.
-- **Deprecated fallback:** `bunx convex env set LINEAR_API_KEY "lin_api_..."` still works if no vault ciphertext exists. Plan to remove after all environments complete UI setup.
+- **Linear sync is server-only:** Settings no longer paste Linear API keys or run client sync. Prefer existing Convex vault ciphertext (`secrets` + `integrationConfigs`) if already configured; otherwise `bunx convex env set LINEAR_API_KEY "lin_api_..."`.
+- **Run sync:** `bunx convex run linearSync:syncAllLinear` (Convex action — not Settings UI).
 - **Convex environment variables** (other keys): Must be configured in Convex deployment separately from local `.env.local` or Netlify env vars.
-  - Run sync action: `bunx convex run linearSync:syncAllLinear`
 - **Netlify environment & linking**:
   - Production site: **https://seridian.netlify.app** (Netlify project `seridian`, repo `therodfather/seridian`)
   - Site link (if you have access): `bunx netlify link --name seridian`

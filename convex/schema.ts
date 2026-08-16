@@ -125,11 +125,23 @@ export default defineSchema({
     linearCreatedAt: v.optional(v.string()),
     linearUpdatedAt: v.optional(v.string()),
     lastSyncedAt: v.optional(v.number()),
+    /**
+     * GitHub Projects v2 is ground truth for this board — these fields link
+     * a local issue to its GitHub Issue + Project item. Populated once
+     * either side creates the pairing; pulls overwrite local status/title
+     * on conflict, pushes create the GitHub side if these are still unset.
+     */
+    githubIssueNumber: v.optional(v.number()),
+    githubIssueNodeId: v.optional(v.string()),
+    githubProjectItemId: v.optional(v.string()),
+    githubUpdatedAt: v.optional(v.string()),
   })
     .index("by_linearId", ["linearId"])
     .index("by_status", ["status"])
     .index("by_clientId", ["clientId"])
-    .index("by_status_and_clientId", ["status", "clientId"]),
+    .index("by_status_and_clientId", ["status", "clientId"])
+    .index("by_githubIssueNumber", ["githubIssueNumber"])
+    .index("by_githubProjectItemId", ["githubProjectItemId"]),
 
   bookings: defineTable({
     title: v.string(),
@@ -378,7 +390,8 @@ export default defineSchema({
     .index("by_state", ["state"]),
 
   githubProjects: defineTable({
-    githubId: v.number(),
+    /** Projects v2 node ID — an opaque string (e.g. "PVT_..."), not numeric. */
+    githubId: v.string(),
     number: v.number(),
     title: v.string(),
     description: v.optional(v.string()),

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 export const list = query({
   args: {
@@ -80,7 +81,9 @@ export const create = mutation({
       .order("desc")
       .first();
     const order = existing ? existing.order + 1 : 0;
-    return await ctx.db.insert("issues", { ...args, order });
+    const issueId = await ctx.db.insert("issues", { ...args, order });
+    await ctx.scheduler.runAfter(0, internal.githubProjectsSync.pushIssueChange, { issueId });
+    return issueId;
   },
 });
 
@@ -120,6 +123,9 @@ export const update = mutation({
       Object.entries(fields).filter(([, v]) => v !== undefined),
     );
     await ctx.db.patch(issueId, nonUndefined);
+    if ("status" in nonUndefined) {
+      await ctx.scheduler.runAfter(0, internal.githubProjectsSync.pushIssueChange, { issueId });
+    }
     return issueId;
   },
 });

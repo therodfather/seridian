@@ -18,29 +18,6 @@ type GitHubIssue = {
   updated_at: string;
 };
 
-type GitHubProjectNode = {
-  id: string;
-  number: number;
-  title: string;
-  description: string | null;
-  state: string;
-};
-
-type GitHubProjectsResponse = {
-  data?: {
-    organization?: {
-      projects: {
-        nodes: GitHubProjectNode[];
-        pageInfo: {
-          hasNextPage: boolean;
-          endCursor: string;
-        };
-      };
-    };
-  };
-  errors?: { message?: string }[];
-};
-
 function parseLinkHeader(header: string | null): string | null {
   if (!header) return null;
   const match = header.match(/<([^>]+)>;\s*rel="next"/);
@@ -129,28 +106,32 @@ async function fetchGitHubIssues(
 
 async function fetchGitHubProjects(
   token: string,
-  org: string,
+  login: string,
 ): Promise<
-  { githubId: number; number: number; title: string; description: string | undefined; state: string }[]
+  { githubId: string; number: number; title: string; description: string | undefined; state: string }[]
 > {
   const allProjects: {
-    githubId: number;
+    githubId: string;
     number: number;
     title: string;
     description: string | undefined;
     state: string;
   }[] = [];
 
+  // Classic Projects (organization.projects) was sunset by GitHub in 2024 —
+  // this uses Projects v2 instead. therodfather/seridian's board is a user
+  // project (github.com/users/<login>/projects/N), so `user(login)`, not
+  // `organization(login)`.
   const PROJECTS_QUERY = `
-    query FetchProjects($org: String!, $cursor: String) {
-      organization(login: $org) {
-        projects(first: 100, after: $cursor) {
+    query FetchProjects($login: String!, $cursor: String) {
+      user(login: $login) {
+        projectsV2(first: 100, after: $cursor) {
           nodes {
             id
             number
             title
-            description
-            state
+            shortDescription
+            closed
           }
           pageInfo {
             hasNextPage
@@ -175,7 +156,7 @@ async function fetchGitHubProjects(
         },
         body: JSON.stringify({
           query: PROJECTS_QUERY,
-          variables: { org, cursor },
+          variables: { login, cursor },
         }),
       });
     } catch {
@@ -189,9 +170,25 @@ async function fetchGitHubProjects(
       throw new Error(`GitHub GraphQL returned HTTP ${res.status}`);
     }
 
-    let json: GitHubProjectsResponse;
+    let json: {
+      data?: {
+        user?: {
+          projectsV2: {
+            nodes: Array<{
+              id: string;
+              number: number;
+              title: string;
+              shortDescription: string | null;
+              closed: boolean;
+            }>;
+            pageInfo: { hasNextPage: boolean; endCursor: string | null };
+          };
+        };
+      };
+      errors?: { message?: string }[];
+    };
     try {
-      json = (await res.json()) as GitHubProjectsResponse;
+      json = await res.json();
     } catch {
       throw new Error("GitHub returned an unreadable GraphQL response");
     }
@@ -203,23 +200,23 @@ async function fetchGitHubProjects(
       throw new Error(`GitHub GraphQL errors: ${msg}`);
     }
 
-    const projects = json.data?.organization?.projects;
+    const projects = json.data?.user?.projectsV2;
     if (!projects) {
       throw new Error("Unexpected response structure from GitHub");
     }
 
     for (const node of projects.nodes) {
       allProjects.push({
-        githubId: parseInt(node.id, 10),
+        githubId: node.id,
         number: node.number,
         title: node.title,
-        description: node.description ?? undefined,
-        state: node.state,
+        description: node.shortDescription ?? undefined,
+        state: node.closed ? "closed" : "open",
       });
     }
 
     hasNextPage = projects.pageInfo.hasNextPage;
-    cursor = projects.pageInfo.endCursor;
+    cursor = projects.pageInfo.endCursor ?? null;
   }
 
   return allProjects;
@@ -290,7 +287,7 @@ export const upsertGitHubIssues = internalMutation({
 });
 
 const projectPayloadValidator = v.object({
-  githubId: v.number(),
+  githubId: v.string(),
   number: v.number(),
   title: v.string(),
   description: v.optional(v.string()),

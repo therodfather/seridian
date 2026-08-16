@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { SyncCard } from "./SyncCard";
-import { CheckSquare, FolderKanban } from "lucide-react";
+import { CheckSquare, FolderKanban, Kanban } from "lucide-react";
 
 interface GitHubSyncSectionProps {
   onSyncComplete?: () => void;
@@ -12,9 +12,13 @@ interface GitHubSyncSectionProps {
 
 export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
   const stats = useQuery(api.githubIngest.getGitHubStats);
+  const boardStats = useQuery(api.githubProjectsSync.getBoardStats);
   const syncAll = useAction(api.githubSync.syncAllGitHub);
+  const pullBoard = useAction(api.githubProjectsSync.pullFromGitHubProjects);
   const [syncing, setSyncing] = useState(false);
+  const [syncingBoard, setSyncingBoard] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [boardError, setBoardError] = useState<string | null>(null);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
@@ -28,6 +32,19 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
       setSyncing(false);
     }
   }, [syncAll, onSyncComplete]);
+
+  const handleSyncBoard = useCallback(async () => {
+    setSyncingBoard(true);
+    setBoardError(null);
+    try {
+      await pullBoard({});
+      onSyncComplete?.();
+    } catch (err) {
+      setBoardError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncingBoard(false);
+    }
+  }, [pullBoard, onSyncComplete]);
 
   if (!stats) {
     return (
@@ -117,6 +134,11 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
           {error}
         </div>
       )}
+      {boardError && (
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {boardError}
+        </div>
+      )}
 
       {!hasAnyData && !error && (
         <div className="rounded-xl border border-dashed border-white/[0.08] px-4 py-8 text-center">
@@ -127,7 +149,7 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <SyncCard
           title="Issues"
           icon={CheckSquare}
@@ -149,6 +171,16 @@ export function GitHubSyncSection({ onSyncComplete }: GitHubSyncSectionProps) {
           onSync={handleSync}
           connected={!!stats.lastProjectSync || stats.totalProjects > 0}
           details={projectDetails.length > 0 ? projectDetails : undefined}
+        />
+        <SyncCard
+          title="Kanban board"
+          icon={Kanban}
+          lastSynced={boardStats?.lastSyncedAt ?? null}
+          count={boardStats?.linkedIssues ?? 0}
+          countLabel="linked issues"
+          syncing={syncingBoard}
+          onSync={handleSyncBoard}
+          connected={!!boardStats?.linkedIssues}
         />
       </div>
     </div>

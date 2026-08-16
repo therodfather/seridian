@@ -12,6 +12,12 @@ import { useDashboardAuth } from "@/components/dashboard/DashboardGuard";
 import { ROUTES, settingsTabHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
+/** Guards mixed-branch HMR where `ROUTES.dashboard.ivr` can be missing. */
+const IVR_LIST_HREF =
+  typeof ROUTES.dashboard.ivr === "string"
+    ? ROUTES.dashboard.ivr
+    : "/dashboard/ivr";
+
 interface ChecklistItem {
   id: string;
   label: string;
@@ -48,13 +54,13 @@ export function SetupChecklist() {
     {
       id: "ivr",
       label: "Create an IVR / voice flow",
-      href: ROUTES.dashboard.ivr,
+      href: IVR_LIST_HREF,
       done: hasIvr,
     },
     {
       id: "publish",
       label: "Publish an IVR (needs transfer or hangup path)",
-      href: ROUTES.dashboard.ivr,
+      href: IVR_LIST_HREF,
       done: hasPublished,
     },
     {
@@ -122,7 +128,7 @@ export function SetupChecklist() {
         <span className="text-white/10" aria-hidden="true">
           ·
         </span>
-        <Link href={ROUTES.dashboard.ivr} className="text-cyan-400 hover:underline">
+        <Link href={IVR_LIST_HREF} className="text-cyan-400 hover:underline">
           Voice / IVR
         </Link>
       </div>

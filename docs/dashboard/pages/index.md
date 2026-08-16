@@ -12,6 +12,7 @@ Each page has a short doc: what it does, which files to edit, which flow it uses
 | Work (Issues) | [issues.md](./issues.md) |
 | Voice / IVR | [ivr.md](./ivr.md) |
 | Settings | [settings.md](./settings.md) |
+| Resend (email) | [resend.md](./resend.md) |
 
 ## Nested under Business (not in sidebar)
 

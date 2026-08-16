@@ -106,6 +106,7 @@ export const get = query({
       successMessage: v.string(),
       redirectUrl: v.optional(v.string()),
       notifyWebhookUrl: v.optional(v.string()),
+      notifyEmailTo: v.optional(v.string()),
       submissionCount: v.number(),
       updatedAt: v.number(),
       publishedAt: v.optional(v.number()),
@@ -128,6 +129,7 @@ export const get = query({
       successMessage: form.successMessage,
       redirectUrl: form.redirectUrl,
       notifyWebhookUrl: form.notifyWebhookUrl,
+      notifyEmailTo: form.notifyEmailTo,
       submissionCount: form.submissionCount,
       updatedAt: form.updatedAt,
       publishedAt: form.publishedAt,
@@ -208,6 +210,7 @@ export const saveDraft = mutation({
     successMessage: v.string(),
     redirectUrl: v.optional(v.string()),
     notifyWebhookUrl: v.optional(v.string()),
+    notifyEmailTo: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -231,6 +234,7 @@ export const saveDraft = mutation({
         args.successMessage.trim() || "Thanks — we received your response.",
       redirectUrl: args.redirectUrl?.trim() || undefined,
       notifyWebhookUrl: args.notifyWebhookUrl?.trim() || undefined,
+      notifyEmailTo: args.notifyEmailTo?.trim() || undefined,
       updatedAt: Date.now(),
     });
     return null;
@@ -438,7 +442,7 @@ async function persistSubmission(
   const workflows = await ctx.db.query("workflows").take(200);
   for (const w of workflows) {
     if (w.status !== "live") continue;
-    const t = w.draftGraph.trigger as any;
+    const t = w.draftGraph.trigger;
     if (t.type !== "form_submission") continue;
     const matches =
       (!t.formId && !t.formSlug) ||
@@ -447,9 +451,23 @@ async function persistSubmission(
     if (!matches) continue;
     await ctx.scheduler.runAfter(0, internal.workflows.beginRun, {
       workflowId: w._id,
-      trigger: "form_submission" as any,
+      trigger: "form_submission",
       triggerPayload: payloadJson,
     });
+  }
+
+  if (form.notifyEmailTo?.trim()) {
+    const to = form.notifyEmailTo
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (to.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.resend.sendEmail, {
+        to,
+        subject: `New submission: ${form.name}`,
+        text: `Form "${form.name}" (/f/${form.slug}) received a submission.\n\n${previewFromPayload(args.cleaned)}\n\n${payloadJson}`,
+      });
+    }
   }
 
   return id;

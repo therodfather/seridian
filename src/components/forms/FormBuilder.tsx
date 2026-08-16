@@ -74,6 +74,7 @@ export function FormBuilder({ formId }: { formId: string }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
   const [notifyWebhookUrl, setNotifyWebhookUrl] = useState("");
+  const [notifyEmailTo, setNotifyEmailTo] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -86,6 +87,7 @@ export function FormBuilder({ formId }: { formId: string }) {
     setSuccessMessage(form.successMessage);
     setRedirectUrl(form.redirectUrl ?? "");
     setNotifyWebhookUrl(form.notifyWebhookUrl ?? "");
+    setNotifyEmailTo(form.notifyEmailTo ?? "");
     setHydrated(true);
   }, [form, hydrated]);
 
@@ -111,6 +113,7 @@ export function FormBuilder({ formId }: { formId: string }) {
         successMessage,
         redirectUrl: redirectUrl || undefined,
         notifyWebhookUrl: notifyWebhookUrl || undefined,
+        notifyEmailTo: notifyEmailTo || undefined,
       });
       toastMutationSuccess("Draft saved");
     } catch (err) {
@@ -129,6 +132,7 @@ export function FormBuilder({ formId }: { formId: string }) {
         successMessage,
         redirectUrl: redirectUrl || undefined,
         notifyWebhookUrl: notifyWebhookUrl || undefined,
+        notifyEmailTo: notifyEmailTo || undefined,
       });
       const result = await publish.mutateAsync();
       toastMutationSuccess(`Published v${result.version}`);
@@ -483,6 +487,19 @@ export function FormBuilder({ formId }: { formId: string }) {
                 placeholder="https://…"
                 className="border-white/10 bg-[#0c1222]"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notify email (Resend, optional)</Label>
+              <Input
+                value={notifyEmailTo}
+                onChange={(e) => setNotifyEmailTo(e.target.value)}
+                placeholder="ops@yourdomain.com, founder@…"
+                className="border-white/10 bg-[#0c1222] text-xs"
+              />
+              <p className="text-[11px] text-slate-500">
+                Requires Settings → Integrations → Resend. Comma-separated
+                recipients get each submission.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Notify webhook URL (optional)</Label>

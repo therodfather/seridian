@@ -1,10 +1,11 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { CreditCard, ExternalLink, GitBranch, Globe, Landmark, PhoneCall } from "lucide-react";
+import { CreditCard, ExternalLink, GitBranch, Globe, Landmark, Mail, PhoneCall } from "lucide-react";
 import { Button } from "@bytecats/ui-kit";
 import { SecretConnectCard } from "./SecretConnectCard";
 import { TelnyxConnectCard } from "./TelnyxConnectCard";
+import { ResendConnectCard } from "./ResendConnectCard";
 import {
   GITHUB_ACTIONS,
   GITHUB_REPO,
@@ -193,6 +194,21 @@ export function PlatformConnections({
             currentUserId={currentUserId}
           />
         </div>
+      </WizardBoundary>
+
+      <div>
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <Mail className="h-4 w-4 text-cyan-400" />
+          Email
+        </h3>
+        <p className="text-xs text-slate-400 mt-1">
+          Resend powers form notifications, Workflow email steps, and future
+          product mail across Seridian.
+        </p>
+      </div>
+
+      <WizardBoundary>
+        <ResendConnectCard currentUserId={currentUserId} />
       </WizardBoundary>
 
       <div>

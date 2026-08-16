@@ -11,6 +11,7 @@ export type WorkflowStepType =
   | "create_issue"
   | "create_linear_issue"
   | "append_client_note"
+  | "send_email"
   | "delay"
   | "filter";
 
@@ -27,6 +28,9 @@ export type WorkflowStep = {
   issuePriority?: "urgent" | "high" | "medium" | "low" | "none";
   clientId?: string;
   noteText?: string;
+  emailTo?: string;
+  emailSubject?: string;
+  emailBody?: string;
   delaySeconds?: number;
   filterField?: string;
   filterEquals?: string;
@@ -47,6 +51,7 @@ export const STEP_TYPE_LABELS: Record<WorkflowStepType, string> = {
   create_issue: "Create dashboard issue",
   create_linear_issue: "Create Linear issue",
   append_client_note: "Append client note",
+  send_email: "Send email (Resend)",
   delay: "Delay",
   filter: "Filter",
 };
@@ -95,6 +100,15 @@ export function createBlankStep(type: WorkflowStepType): WorkflowStep {
       };
     case "append_client_note":
       return { id, type, label, clientId: "", noteText: "" };
+    case "send_email":
+      return {
+        id,
+        type,
+        label,
+        emailTo: "you@example.com",
+        emailSubject: "Workflow notification",
+        emailBody: "Trigger payload:\n{{trigger}}",
+      };
     case "delay":
       return { id, type, label, delaySeconds: 30 };
     case "filter":

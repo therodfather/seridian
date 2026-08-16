@@ -95,6 +95,7 @@ export function useSaveFormDraft(currentUserId: string, formId: string) {
       successMessage: string;
       redirectUrl?: string;
       notifyWebhookUrl?: string;
+      notifyEmailTo?: string;
     }) => saveFormDraftAction({ currentUserId, formId, ...input }),
     onSuccess: () => {
       void qc.invalidateQueries({

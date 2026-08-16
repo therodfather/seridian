@@ -63,29 +63,39 @@ describe("integrations setup", () => {
 
   test("defaults show github/netlify configured and linear/stripe/mercury/telnyx not configured", async () => {
     const statuses = await t.query(api.integrations.listStatuses, {});
-    expect(statuses.map((s) => s.provider)).toEqual([
+    expect(statuses.map((s: { provider: string }) => s.provider)).toEqual([
       "github",
       "netlify",
       "linear",
       "stripe",
       "mercury",
       "telnyx",
+      "resend",
     ]);
-    expect(statuses.find((s) => s.provider === "linear")?.status).toBe(
-      "not_configured",
-    );
-    expect(statuses.find((s) => s.provider === "stripe")?.status).toBe(
-      "not_configured",
-    );
-    expect(statuses.find((s) => s.provider === "mercury")?.status).toBe(
-      "not_configured",
-    );
-    expect(statuses.find((s) => s.provider === "telnyx")?.status).toBe(
-      "not_configured",
-    );
-    expect(statuses.find((s) => s.provider === "github")?.status).toBe(
-      "configured",
-    );
+    expect(
+      statuses.find((s: { provider: string }) => s.provider === "linear")
+        ?.status,
+    ).toBe("not_configured");
+    expect(
+      statuses.find((s: { provider: string }) => s.provider === "stripe")
+        ?.status,
+    ).toBe("not_configured");
+    expect(
+      statuses.find((s: { provider: string }) => s.provider === "mercury")
+        ?.status,
+    ).toBe("not_configured");
+    expect(
+      statuses.find((s: { provider: string }) => s.provider === "telnyx")
+        ?.status,
+    ).toBe("not_configured");
+    expect(
+      statuses.find((s: { provider: string }) => s.provider === "resend")
+        ?.status,
+    ).toBe("not_configured");
+    expect(
+      statuses.find((s: { provider: string }) => s.provider === "github")
+        ?.status,
+    ).toBe("configured");
   });
 
   test("admin multi-step: enable providers then complete Linear setup", async () => {

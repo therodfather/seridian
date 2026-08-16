@@ -11,9 +11,11 @@ import {
   SelectValue,
   Textarea,
 } from "@bytecats/ui-kit";
+import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import type { Doc } from "convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import {
   createBlankStep,
@@ -331,7 +333,7 @@ export function WorkflowStepEditor({
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(clients ?? []).map((c) => (
+                      {((clients as Array<Doc<"clients">> | undefined) ?? []).map((c: Doc<"clients">) => (
                         <SelectItem key={c._id} value={c._id}>
                           {c.company || c.name}
                         </SelectItem>
@@ -349,6 +351,52 @@ export function WorkflowStepEditor({
                     }
                     rows={3}
                   />
+                </div>
+              </>
+            )}
+
+            {selected.type === "send_email" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email-to">To (comma-separated)</Label>
+                  <Input
+                    id="email-to"
+                    value={selected.emailTo ?? ""}
+                    onChange={(e) =>
+                      handleUpdate({ ...selected, emailTo: e.target.value })
+                    }
+                    placeholder="ops@… — templates: {{trigger.email}}"
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email-subject">Subject</Label>
+                  <Input
+                    id="email-subject"
+                    value={selected.emailSubject ?? ""}
+                    onChange={(e) =>
+                      handleUpdate({
+                        ...selected,
+                        emailSubject: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email-body">Body</Label>
+                  <Textarea
+                    id="email-body"
+                    value={selected.emailBody ?? ""}
+                    onChange={(e) =>
+                      handleUpdate({ ...selected, emailBody: e.target.value })
+                    }
+                    rows={5}
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Uses Resend (Settings → Integrations). Templates like{" "}
+                    <code className="text-slate-400">{"{{trigger}}"}</code>.
+                  </p>
                 </div>
               </>
             )}

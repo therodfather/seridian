@@ -194,6 +194,7 @@ export default defineSchema({
       v.literal("stripe"),
       v.literal("mercury"),
       v.literal("telnyx"),
+      v.literal("resend"),
     ),
     enabled: v.boolean(),
     /** Honest setup state — not a live OAuth health check. */
@@ -298,6 +299,7 @@ export default defineSchema({
       v.literal("published"),
       v.literal("archived"),
     ),
+    clientId: v.optional(v.id("clients")),
     createdBy: v.string(),
     updatedBy: v.string(),
     createdAt: v.number(),
@@ -305,7 +307,8 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_phoneNumber", ["phoneNumber"])
-    .index("by_business", ["businessId"]),
+    .index("by_business", ["businessId"])
+    .index("by_clientId", ["clientId"]),
 
   /** Immutable published snapshots executed by the Telnyx webhook. */
   ivrFlowVersions: defineTable({
@@ -789,6 +792,7 @@ export default defineSchema({
             v.literal("create_issue"),
             v.literal("create_linear_issue"),
             v.literal("append_client_note"),
+            v.literal("send_email"),
             v.literal("delay"),
             v.literal("filter"),
           ),
@@ -818,6 +822,9 @@ export default defineSchema({
           ),
           clientId: v.optional(v.string()),
           noteText: v.optional(v.string()),
+          emailTo: v.optional(v.string()),
+          emailSubject: v.optional(v.string()),
+          emailBody: v.optional(v.string()),
           delaySeconds: v.optional(v.number()),
           filterField: v.optional(v.string()),
           filterEquals: v.optional(v.string()),
@@ -833,6 +840,7 @@ export default defineSchema({
       v.literal("live"),
       v.literal("archived"),
     ),
+    clientId: v.optional(v.id("clients")),
     lastRunAt: v.optional(v.number()),
     lastRunStatus: v.optional(
       v.union(
@@ -852,7 +860,8 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_webhookToken", ["webhookToken"])
-    .index("by_status_and_nextRunAt", ["status", "nextRunAt"]),
+    .index("by_status_and_nextRunAt", ["status", "nextRunAt"])
+    .index("by_clientId", ["clientId"]),
 
   /** Immutable published snapshots executed by webhook / schedule / Run now. */
   workflowVersions: defineTable({
@@ -878,6 +887,7 @@ export default defineSchema({
             v.literal("create_issue"),
             v.literal("create_linear_issue"),
             v.literal("append_client_note"),
+            v.literal("send_email"),
             v.literal("delay"),
             v.literal("filter"),
           ),
@@ -907,6 +917,9 @@ export default defineSchema({
           ),
           clientId: v.optional(v.string()),
           noteText: v.optional(v.string()),
+          emailTo: v.optional(v.string()),
+          emailSubject: v.optional(v.string()),
+          emailBody: v.optional(v.string()),
           delaySeconds: v.optional(v.number()),
           filterField: v.optional(v.string()),
           filterEquals: v.optional(v.string()),
@@ -1038,6 +1051,8 @@ export default defineSchema({
     redirectUrl: v.optional(v.string()),
     /** Optional webhook notified on each submission (Formspree-style). */
     notifyWebhookUrl: v.optional(v.string()),
+    /** Optional Resend notification recipient(s), comma-separated. */
+    notifyEmailTo: v.optional(v.string()),
     submissionCount: v.number(),
     createdBy: v.string(),
     createdAt: v.number(),
@@ -1068,5 +1083,389 @@ export default defineSchema({
     .index("by_form", ["formId"])
     .index("by_form_and_createdAt", ["formId", "createdAt"])
     .index("by_form_and_read", ["formId", "read"]),
+
+  /* =========================================================================
+   * GMB & Review Management & Analytics Suites (Clean-roomed from Reviewz)
+   * ========================================================================= */
+  gmbListings: defineTable({
+    clientId: v.optional(v.id("clients")),
+    locationName: v.string(),
+    placeId: v.string(), // Google Place ID
+    address: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    websiteUrl: v.optional(v.string()),
+    googleMapsUrl: v.optional(v.string()),
+    rating: v.optional(v.number()),
+    totalReviews: v.optional(v.number()),
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending"),
+      v.literal("disconnected"),
+      v.literal("suspended"),
+    ),
+    lastSyncedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_placeId", ["placeId"])
+    .index("by_status", ["status"]),
+
+  reviews: defineTable({
+    listingId: v.optional(v.id("gmbListings")),
+    clientId: v.optional(v.id("clients")),
+    source: v.union(
+      v.literal("google"),
+      v.literal("direct"),
+      v.literal("yelp"),
+      v.literal("facebook"),
+      v.literal("custom"),
+    ),
+    authorName: v.string(),
+    authorPhotoUrl: v.optional(v.string()),
+    rating: v.number(), // 1 - 5
+    comment: v.optional(v.string()),
+    reviewDate: v.number(),
+    reply: v.optional(v.string()),
+    repliedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("published"),
+      v.literal("flagged"),
+      v.literal("archived"),
+      v.literal("pending_reply"),
+    ),
+    sentiment: v.optional(
+      v.union(v.literal("positive"), v.literal("neutral"), v.literal("negative")),
+    ),
+    externalReviewId: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_listingId", ["listingId"])
+    .index("by_clientId", ["clientId"])
+    .index("by_rating", ["rating"])
+    .index("by_source", ["source"])
+    .index("by_status", ["status"])
+    .index("by_reviewDate", ["reviewDate"]),
+
+  reviewCampaigns: defineTable({
+    clientId: v.optional(v.id("clients")),
+    listingId: v.optional(v.id("gmbListings")),
+    name: v.string(),
+    type: v.union(
+      v.literal("sms"),
+      v.literal("email"),
+      v.literal("qr_code"),
+      v.literal("link"),
+    ),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("active"),
+      v.literal("paused"),
+      v.literal("completed"),
+    ),
+    targetAudience: v.optional(v.string()),
+    sentCount: v.number(),
+    openedCount: v.number(),
+    clickedCount: v.number(),
+    reviewsGenerated: v.number(),
+    templateId: v.optional(v.id("emailTemplates")),
+    customMessage: v.optional(v.string()),
+    scheduledAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_listingId", ["listingId"])
+    .index("by_status", ["status"]),
+
+  analyticsSuites: defineTable({
+    clientId: v.optional(v.id("clients")),
+    listingId: v.optional(v.id("gmbListings")),
+    metricType: v.union(
+      v.literal("views"),
+      v.literal("searches_direct"),
+      v.literal("searches_discovery"),
+      v.literal("actions_website"),
+      v.literal("actions_phone"),
+      v.literal("actions_directions"),
+      v.literal("reviews_count"),
+      v.literal("average_rating"),
+      v.literal("custom"),
+    ),
+    value: v.number(),
+    period: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("quarterly"),
+      v.literal("annual"),
+    ),
+    timestamp: v.number(),
+    metadata: v.optional(v.string()),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_listingId", ["listingId"])
+    .index("by_metricType_and_timestamp", ["metricType", "timestamp"])
+    .index("by_timestamp", ["timestamp"]),
+
+  analyticsProjects: defineTable({
+    clientId: v.optional(v.id("clients")),
+    name: v.string(),
+    category: v.union(
+      v.literal("seo"),
+      v.literal("reputation"),
+      v.literal("marketing"),
+      v.literal("website"),
+      v.literal("automation"),
+    ),
+    status: v.union(
+      v.literal("planned"),
+      v.literal("in_progress"),
+      v.literal("on_hold"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+    ),
+    targetKpi: v.optional(v.string()),
+    currentKpiValue: v.optional(v.number()),
+    targetKpiValue: v.optional(v.number()),
+    deadline: v.optional(v.number()),
+    healthScore: v.optional(v.number()), // 0-100
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_status", ["status"])
+    .index("by_category", ["category"]),
+
+  /* =========================================================================
+   * Ideas & Brainstorming Scratchpad
+   * ========================================================================= */
+  ideas: defineTable({
+    title: v.string(),
+    content: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("brainstorming"),
+      v.literal("validated"),
+      v.literal("in_development"),
+      v.literal("converted"),
+      v.literal("archived"),
+    ),
+    tags: v.array(v.string()),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+    color: v.optional(v.string()),
+    convertedToType: v.optional(
+      v.union(
+        v.literal("issue"),
+        v.literal("proposal"),
+        v.literal("deal"),
+        v.literal("contract"),
+        v.literal("workflow"),
+        v.literal("publicationPost"),
+        v.literal("custom"),
+      ),
+    ),
+    convertedToId: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    author: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_status", ["status"])
+    .index("by_priority", ["priority"])
+    .index("by_createdAt", ["createdAt"]),
+
+  /* =========================================================================
+   * Client Usage Metering & Invoicing System
+   * ========================================================================= */
+  clientUsageMeters: defineTable({
+    clientId: v.id("clients"),
+    meterType: v.union(
+      v.literal("workflow_executions"),
+      v.literal("ai_tokens"),
+      v.literal("voice_minutes"),
+      v.literal("sms_messages"),
+      v.literal("storage_bytes"),
+      v.literal("custom"),
+    ),
+    includedAllowance: v.number(), // Free units included per cycle
+    unitPriceCents: v.number(),   // Overage price per unit in integer cents
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.number(),
+    currentPeriodUsage: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_client_and_meterType", ["clientId", "meterType"]),
+
+  clientUsageRecords: defineTable({
+    clientId: v.id("clients"),
+    meterType: v.union(
+      v.literal("workflow_executions"),
+      v.literal("ai_tokens"),
+      v.literal("voice_minutes"),
+      v.literal("sms_messages"),
+      v.literal("storage_bytes"),
+      v.literal("custom"),
+    ),
+    quantity: v.number(),
+    timestamp: v.number(),
+    sourceId: v.optional(v.string()),
+    metadata: v.optional(v.string()),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_client_and_timestamp", ["clientId", "timestamp"])
+    .index("by_client_and_meterType", ["clientId", "meterType"]),
+
+  clientInvoices: defineTable({
+    clientId: v.id("clients"),
+    invoiceNumber: v.string(),
+    billingPeriodStart: v.number(),
+    billingPeriodEnd: v.number(),
+    baseFeeCents: v.number(),
+    meteredFeeCents: v.number(),
+    totalAmountCents: v.number(),
+    currency: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("issued"),
+      v.literal("paid"),
+      v.literal("overdue"),
+      v.literal("void"),
+      v.literal("uncollectible"),
+    ),
+    dueDate: v.number(),
+    paidAt: v.optional(v.number()),
+    lineItems: v.array(
+      v.object({
+        description: v.string(),
+        meterType: v.optional(v.string()),
+        quantity: v.number(),
+        unitPriceCents: v.number(),
+        totalCents: v.number(),
+      }),
+    ),
+    stripeInvoiceId: v.optional(v.string()),
+    stripePaymentIntentId: v.optional(v.string()),
+    pdfFileId: v.optional(v.id("files")),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clientId", ["clientId"])
+    .index("by_status", ["status"])
+    .index("by_invoiceNumber", ["invoiceNumber"])
+    .index("by_dueDate", ["dueDate"]),
+
+  /* =========================================================================
+   * In-House Ghost CMS / Newsletter Publishing Suite
+   * ========================================================================= */
+  publications: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    coverImageUrl: v.optional(v.string()),
+    primaryColor: v.optional(v.string()),
+    status: v.union(
+      v.literal("active"),
+      v.literal("paused"),
+      v.literal("archived"),
+    ),
+    customDomain: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_clientId", ["clientId"])
+    .index("by_status", ["status"]),
+
+  publicationPosts: defineTable({
+    publicationId: v.id("publications"),
+    title: v.string(),
+    slug: v.string(),
+    markdown: v.string(),
+    html: v.optional(v.string()),
+    excerpt: v.optional(v.string()),
+    featuredImage: v.optional(v.string()),
+    tags: v.array(v.string()),
+    author: v.string(),
+    authorAvatarUrl: v.optional(v.string()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("scheduled"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    publishedAt: v.optional(v.number()),
+    views: v.number(),
+    readingTimeMinutes: v.optional(v.number()),
+    canonicalUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_publication", ["publicationId"])
+    .index("by_publication_and_slug", ["publicationId", "slug"])
+    .index("by_publication_and_status", ["publicationId", "status"])
+    .index("by_publishedAt", ["publishedAt"]),
+
+  publicationSubscribers: defineTable({
+    publicationId: v.id("publications"),
+    email: v.string(),
+    name: v.optional(v.string()),
+    status: v.union(
+      v.literal("subscribed"),
+      v.literal("unsubscribed"),
+      v.literal("bounced"),
+      v.literal("pending"),
+    ),
+    subscribedAt: v.number(),
+    unsubscribedAt: v.optional(v.number()),
+    tags: v.array(v.string()),
+    openCount: v.number(),
+    clickCount: v.number(),
+  })
+    .index("by_publication", ["publicationId"])
+    .index("by_publication_and_email", ["publicationId", "email"])
+    .index("by_status", ["status"]),
+
+  newsletters: defineTable({
+    publicationId: v.id("publications"),
+    subject: v.string(),
+    previewText: v.optional(v.string()),
+    contentMarkdown: v.string(),
+    contentHtml: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("scheduled"),
+      v.literal("sending"),
+      v.literal("sent"),
+      v.literal("failed"),
+    ),
+    scheduledFor: v.optional(v.number()),
+    sentAt: v.optional(v.number()),
+    recipientsCount: v.number(),
+    deliveredCount: v.number(),
+    openedCount: v.number(),
+    clickedCount: v.number(),
+    openRate: v.optional(v.number()),
+    clickRate: v.optional(v.number()),
+    associatedPostId: v.optional(v.id("publicationPosts")),
+    author: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_publication", ["publicationId"])
+    .index("by_status", ["status"])
+    .index("by_sentAt", ["sentAt"]),
 });
 

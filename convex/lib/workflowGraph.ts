@@ -22,6 +22,7 @@ export const workflowStepTypeValidator = v.union(
   v.literal("create_issue"),
   v.literal("create_linear_issue"),
   v.literal("append_client_note"),
+  v.literal("send_email"),
   v.literal("delay"),
   v.literal("filter"),
 );
@@ -58,6 +59,10 @@ export const workflowStepValidator = v.object({
   /** Client note — store as string id; validated at execute time */
   clientId: v.optional(v.string()),
   noteText: v.optional(v.string()),
+  /** Resend email */
+  emailTo: v.optional(v.string()),
+  emailSubject: v.optional(v.string()),
+  emailBody: v.optional(v.string()),
   /** Delay */
   delaySeconds: v.optional(v.number()),
   /** Filter: continue only when trigger/context path equals value */
@@ -87,6 +92,7 @@ export type WorkflowStepType =
   | "create_issue"
   | "create_linear_issue"
   | "append_client_note"
+  | "send_email"
   | "delay"
   | "filter";
 
@@ -103,6 +109,9 @@ export type WorkflowStep = {
   issuePriority?: "urgent" | "high" | "medium" | "low" | "none";
   clientId?: string;
   noteText?: string;
+  emailTo?: string;
+  emailSubject?: string;
+  emailBody?: string;
   delaySeconds?: number;
   filterField?: string;
   filterEquals?: string;
@@ -123,6 +132,7 @@ export const STEP_TYPE_LABELS: Record<WorkflowStepType, string> = {
   create_issue: "Create dashboard issue",
   create_linear_issue: "Create Linear issue",
   append_client_note: "Append client note",
+  send_email: "Send email (Resend)",
   delay: "Delay",
   filter: "Filter",
 };
@@ -176,6 +186,15 @@ export function createBlankStep(type: WorkflowStepType): WorkflowStep {
         label,
         clientId: "",
         noteText: "",
+      };
+    case "send_email":
+      return {
+        id,
+        type,
+        label,
+        emailTo: "you@example.com",
+        emailSubject: "Workflow notification",
+        emailBody: "Trigger payload:\n{{trigger}}",
       };
     case "delay":
       return { id, type, label, delaySeconds: 30 };
@@ -245,6 +264,14 @@ export function assertPublishableGraph(graph: WorkflowGraph): void {
         }
         if (!step.noteText?.trim()) {
           throw new Error(`Client note step "${step.label}" needs note text`);
+        }
+        break;
+      case "send_email":
+        if (!step.emailTo?.trim()) {
+          throw new Error(`Email step "${step.label}" needs recipients`);
+        }
+        if (!step.emailSubject?.trim()) {
+          throw new Error(`Email step "${step.label}" needs a subject`);
         }
         break;
       case "delay": {

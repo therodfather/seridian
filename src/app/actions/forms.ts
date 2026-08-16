@@ -42,6 +42,7 @@ export type FormDetail = {
   successMessage: string;
   redirectUrl?: string;
   notifyWebhookUrl?: string;
+  notifyEmailTo?: string;
   submissionCount: number;
   updatedAt: number;
   publishedAt?: number;
@@ -101,6 +102,7 @@ export async function saveFormDraftAction(input: {
   successMessage: string;
   redirectUrl?: string;
   notifyWebhookUrl?: string;
+  notifyEmailTo?: string;
 }): Promise<null> {
   return await client().mutation(api.forms.saveDraft, {
     ...input,

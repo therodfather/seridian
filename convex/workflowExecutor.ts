@@ -277,6 +277,25 @@ export const executeFromStep = internalAction({
           output = "Appended client note";
           break;
         }
+        case "send_email": {
+          const toRaw = applyTemplate(step.emailTo ?? "", context);
+          const to = toRaw
+            .split(/[,;]/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const subject = applyTemplate(step.emailSubject ?? "", context);
+          const text = applyTemplate(step.emailBody ?? "", context);
+          const result = await ctx.runAction(internal.resend.sendEmail, {
+            to,
+            subject,
+            text,
+          });
+          if (!result.ok) {
+            throw new Error(result.error ?? "Resend send failed");
+          }
+          output = `Email sent${result.id ? ` (${result.id})` : ""}`;
+          break;
+        }
         default:
           throw new Error(`Unknown step type: ${step.type}`);
       }

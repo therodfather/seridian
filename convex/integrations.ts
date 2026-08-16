@@ -3,6 +3,7 @@ import type { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./lib/admin";
 import { TELNYX_API_KEY_NAME } from "./telnyx";
+import { RESEND_API_KEY_NAME } from "./resendHelpers";
 
 const providerValidator = v.union(
   v.literal("linear"),
@@ -11,6 +12,7 @@ const providerValidator = v.union(
   v.literal("stripe"),
   v.literal("mercury"),
   v.literal("telnyx"),
+  v.literal("resend"),
 );
 
 const statusValidator = v.union(
@@ -19,7 +21,14 @@ const statusValidator = v.union(
   v.literal("connected"),
 );
 
-type Provider = "linear" | "github" | "netlify" | "stripe" | "mercury" | "telnyx";
+type Provider =
+  | "linear"
+  | "github"
+  | "netlify"
+  | "stripe"
+  | "mercury"
+  | "telnyx"
+  | "resend";
 type IntegrationStatus = "not_configured" | "configured" | "connected";
 
 const LINEAR_SECRET_NAME = "LINEAR_API_KEY";
@@ -107,6 +116,7 @@ export const listStatuses = query({
       "stripe",
       "mercury",
       "telnyx",
+      "resend",
     ];
     const rows = [];
 
@@ -119,6 +129,7 @@ export const listStatuses = query({
       const requiresSecret =
         provider === "linear" ||
         provider === "telnyx" ||
+        provider === "resend" ||
         provider in SINGLE_SECRET_PROVIDERS;
 
       let hasSecret = false;
@@ -140,6 +151,12 @@ export const listStatuses = query({
         const secret = await ctx.db
           .query("secrets")
           .withIndex("by_name", (q) => q.eq("name", TELNYX_API_KEY_NAME))
+          .first();
+        hasSecret = Boolean(secret?.ciphertext);
+      } else if (provider === "resend") {
+        const secret = await ctx.db
+          .query("secrets")
+          .withIndex("by_name", (q) => q.eq("name", RESEND_API_KEY_NAME))
           .first();
         hasSecret = Boolean(secret?.ciphertext);
       }

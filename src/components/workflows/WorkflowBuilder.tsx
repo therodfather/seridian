@@ -290,7 +290,7 @@ export function WorkflowBuilder({ workflowId }: WorkflowBuilderProps) {
         </div>
       }
     >
-      <BackLink href={ROUTES.dashboard.workflows}>All workflows</BackLink>
+      <BackLink href={ROUTES.dashboard.workflows} label="All workflows" />
 
       <FlowSteps
         steps={FLOW_STEPS}

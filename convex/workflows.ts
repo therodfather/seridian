@@ -10,6 +10,7 @@ import {
 } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { requireAdmin } from "./lib/admin";
 import {
   assertPublishableGraph,
@@ -410,7 +411,7 @@ export const runNow = mutation({
     workflowId: v.id("workflows"),
   },
   returns: v.id("workflowRuns"),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Id<"workflowRuns">> => {
     requireAdmin(args.currentUserId);
     return await ctx.runMutation(internal.workflows.beginRun, {
       workflowId: args.workflowId,

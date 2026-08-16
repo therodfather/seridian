@@ -116,7 +116,6 @@ export function isPublishableGraph(graph: WorkflowGraph): boolean {
         const url = step.url?.trim() ?? "";
         if (!url || url === "https://") return false;
         try {
-          // eslint-disable-next-line no-new
           new URL(url);
         } catch {
           return false;

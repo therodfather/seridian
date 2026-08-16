@@ -61,7 +61,8 @@ export default function ArenaDashboardPage() {
     if (banks.length === 0 && !creatingBank && !bankId && !bankError) {
       void ensureBank();
     } else if (banks.length > 0 && !bankId) {
-      setBankId(banks[0]._id);
+      const companyBank = banks.find((b) => b.name === "Seridian Wiki");
+      setBankId((companyBank ?? banks[0])._id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot bank bootstrap
   }, [banks, creatingBank, bankId, bankError]);

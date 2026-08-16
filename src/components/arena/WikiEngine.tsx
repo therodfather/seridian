@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { Id } from "convex/_generated/dataModel";
-import { Button, Input, Textarea } from "@bytecats/ui-kit";
+import { Button } from "@bytecats/ui-kit";
 import { cn } from "@/lib/utils";
 import {
   addToQueue,
@@ -13,7 +13,14 @@ import {
   markSynced,
   shouldAutoSync,
 } from "@/lib/localWikiQueue";
-import type { WikiQueueItem, QueueStats } from "@/lib/localWikiQueue";
+import type { QueueStats } from "@/lib/localWikiQueue";
+import {
+  buildContextSummary,
+  buildGeneratePrompt,
+  generateFallbackContent,
+  generatePlan,
+  type PlanItem,
+} from "@/lib/wikiEngine";
 import {
   BookOpen,
   Loader2,
@@ -23,7 +30,6 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  Plus,
   RefreshCw,
   CheckCircle2,
   AlertCircle,
@@ -58,13 +64,6 @@ interface Improvement {
   timestamp: number;
 }
 
-interface PlanItem {
-  action: "create" | "update";
-  title: string;
-  reason: string;
-  pageId?: Id<"wikiPages">;
-}
-
 const STEP_LABELS: Record<PipelineStep, string> = {
   idle: "Idle",
   scan: "Scanning Data",
@@ -90,112 +89,6 @@ const STEP_ICONS: Record<PipelineStep, React.ReactNode> = {
 async function loadLLM() {
   const { pipeline } = await import("@huggingface/transformers");
   return await pipeline("text2text-generation", "Xenova/T5-small");
-}
-
-function buildContextSummary(
-  wikiPages: Array<{ title: string; content: string }> | undefined,
-  memories: Array<{ content: string; tags?: string[] }> | undefined,
-  clients: Array<{ name: string; company: string; industry?: string }> | undefined,
-) {
-  const pageTitles = wikiPages?.map((p) => p.title) ?? [];
-  const memorySnippets =
-    memories?.slice(0, 20).map((m) => m.content.slice(0, 120)) ?? [];
-  const clientNames = clients?.map((c) => `${c.name} (${c.company})`) ?? [];
-
-  return {
-    pageTitles,
-    memorySnippets,
-    clientNames,
-    pageContents: wikiPages?.map((p) => ({
-      title: p.title,
-      excerpt: p.content.slice(0, 300),
-    })) ?? [],
-  };
-}
-
-function generatePlan(
-  context: ReturnType<typeof buildContextSummary>,
-): PlanItem[] {
-  const plans: PlanItem[] = [];
-  const existingTitles = new Set(
-    context.pageTitles.map((t) => t.toLowerCase()),
-  );
-
-  const suggestedTopics = [
-    { title: "Company Overview", keyword: "company overview" },
-    { title: "Client Services", keyword: "client services" },
-    { title: "Technology Stack", keyword: "technology" },
-    { title: "Team & Roles", keyword: "team" },
-    { title: "Pricing & Plans", keyword: "pricing" },
-    { title: "Project Workflow", keyword: "workflow" },
-    { title: "Security & Compliance", keyword: "security" },
-    { title: "API Documentation", keyword: "api" },
-    { title: "Onboarding Guide", keyword: "onboarding" },
-    { title: "Troubleshooting", keyword: "troubleshoot" },
-  ];
-
-  for (const topic of suggestedTopics) {
-    const covered = context.pageTitles.some((t) =>
-      t.toLowerCase().includes(topic.keyword),
-    );
-    if (!covered) {
-      plans.push({
-        action: "create",
-        title: topic.title,
-        reason: `No wiki page covers "${topic.title}"`,
-      });
-    }
-  }
-
-  if (context.memorySnippets.length > 0 && context.pageContents.length < 5) {
-    plans.push({
-      action: "create",
-      title: "Memory Index",
-      reason: "Consolidate memory bank facts into a single reference page",
-    });
-  }
-
-  for (const page of context.pageContents) {
-    if (page.excerpt.length < 150) {
-      plans.push({
-        action: "update",
-        title: page.title,
-        reason: `"${page.title}" has thin content (${page.excerpt.length} chars)`,
-      });
-    }
-  }
-
-  return plans.slice(0, 10);
-}
-
-function buildGeneratePrompt(
-  planItem: PlanItem,
-  context: ReturnType<typeof buildContextSummary>,
-): string {
-  const existingPage = planItem.pageId
-    ? context.pageContents.find((p) => p.title === planItem.title)
-    : null;
-
-  let prompt = `You are a technical documentation writer for Seridian, a technology company.\n\n`;
-
-  if (existingPage) {
-    prompt += `EXISTING PAGE "${planItem.title}":\n${existingPage.excerpt}\n\n`;
-    prompt += `IMPROVEMENT REASON: ${planItem.reason}\n\n`;
-    prompt += `Rewrite this page with significantly more detail. Keep the same title.`;
-  } else {
-    prompt += `CREATE A NEW WIKI PAGE titled "${planItem.title}".\n`;
-    prompt += `REASON: ${planItem.reason}\n\n`;
-  }
-
-  if (context.clientNames.length > 0) {
-    prompt += `KNOWN CLIENTS: ${context.clientNames.slice(0, 10).join(", ")}\n`;
-  }
-  if (context.memorySnippets.length > 0) {
-    prompt += `COMPANY FACTS:\n${context.memorySnippets.slice(0, 5).join("\n")}\n`;
-  }
-
-  prompt += `\nWrite comprehensive markdown documentation. Include sections, bullet points, and clear explanations. Be specific and actionable.`;
-  return prompt;
 }
 
 export function WikiEngine({ bankId }: WikiEngineProps) {
@@ -347,10 +240,11 @@ export function WikiEngine({ bankId }: WikiEngineProps) {
           id: `${Date.now()}-${i}`,
           type: plan.action,
           title: plan.title,
-          before: plan.pageId
-            ? context.pageContents.find((p) => p.title === plan.title)
-                ?.excerpt
-            : undefined,
+          before:
+            plan.action === "update"
+              ? context.pageContents.find((p) => p.title === plan.title)
+                  ?.excerpt
+              : undefined,
           after: "",
           status: "running",
           timestamp: Date.now(),
@@ -771,79 +665,3 @@ function DataStat({
   );
 }
 
-function generateFallbackContent(
-  plan: PlanItem,
-  context: ReturnType<typeof buildContextSummary>,
-): string {
-  const clientList = context.clientNames.slice(0, 5).join(", ");
-  const memoryContext = context.memorySnippets.slice(0, 3).join("\n");
-
-  if (plan.title === "Company Overview") {
-    return `# Company Overview
-
-Seridian is a technology company providing innovative solutions.
-
-## Mission
-Delivering exceptional value through technology and partnership.
-
-## Services
-- Custom software development
-- Cloud infrastructure management
-- Digital transformation consulting
-
-## Key Clients
-${clientList || "Various enterprise clients"}
-
-## Company Facts
-${memoryContext || "Building cutting-edge technology solutions."}
-
----
-*Auto-generated by Wiki Engine — review and refine this content.*`;
-  }
-
-  if (plan.title === "Client Services") {
-    return `# Client Services
-
-Our service offerings are designed to meet diverse technology needs.
-
-## Core Services
-1. **Software Development** — Full-stack applications
-2. **Infrastructure** — Cloud, DevOps, and monitoring
-3. **Consulting** — Strategy and architecture
-
-## Client Portfolio
-${clientList || "A growing portfolio of satisfied clients"}
-
-## Engagement Model
-- Discovery and assessment
-- Solution design
-- Implementation
-- Ongoing support
-
-## Known Client Needs
-${memoryContext || "Clients seek reliable, scalable solutions."}
-
----
-*Auto-generated by Wiki Engine — review and refine this content.*`;
-  }
-
-  return `# ${plan.title}
-
-> ${plan.reason}
-
-## Overview
-This page provides comprehensive documentation for ${plan.title.toLowerCase()}.
-
-## Key Information
-${memoryContext ? `- ${memoryContext.split("\n").join("\n- ")}` : "- Information pending review."}
-
-## Related Clients
-${clientList || "- Client data pending integration."}
-
-## Additional Notes
-- Cross-reference with other wiki pages as needed
-- Update regularly as information evolves
-
----
-*Auto-generated by Wiki Engine — review and refine this content.*`;
-}

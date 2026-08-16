@@ -26,7 +26,7 @@ test.describe("settings integrations", { tag: "@smoke" }, () => {
     );
     await expect(page.getByRole("button", { name: /Start setup|Manage setup/i })).toBeVisible();
     await expect(page.getByText(/Not configured/i).first()).toBeVisible();
-    await expect(page.getByText("Linear sync (trial)")).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Linear \(trial\)/i })).toBeVisible();
     await expect(page.getByText(/^Live$/)).toHaveCount(0);
   });
 

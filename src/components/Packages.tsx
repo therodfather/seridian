@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@bytecats/ui-kit";
 
-type PackageCategory = "application" | "devops";
+type PackageCategory = "application" | "devops" | "automation";
 
 interface Package {
   category: PackageCategory;
@@ -112,6 +112,27 @@ const packages: Package[] = [
     pitch:
       "Stop deploying your application manually. We'll build a reliable CI/CD pipeline that takes your code from Git to production automatically.",
   },
+  {
+    category: "automation",
+    title: "n8n Automated Workflows",
+    price: "$2,999",
+    forWhom:
+      "Teams drowning in manual data entry and copy-paste between tools who want reliable automations without hiring a full-time integration developer.",
+    includes: [
+      "Workflow discovery & process mapping session",
+      "1–3 production-ready n8n workflows",
+      "App integrations (CRM, email, Slack, databases, webhooks, etc.)",
+      "Error handling & failure notifications",
+      "End-to-end testing & validation",
+      "Workflow documentation",
+      "One revision cycle",
+    ],
+    deliverable:
+      "Working automated workflows deployed to your self-hosted n8n instance or n8n Cloud",
+    timeline: "1–2 weeks",
+    pitch:
+      "Connect your tools without custom code — n8n integrates 400+ apps and replaces hours of manual work. Own your automations with self-hosting or n8n Cloud — no vendor lock-in like Zapier.",
+  },
 ];
 
 const categoryMeta: Record<
@@ -129,6 +150,12 @@ const categoryMeta: Record<
     description:
       "Assessments and automation to make your cloud infrastructure reliable and efficient.",
     badgeClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+  },
+  automation: {
+    label: "Automation",
+    description:
+      "Connect your business tools and eliminate repetitive work with production-ready workflow automations.",
+    badgeClass: "border-violet-500/20 bg-violet-500/10 text-violet-400",
   },
 };
 
@@ -269,7 +296,13 @@ export function Packages() {
         </div>
       </section>
 
-      <section className="bg-slate-925 py-24">
+      <section className="border-b border-white/5 bg-slate-925 py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <PackageSection category="automation" />
+        </div>
+      </section>
+
+      <section className="bg-slate-950 py-24">
         <div className="mx-auto max-w-6xl px-6">
           <div className="card-glow mx-auto max-w-2xl rounded-2xl border-white/5 bg-slate-850/50 p-10 text-center backdrop-blur-sm">
             <h2 className="font-display text-2xl font-bold text-white md:text-3xl">

@@ -69,7 +69,6 @@ export const create = mutation({
     ),
     clientId: v.optional(v.id("clients")),
     labels: v.array(v.string()),
-    linearId: v.optional(v.string()),
     assignee: v.optional(v.string()),
     dueDate: v.optional(v.string()),
   },
@@ -109,7 +108,6 @@ export const update = mutation({
     ),
     clientId: v.optional(v.union(v.id("clients"), v.null())),
     labels: v.optional(v.array(v.string())),
-    linearId: v.optional(v.string()),
     assignee: v.optional(v.string()),
     dueDate: v.optional(v.string()),
     order: v.optional(v.number()),
@@ -128,32 +126,6 @@ export const remove = mutation({
   args: { issueId: v.id("issues") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.issueId);
-  },
-});
-
-export const getLinearSyncStats = query({
-  args: {},
-  handler: async (ctx) => {
-    const issues = await ctx.db
-      .query("issues")
-      .filter((q) => q.neq(q.field("linearId"), undefined))
-      .collect();
-
-    const byStatus: Record<string, number> = {};
-    for (const issue of issues) {
-      byStatus[issue.status] = (byStatus[issue.status] ?? 0) + 1;
-    }
-
-    const syncMeta = await ctx.db
-      .query("syncMeta")
-      .withIndex("by_key", (q) => q.eq("key", "lastSyncTime"))
-      .unique();
-
-    return {
-      totalIssues: issues.length,
-      byStatus,
-      lastSyncTime: syncMeta ? parseInt(syncMeta.value, 10) : null,
-    };
   },
 });
 

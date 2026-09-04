@@ -46,16 +46,12 @@ export default defineSchema({
     ),
     clientId: v.optional(v.id("clients")),
     labels: v.array(v.string()),
-    linearId: v.optional(v.string()),
     identifier: v.optional(v.string()),
     assignee: v.optional(v.string()),
     dueDate: v.optional(v.string()),
     order: v.number(),
-    linearCreatedAt: v.optional(v.string()),
-    linearUpdatedAt: v.optional(v.string()),
     lastSyncedAt: v.optional(v.number()),
   })
-    .index("by_linearId", ["linearId"])
     .index("by_status", ["status"])
     .index("by_clientId", ["clientId"])
     .index("by_status_and_clientId", ["status", "clientId"]),
@@ -238,35 +234,4 @@ export default defineSchema({
     state: v.string(),
     syncedAt: v.number(),
   }).index("by_githubId", ["githubId"]),
-
-  linearTeams: defineTable({
-    linearId: v.string(),
-    name: v.string(),
-    key: v.string(),
-    syncedAt: v.number(),
-  }).index("by_linearId", ["linearId"]),
-
-  linearProjects: defineTable({
-    linearId: v.string(),
-    name: v.string(),
-    description: v.optional(v.string()),
-    state: v.string(),
-    teamId: v.optional(v.string()),
-    syncedAt: v.number(),
-  }).index("by_linearId", ["linearId"]),
-
-  linearLabels: defineTable({
-    linearId: v.string(),
-    name: v.string(),
-    color: v.optional(v.string()),
-    syncedAt: v.number(),
-  }).index("by_linearId", ["linearId"]),
-
-  linearUsers: defineTable({
-    linearId: v.string(),
-    name: v.string(),
-    email: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-    syncedAt: v.number(),
-  }).index("by_linearId", ["linearId"]),
 });

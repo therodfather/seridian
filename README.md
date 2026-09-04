@@ -70,84 +70,24 @@ import Image from "next/image";
 - **GitHub:** [https://github.com/therodfather/seridian](https://github.com/therodfather/seridian)
 - **Netlify dashboard:** [https://app.netlify.com/projects/seridian](https://app.netlify.com/projects/seridian)
 
-## Contact form (GitHub Projects)
+## Contact form (webhook → portal)
 
-Submissions from the contact form create a **GitHub issue** and add it to a **GitHub Projects v2** board via `POST /api/contact`. Tokens must **never** be committed — configure them as Netlify environment variables (and in `.env.local` for local dev).
+Submissions from the contact form are handled by a **server action** (`src/app/actions/contact.ts`) that validates input server-side, signs the payload with an HMAC-SHA256 signature, and POSTs it to the **contact webhook** hosted on the Seridian portal deploy (`app.seridian.dev`). The portal receives it and delivers the message by email via Resend. Email delivery, recipients, and the Resend integration live entirely in the private portal repo — nothing about them is stored here.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GITHUB_TOKEN` | Yes | Personal Access Token with Issues + Projects permissions |
-| `GITHUB_REPO` | Yes | Repository for new issues, e.g. `therodfather/seridian` |
-| `GITHUB_PROJECT_NUMBER` | One of* | Project number from the project URL (see below) |
-| `GITHUB_PROJECT_ID` | One of* | GraphQL node ID for the project (alternative to number) |
-| `GITHUB_PROJECT_STATUS` | Recommended | Status column label for new items (see below) |
+| `CONTACT_WEBHOOK_URL` | Yes | Webhook receiver URL, e.g. `https://app.seridian.dev/api/webhooks/seridian-contact` |
+| `CONTACT_WEBHOOK_SECRET` | Yes | Shared secret — must match the portal deploy exactly |
 
-\* Set either `GITHUB_PROJECT_NUMBER` or `GITHUB_PROJECT_ID`. If both are set, `GITHUB_PROJECT_ID` wins.
+Secrets must **never** be committed — configure them as Netlify environment variables (and in `.env.local` for local dev). The webhook only accepts requests bearing the shared secret (bearer token + fresh timestamped HMAC signature), so only this deploy can deliver submissions.
 
 Copy `.env.example` → `.env.local` for local development.
-
-### Getting a GitHub token
-
-#### Option A: Fine-grained PAT (recommended)
-
-1. GitHub → **Settings** → **Developer settings** → **Fine-grained personal access tokens**
-2. **Generate new token** with access to the target repository (`therodfather/seridian` or a dedicated intake repo)
-3. Permissions:
-   - **Issues: Read and write** — create issues
-   - **Projects: Read and write** — add issues to the project board
-   - **Metadata: Read** — included by default
-4. If the project belongs to an organization, the org may need to approve the token
-
-#### Option B: Classic PAT
-
-1. GitHub → **Settings** → **Developer settings** → **Personal access tokens (classic)**
-2. Scopes: `repo` (private repos) or `public_repo` (public only). For Projects v2, prefer a fine-grained token with **Projects** permission — classic `project` scope targets legacy projects.
-
-### Finding the project number
-
-- User project: `https://github.com/users/therodfather/projects/1` → project number is **`1`**
-- Org project: `https://github.com/orgs/ORG/projects/N` → project number is **`N`**
-
-To use the GraphQL node ID instead, run the `projectV2` query in [GitHub's GraphQL Explorer](https://docs.github.com/en/graphql/overview/explorer) and set `GITHUB_PROJECT_ID`.
-
-### Setting the Status column
-
-GitHub Projects v2 boards use a **Status** single-select field for columns. Adding an issue via the API does not set Status — items land in the first option (usually **Todo**) unless you configure `GITHUB_PROJECT_STATUS`.
-
-Set `GITHUB_PROJECT_STATUS` to the **exact label** shown on your project board for the target column (e.g. `Inbox`, `Triage`, `New leads`). Matching is case-insensitive.
-
-**How to find column names:** open your project board and read the Status column headers — use those labels exactly. To list options via GraphQL, run this in the [GraphQL Explorer](https://docs.github.com/en/graphql/overview/explorer) (replace `therodfather` and `1` if needed):
-
-```graphql
-query {
-  user(login: "therodfather") {
-    projectV2(number: 1) {
-      field(name: "Status") {
-        ... on ProjectV2SingleSelectField {
-          options { name }
-        }
-      }
-    }
-  }
-}
-```
-
-For org-owned projects, use `organization(login: "ORG")` instead of `user(login: "...")`.
 
 ### Netlify (production + deploy previews)
 
 ```bash
-npx netlify-cli env:set GITHUB_TOKEN "ghp_..." --context production --context deploy-preview
-npx netlify-cli env:set GITHUB_REPO "therodfather/seridian" --context production --context deploy-preview
-npx netlify-cli env:set GITHUB_PROJECT_NUMBER "1" --context production --context deploy-preview
-npx netlify-cli env:set GITHUB_PROJECT_STATUS "YourColumnName" --context production --context deploy-preview
-```
-
-Remove legacy Linear vars if they are still set:
-
-```bash
-npx netlify-cli env:unset LINEAR_API_KEY --context production --context deploy-preview
-npx netlify-cli env:unset LINEAR_TEAM_ID --context production --context deploy-preview
+npx netlify-cli env:set CONTACT_WEBHOOK_URL "https://app.seridian.dev/api/webhooks/seridian-contact" --context production --context deploy-preview
+npx netlify-cli env:set CONTACT_WEBHOOK_SECRET "<shared secret>" --context production --context deploy-preview
 ```
 
 Redeploy after changing env vars so they take effect on deployed builds.

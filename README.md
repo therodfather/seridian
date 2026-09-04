@@ -25,17 +25,22 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```
 src/
 ├── app/
+│   ├── actions/
+│   │   └── contact.ts   # "use server" action: validate + sign + forward
 │   ├── globals.css      # Global styles & theme
 │   ├── layout.tsx       # Root layout with metadata
 │   └── page.tsx         # Home page
-└── components/
-    ├── Header.tsx       # Navigation
-    ├── Hero.tsx         # Hero section
-    ├── Services.tsx     # Service offerings
-    ├── Approach.tsx     # Consulting approach
-    ├── Expertise.tsx    # Technology stack
-    ├── Contact.tsx      # Contact form & CTA
-    └── Footer.tsx       # Site footer
+├── components/
+│   ├── Header.tsx       # Navigation
+│   ├── Hero.tsx         # Hero section
+│   ├── Services.tsx     # Service offerings
+│   ├── Approach.tsx     # Consulting approach
+│   ├── Expertise.tsx    # Technology stack
+│   ├── Contact.tsx      # Contact form & CTA
+│   └── Footer.tsx       # Site footer
+└── lib/
+    └── utils.ts         # cn() re-exported from @bytecats/ui-kit
+docs/                    # Guides — indexed below
 ```
 
 ## Assets
@@ -64,33 +69,34 @@ import Image from "next/image";
 - Adjust technology tags in `src/components/Expertise.tsx`
 - Edit site metadata in `src/app/layout.tsx`
 
+## Documentation
+
+| Doc | Contents |
+|-----|----------|
+| [docs/README.md](docs/README.md) | Docs index + repo boundaries (what's public vs private) |
+| [docs/contact-form.md](docs/contact-form.md) | Contact pipeline end-to-end: request lifecycle, HMAC signing scheme, lander setup (Netlify + local), worked curl/stub-receiver examples, secret rotation, troubleshooting |
+| [docs/deploy.md](docs/deploy.md) | Netlify deploy flow, env-var inventory, post-deploy verification |
+
 ## Links
 
 - **Live site:** [https://seridian.netlify.app](https://seridian.netlify.app)
 - **GitHub:** [https://github.com/therodfather/seridian](https://github.com/therodfather/seridian)
 - **Netlify dashboard:** [https://app.netlify.com/projects/seridian](https://app.netlify.com/projects/seridian)
 
-## Contact form (webhook → portal)
+## Contact form (quick reference)
 
-Submissions from the contact form are handled by a **server action** (`src/app/actions/contact.ts`) that validates input server-side, signs the payload with an HMAC-SHA256 signature, and POSTs it to the **contact webhook** hosted on the Seridian portal deploy (`app.seridian.dev`). The portal receives it and delivers the message by email via Resend. Email delivery, recipients, and the Resend integration live entirely in the private portal repo — nothing about them is stored here.
+The form is a server action (`src/app/actions/contact.ts`) that validates input,
+HMAC-signs it, and forwards it to the contact webhook on the portal deploy
+(`app.seridian.dev`), which delivers the message by email. Delivery and recipients
+are handled entirely in the private portal repo — nothing private is stored here.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `CONTACT_WEBHOOK_URL` | Yes | Webhook receiver URL, e.g. `https://app.seridian.dev/api/webhooks/seridian-contact` |
-| `CONTACT_WEBHOOK_SECRET` | Yes | Shared secret — must match the portal deploy exactly |
+| `CONTACT_WEBHOOK_URL` | Yes | Receiver URL, e.g. `https://app.seridian.dev/api/webhooks/seridian-contact` |
+| `CONTACT_WEBHOOK_SECRET` | Yes | Shared secret — must match the portal deploy exactly; set via Netlify env only |
 
-Secrets must **never** be committed — configure them as Netlify environment variables (and in `.env.local` for local dev). The webhook only accepts requests bearing the shared secret (bearer token + fresh timestamped HMAC signature), so only this deploy can deliver submissions.
-
-Copy `.env.example` → `.env.local` for local development.
-
-### Netlify (production + deploy previews)
-
-```bash
-npx netlify-cli env:set CONTACT_WEBHOOK_URL "https://app.seridian.dev/api/webhooks/seridian-contact" --context production --context deploy-preview
-npx netlify-cli env:set CONTACT_WEBHOOK_SECRET "<shared secret>" --context production --context deploy-preview
-```
-
-Redeploy after changing env vars so they take effect on deployed builds.
+Full setup, local testing examples, rotation, and troubleshooting:
+**[docs/contact-form.md](docs/contact-form.md)**
 
 ## Deploy
 
@@ -99,3 +105,5 @@ Pushes to `main` automatically deploy via Netlify. To deploy manually from the C
 ```bash
 bunx netlify deploy --prod --build
 ```
+
+Env vars, verification steps, and pipeline details: **[docs/deploy.md](docs/deploy.md)**

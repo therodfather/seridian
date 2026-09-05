@@ -10,6 +10,7 @@ import {
   Separator,
   Textarea,
 } from "@bytecats/ui-kit";
+import { submitContact } from "@/app/actions/contact";
 
 type Toast = { msg: string; type: "success" | "error" } | null;
 
@@ -59,31 +60,19 @@ export function Contact() {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), message: message.trim(), company }),
+      const data = await submitContact({
+        name: name.trim(),
+        email: email.trim(),
+        message: message.trim(),
+        company,
       });
-      const data = (await res.json()) as {
-        ok: boolean;
-        error?: string;
-        identifier?: string;
-      };
 
-      if (!res.ok || !data.ok) {
-        const msg =
-          res.status === 429
-            ? data.error ?? "Rate limited — try again in a minute"
-            : data.error ?? "Failed to send — please try again";
-        setToast({ msg, type: "error" });
+      if (!data.ok) {
+        setToast({ msg: data.error ?? "Failed to send — please try again", type: "error" });
         return;
       }
 
-      if (data.identifier) {
-        setToast({ msg: `Message sent — Issue ${data.identifier} created`, type: "success" });
-      } else {
-        setToast({ msg: "Message sent — thank you!", type: "success" });
-      }
+      setToast({ msg: "Message sent — thank you!", type: "success" });
       setName("");
       setEmail("");
       setMessage("");
@@ -142,8 +131,8 @@ export function Contact() {
                   </a>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Prefer email? Use the link above or submit the form — every submission creates a GitHub issue on our{" "}
-                  <span className="text-slate-300">project board</span>.
+                  Prefer email? Use the link above or submit the form — every submission goes
+                  straight to our inbox.
                 </p>
               </div>
             </div>

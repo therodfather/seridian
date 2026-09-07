@@ -85,6 +85,12 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
     submittedAt: new Date().toISOString(),
   });
 
+  // Guard against oversized bodies before signing/sending. Uses TextEncoder
+  // (not Buffer) so the byte count works on any runtime.
+  if (new TextEncoder().encode(payload).length > MAX_BODY_BYTES) {
+    return { ok: false, error: "Message too long (max 2000 characters)" };
+  }
+
   // HMAC over `${timestamp}.${body}` — the receiver rejects anything that is not
   // signed with the shared secret (held only in both Netlify deploys' env).
   const timestamp = Date.now().toString();

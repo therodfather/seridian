@@ -1,20 +1,8 @@
 name: Feature request
-description: Propose a feature — create Linear SER issue first, then mirror here
+description: Propose a feature
 title: "feat: "
 labels: ["type:feature"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        **Tandem workflow:** `linear_create_issue` (official MCP `https://mcp.linear.app/mcp`) → `gh issue create` with `Linear: SER-X` in body. See `docs/LINEAR_GITHUB_WORKFLOW.md`.
-  - type: input
-    id: linear
-    attributes:
-      label: Linear issue
-      description: Linear identifier and URL
-      placeholder: "SER-13 — https://linear.app/seridian/issue/SER-13"
-    validations:
-      required: true
   - type: dropdown
     id: track
     attributes:
@@ -56,4 +44,4 @@ body:
     id: notes
     attributes:
       label: Notes / links
-      description: Figma, Linear project (Seridian Site Refresh), related PRs
+      description: Figma, related PRs

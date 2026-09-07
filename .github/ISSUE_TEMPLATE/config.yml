@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Linear (Seridian team SER)
-    url: https://linear.app/seridian
-    about: Create / triage issues in Linear first (official MCP https://mcp.linear.app/mcp), then mirror to GitHub via gh issue create — see docs/LINEAR_GITHUB_WORKFLOW.md
   - name: Discussions / Questions
     url: https://github.com/4cecoder/seridian/discussions
     about: Ask a question or propose an idea before filing an issue

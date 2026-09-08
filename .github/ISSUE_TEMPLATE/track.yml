@@ -1,12 +1,8 @@
 name: Track task
-description: Frontend track task (ui-kit / webgl / fonts / workflow) — tandem Linear + GitHub
+description: Frontend track task (ui-kit / webgl / fonts / workflow)
 title: "track: "
 labels: ["track:workflow"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Use this for the 3 frontend tracks + workflow. **Must** be 1:1 with a Linear issue. See `docs/LINEAR_GITHUB_WORKFLOW.md`.
   - type: dropdown
     id: track
     attributes:
@@ -21,26 +17,18 @@ body:
     validations:
       required: true
   - type: input
-    id: linear
-    attributes:
-      label: Linear issue link
-      description: Official Linear issue via MCP https://mcp.linear.app/mcp — format Linear: SER-X + URL
-      placeholder: "Linear: SER-4 — https://linear.app/seridian/issue/SER-4"
-    validations:
-      required: true
-  - type: input
     id: worktree
     attributes:
       label: Worktree path
       description: "Exact worktree path (git worktree add <path> -b <branch> main)"
-      placeholder: "/tmp/wt-linear (feature/linear-sync)"
+      placeholder: "/tmp/wt-feature-xyz (feature/xyz)"
     validations:
       required: true
   - type: input
     id: branch
     attributes:
       label: Branch
-      placeholder: "feature/linear-sync"
+      placeholder: "feature/xyz"
     validations:
       required: false
   - type: textarea
@@ -53,20 +41,16 @@ body:
         - [ ] `bun run lint` passes
         - [ ] `bunx tsc --noEmit` passes
         - [ ] `bun run build` succeeds (Next.js)
-        - [ ] PR body contains `Linear: SER-X` and `Fixes #Y`
-        - [ ] Linear issue links back via `GitHub: #Y` + worktree path
       value: |
         - [ ] `bun install --frozen-lockfile` clean
         - [ ] `bun run lint` passes
         - [ ] `bunx tsc --noEmit` passes
         - [ ] `bun run build` succeeds
-        - [ ] PR body contains `Linear: SER-X` and `Fixes #Y`
-        - [ ] Linear issue description has `GitHub: #Y` and worktree path
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope / notes
-      description: What files / components will be touched? Link to Linear project Seridian Site Refresh
-      placeholder: "e.g. .github/workflows/linear-sync.yml, docs/LINEAR_GITHUB_WORKFLOW.md — see Linear project Seridian Site Refresh"
+      description: What files / components will be touched?
+      placeholder: "e.g. src/components/WebGLHero.tsx"

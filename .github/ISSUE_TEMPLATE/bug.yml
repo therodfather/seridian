@@ -1,20 +1,8 @@
 name: Bug report
-description: Report a bug — will be mirrored to Linear SER issue
+description: Report a bug
 title: "fix: "
 labels: ["type:bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        **Tandem:** Create a Linear issue first (`linear_create_issue` via official MCP `https://mcp.linear.app/mcp`), then mirror here. This issue must link to `Linear: SER-X`.
-  - type: input
-    id: linear
-    attributes:
-      label: Linear issue
-      description: Linear identifier (e.g. SER-12) and URL
-      placeholder: "SER-12 — https://linear.app/seridian/issue/SER-12"
-    validations:
-      required: true
   - type: dropdown
     id: track
     attributes:

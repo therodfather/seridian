@@ -30,6 +30,6 @@ The lander never stores email recipients, API keys, or portal internals — only
 webhook URL (public) and the shared secret (Netlify env only, blank in
 `.env.example`).
 
-> Note: `.github/` still contains Linear-era references (PR/issue templates,
-> `linear-sync.yml`, `labels.yml`) left from the deprecated Linear integration.
-> They are inert scaffolding; cleaning them up is tracked as follow-up work.
+> Note: the Linear ↔ GitHub bidirectional sync is deprecated and removed
+> (`linear-sync.yml` deleted, PR/issue templates de-linked from Linear).
+> GitHub issues are the tracker for this repo.

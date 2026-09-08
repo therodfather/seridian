@@ -84,19 +84,26 @@ void main(){
 }
 `;
 
+// Returns null (never throws) so callers can fall back to 2D silently.
+// gl.createShader() returns null when the context is lost — this is expected
+// under React StrictMode double-effects (cleanup runs, then the effect
+// re-runs against the same canvas), Turbopack Fast Refresh remounts, GPU
+// process restarts, or when the browser blocks WebGL. Throwing here surfaces
+// as a noisy `Error: shader create failed` in dev; returning null lets the
+// hero degrade to the static 2D canvas without console noise.
 function compile(
   gl: WebGL2RenderingContext,
   type: number,
   src: string
-): WebGLShader {
+): WebGLShader | null {
+  if (typeof gl.isContextLost === "function" && gl.isContextLost()) return null;
   const s = gl.createShader(type);
-  if (!s) throw new Error("shader create failed");
+  if (!s) return null;
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(s) ?? "compile error";
     gl.deleteShader(s);
-    throw new Error(log);
+    return null;
   }
   return s;
 }
@@ -105,20 +112,20 @@ function createProgram(
   gl: WebGL2RenderingContext,
   vsSrc: string,
   fsSrc: string
-): WebGLProgram {
+): WebGLProgram | null {
+  if (typeof gl.isContextLost === "function" && gl.isContextLost()) return null;
   const vs = compile(gl, gl.VERTEX_SHADER, vsSrc);
-  let fs: WebGLShader;
-  try {
-    fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
-  } catch (err) {
+  if (!vs) return null;
+  const fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
+  if (!fs) {
     gl.deleteShader(vs);
-    throw err;
+    return null;
   }
   const prog = gl.createProgram();
   if (!prog) {
     gl.deleteShader(vs);
     gl.deleteShader(fs);
-    throw new Error("program create failed");
+    return null;
   }
   gl.attachShader(prog, vs);
   gl.attachShader(prog, fs);
@@ -126,9 +133,8 @@ function createProgram(
   gl.deleteShader(vs);
   gl.deleteShader(fs);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    const log = gl.getProgramInfoLog(prog) ?? "link error";
     gl.deleteProgram(prog);
-    throw new Error(log);
+    return null;
   }
   return prog;
 }
@@ -229,69 +235,105 @@ export default function WebGLHero() {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
+    // StrictMode / Turbopack double-effect guard: if cleanup ran, this
+    // instance is stale and must not touch GL or start a RAF loop.
+    let cancelled = false;
 
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
     let reducedMotion = mql.matches;
 
     // fade in
     requestAnimationFrame(() => {
-      canvas.style.opacity = "1";
+      if (!cancelled) canvas.style.opacity = "1";
     });
 
-    // try WebGL2
+    // WebGL2 only — our shaders are `#version 300 es` (GLSL ES 3.00) and
+    // cannot compile on a WebGL1 context, so a missing WebGL2 context means
+    // silent 2D fallback (no warning, no throw).
     let gl: WebGL2RenderingContext | null = null;
     try {
+      // Opaque fullscreen triangle: no alpha blending needed, no depth /
+      // stencil, no MSAA (no geometry edges to smooth), no preserved buffer.
+      // desynchronized + failIfMajorPerformanceCaveat:false keeps software
+      // GL (SwiftShader) from rejecting context creation outright.
       gl = canvas.getContext("webgl2", {
         alpha: false,
-        antialias: true,
+        antialias: false,
         depth: false,
         stencil: false,
         premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
         powerPreference: "high-performance",
+        failIfMajorPerformanceCaveat: false,
+        desynchronized: true,
       }) as WebGL2RenderingContext | null;
     } catch {
       gl = null;
     }
 
-    if (!gl) {
+    // Null GL, dead context (StrictMode remount reuses the same canvas whose
+    // backing context the previous cleanup may have been holding), or a
+    // non-WebGL2 context → degrade silently to the static 2D canvas.
+    if (
+      !gl ||
+      (typeof WebGL2RenderingContext !== "undefined" &&
+        !(gl instanceof WebGL2RenderingContext)) ||
+      (typeof gl.isContextLost === "function" && gl.isContextLost())
+    ) {
       return setupFallback2D(wrap, canvas, mql);
     }
 
-    // WebGL path
-    let program: WebGLProgram | null = null;
-    try {
-      program = createProgram(gl, VERTEX_SRC, FRAGMENT_SRC);
-    } catch (err) {
-      // shader error → fallback
-      console.warn("[WebGLHero] shader error, using 2d fallback", err);
+    // Shader / link failure (including createShader returning null after a
+    // context loss) → silent 2D fallback. Deliberately no console.warn/error:
+    // logging the Error object prints a noisy stack + triggers dev overlays
+    // for an expected, fully-handled degradation path.
+    // Narrow to a const alias so closures keep the non-null type.
+    const glCtx: WebGL2RenderingContext = gl;
+    const program = createProgram(glCtx, VERTEX_SRC, FRAGMENT_SRC);
+    if (!program || cancelled) {
+      if (program && !glCtx.isContextLost()) glCtx.deleteProgram(program);
       return setupFallback2D(wrap, canvas, mql);
     }
 
-    gl.useProgram(program);
+    glCtx.useProgram(program);
 
     // fullscreen triangle (covers viewport, no index buffer)
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+    const posBuf = glCtx.createBuffer();
+    if (!posBuf) {
+      glCtx.deleteProgram(program);
+      return setupFallback2D(wrap, canvas, mql);
+    }
+    glCtx.bindBuffer(glCtx.ARRAY_BUFFER, posBuf);
     // 3 verts: (-1,-1) (3,-1) (-1,3)
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
+    glCtx.bufferData(
+      glCtx.ARRAY_BUFFER,
       new Float32Array([-1, -1, 3, -1, -1, 3]),
-      gl.STATIC_DRAW
+      glCtx.STATIC_DRAW
     );
-    const aPos = gl.getAttribLocation(program, "a_pos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    const aPos = glCtx.getAttribLocation(program, "a_pos");
+    // getAttribLocation returns -1 when the compiler optimizes the attribute
+    // out — enabling index -1 raises GL errors, so guard it.
+    if (aPos !== -1) {
+      glCtx.enableVertexAttribArray(aPos);
+      glCtx.vertexAttribPointer(aPos, 2, glCtx.FLOAT, false, 0, 0);
+    }
 
-    const uTime = gl.getUniformLocation(program, "u_time");
-    const uRes = gl.getUniformLocation(program, "u_res");
+    const uTime = glCtx.getUniformLocation(program, "u_time");
+    const uRes = glCtx.getUniformLocation(program, "u_res");
 
     let raf = 0;
     let start = performance.now();
     let elapsed = 0;
     let hidden = document.hidden;
     let ro: ResizeObserver | null = null;
+    // Fallback cleanup if we have to degrade mid-flight (context lost).
+    let fallbackCleanup: (() => void) | null = null;
+
+    const isDead = () =>
+      cancelled || (typeof glCtx.isContextLost === "function" && glCtx.isContextLost());
 
     const resize = () => {
+      if (isDead()) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = wrap.getBoundingClientRect();
       const w = Math.max(1, Math.round(rect.width * dpr));
@@ -300,16 +342,16 @@ export default function WebGLHero() {
         canvas.width = w;
         canvas.height = h;
         // css size via parent; canvas style already 100%
-        gl!.viewport(0, 0, w, h);
-        gl!.uniform2f(uRes, w, h);
+        glCtx.viewport(0, 0, w, h);
+        glCtx.uniform2f(uRes, w, h);
       } else {
         // ensure viewport matches even if not resized
-        gl!.viewport(0, 0, canvas.width, canvas.height);
+        glCtx.viewport(0, 0, canvas.width, canvas.height);
       }
       // draw once after resize so no blank frame
       if (reducedMotion || hidden) {
-        gl!.uniform1f(uTime, elapsed);
-        gl!.drawArrays(gl.TRIANGLES, 0, 3);
+        glCtx.uniform1f(uTime, elapsed);
+        glCtx.drawArrays(glCtx.TRIANGLES, 0, 3);
       }
     };
 
@@ -317,16 +359,19 @@ export default function WebGLHero() {
     resize();
 
     const render = (now: number) => {
-      if (reducedMotion || hidden) return;
+      if (cancelled || reducedMotion || hidden) return;
+      if (typeof glCtx.isContextLost === "function" && glCtx.isContextLost()) return;
       elapsed = (now - start) * 0.001;
-      gl!.uniform1f(uTime, elapsed);
-      gl!.drawArrays(gl.TRIANGLES, 0, 3);
+      glCtx.uniform1f(uTime, elapsed);
+      glCtx.drawArrays(glCtx.TRIANGLES, 0, 3);
       raf = requestAnimationFrame(render);
     };
 
     // draw static first frame
-    gl.uniform1f(uTime, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (!isDead()) {
+      glCtx.uniform1f(uTime, 0);
+      glCtx.drawArrays(glCtx.TRIANGLES, 0, 3);
+    }
 
     if (!reducedMotion && !hidden) {
       start = performance.now();
@@ -341,6 +386,7 @@ export default function WebGLHero() {
     window.addEventListener("resize", resize);
 
     const onVisibility = () => {
+      if (cancelled || isDead()) return;
       hidden = document.hidden;
       if (hidden) {
         if (raf) cancelAnimationFrame(raf);
@@ -353,19 +399,20 @@ export default function WebGLHero() {
         raf = requestAnimationFrame(render);
       } else {
         // reduced-motion: just redraw static
-        gl!.uniform1f(uTime, elapsed);
-        gl!.drawArrays(gl.TRIANGLES, 0, 3);
+        glCtx.uniform1f(uTime, elapsed);
+        glCtx.drawArrays(glCtx.TRIANGLES, 0, 3);
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     const onReduceChange = (e: MediaQueryListEvent) => {
+      if (cancelled || isDead()) return;
       reducedMotion = e.matches;
       if (reducedMotion) {
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
-        gl!.uniform1f(uTime, elapsed);
-        gl!.drawArrays(gl.TRIANGLES, 0, 3);
+        glCtx.uniform1f(uTime, elapsed);
+        glCtx.drawArrays(glCtx.TRIANGLES, 0, 3);
       } else if (!document.hidden) {
         start = performance.now() - elapsed * 1000;
         raf = requestAnimationFrame(render);
@@ -373,16 +420,42 @@ export default function WebGLHero() {
     };
     mql.addEventListener?.("change", onReduceChange);
 
+    // GPU process restart / tab suspension kills the backing context. The
+    // next createShader/draw would no-op and return null — degrade to the
+    // static 2D canvas instead of freezing on a black hero.
+    const onContextLost = (e: Event) => {
+      // preventDefault keeps the context restorable, but we don't wait for
+      // restore — the 2D fallback is visually equivalent for this hero.
+      e.preventDefault();
+      if (cancelled || fallbackCleanup) return;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      fallbackCleanup = setupFallback2D(wrap, canvas, mql);
+    };
+    canvas.addEventListener("webglcontextlost", onContextLost);
+
     return () => {
+      cancelled = true;
       if (raf) cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVisibility);
       mql.removeEventListener?.("change", onReduceChange);
       window.removeEventListener("resize", resize);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
       if (ro) ro.disconnect();
-      if (program) gl?.deleteProgram(program);
-      if (posBuf) gl?.deleteBuffer(posBuf);
-      // release GPU context explicitly on unmount
-      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      if (fallbackCleanup) fallbackCleanup();
+      // NOTE: intentionally no WEBGL_lose_context.loseContext() here.
+      // The canvas owns a single backing GL context; killing it in cleanup
+      // poisons React StrictMode's second effect mount (and Turbopack Fast
+      // Refresh remounts) — getContext("webgl2") returns the same *lost*
+      // context, createShader returns null, and dev logs a noisy
+      // "shader create failed". Deleting our program/buffer is sufficient;
+      // the browser reclaims the context when the canvas unmounts.
+      if (typeof glCtx.isContextLost !== "function" || !glCtx.isContextLost()) {
+        glCtx.deleteProgram(program);
+        glCtx.deleteBuffer(posBuf);
+        glCtx.bindBuffer(glCtx.ARRAY_BUFFER, null);
+        glCtx.useProgram(null);
+      }
     };
   }, []);
 

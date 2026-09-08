@@ -45,6 +45,14 @@ All notable changes to the Seridian project are documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- `android-chat/` and `kmp-chat/` chat clients + tests (portal-owned).
+- `.github/workflows/android.yml` Android CI.
+- `.github/workflows/linear-sync.yml` Linear ↔ GitHub bidirectional sync.
+
+### Changed
+- Deprecated bidirectional Linear ↔ GitHub sync — GitHub issues are the tracker (issue/PR templates de-linked from Linear).
+
 ### Planned
 - `feature/ui-kit` — shadcn/ui integration refinements.
 - `feature/webgl` — WebGL enhancements.

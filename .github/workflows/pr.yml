@@ -39,6 +39,9 @@ jobs:
         run: bun run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          # Public Convex URL required at build time (prerender instantiates ConvexReactClient).
+          # Same value as Netlify production env; NEXT_PUBLIC_ vars ship to the browser anyway.
+          NEXT_PUBLIC_CONVEX_URL: https://fine-flamingo-162.convex.cloud
 
       - name: Upload build artifact
         if: always()
@@ -62,6 +65,7 @@ jobs:
       - run: bunx next build --profile 2>&1 | tee build.log || true
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_CONVEX_URL: https://fine-flamingo-162.convex.cloud
       - name: Comment bundle hint
         uses: marocchino/sticky-pull-request-comment@v2
         if: github.event_name == 'pull_request'

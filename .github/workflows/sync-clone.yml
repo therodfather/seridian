@@ -1,0 +1,45 @@
+name: Sync Clone (upstream mirror)
+
+# One-way mirror: 4cecoder/seridian-clone parrots therodfather/seridian main.
+# This file lives in the upstream repo so the fork inherits it, but the job
+# runs ONLY in the clone (see `if:` guard). Day-to-day work happens in
+# therodfather/seridian — we never touch the clone manually.
+#
+# Bootstrap (one time, after this file merges to upstream main):
+#   gh api repos/4cecoder/seridian-clone/merge-upstream -f branch=main
+# After that the schedule keeps the clone in sync hands-off.
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-clone
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.repository == '4cecoder/seridian-clone'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror upstream main
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/therodfather/seridian.git || true
+          git fetch upstream main
+          git checkout main
+          if git diff --quiet HEAD upstream/main; then
+            echo "Clone already in sync with upstream main."
+            exit 0
+          fi
+          git reset --hard upstream/main
+          git push origin main

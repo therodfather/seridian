@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "@bytecats/ui-kit/styles.css";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { AppCatalog } from "@/components/AppCatalog";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@bytecats/ui-kit";
 
@@ -64,6 +65,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Header />
         <main>{children}</main>
+        <AppCatalog />
         <Footer />
         <Toaster position="top-right" richColors />
       </body>

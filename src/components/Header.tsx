@@ -8,6 +8,7 @@ import { Button } from "@bytecats/ui-kit";
 const navLinks = [
   { href: "/#services", label: "Services" },
   { href: "/packages", label: "Packages" },
+  { href: "#apps", label: "Apps" },
   { href: "/#approach", label: "Approach" },
   { href: "/#expertise", label: "Expertise" },
   { href: "/#contact", label: "Contact" },

@@ -1,0 +1,78 @@
+name: Sync Clone (upstream mirror)
+
+# One-way mirror: 4cecoder/seridian-clone parrots therodfather/seridian main.
+# This file lives in the upstream repo so the fork inherits it. Day-to-day
+# work happens in therodfather/seridian — we never touch the clone manually.
+#
+# Three sync paths (first one that fires wins, the rest no-op):
+#   1. INSTANT — push to upstream main auto-mirrors to the clone (job
+#      `push-mirror`). Needs the CLONE_MIRROR_TOKEN secret (a PAT with
+#      contents:write on 4cecoder/seridian-clone):
+#        gh secret set CLONE_MIRROR_TOKEN -R therodfather/seridian
+#   2. BUTTON — Actions tab → "Sync Clone (upstream mirror)" → Run workflow
+#      (same `push-mirror` job when run in upstream; `pull-mirror` when run
+#      in the clone).
+#   3. SAFETY NET — every 6h the clone pulls upstream itself (job
+#      `pull-mirror`, uses the built-in GITHUB_TOKEN, no secret needed).
+#
+# A raw GitHub webhook would need a listener server — Actions covers it.
+#
+# Bootstrap (one time, after this file merges to upstream main):
+#   gh api repos/4cecoder/seridian-clone/merge-upstream -f branch=main
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-clone
+  cancel-in-progress: false
+
+jobs:
+  # Runs in UPSTREAM right after main advances (or via the Run button).
+  # Pushes upstream main to the clone. Fast-forward only — fails loudly if
+  # the clone ever diverged (the pull-mirror job below heals it).
+  push-mirror:
+    if: github.repository == 'therodfather/seridian' && secrets.CLONE_MIRROR_TOKEN != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push main to clone (instant mirror)
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git push "https://x-access-token:${{ secrets.CLONE_MIRROR_TOKEN }}@github.com/4cecoder/seridian-clone.git" origin/main:main
+
+  # Runs in the CLONE on schedule (or via its Run button). Pulls upstream
+  # main and resets to it — heals any divergence. Needs no secret.
+  pull-mirror:
+    if: github.repository == '4cecoder/seridian-clone'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror upstream main
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/therodfather/seridian.git || true
+          git fetch upstream main
+          git checkout main
+          if git diff --quiet HEAD upstream/main; then
+            echo "Clone already in sync with upstream main."
+            exit 0
+          fi
+          git reset --hard upstream/main
+          git push origin main

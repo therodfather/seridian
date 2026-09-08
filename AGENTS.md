@@ -7,7 +7,7 @@
 
 ## Commands
 - `bun run dev` — Next.js dev server (http://localhost:3000)
-- `bun run lint` — `next lint` per `package.json` / CI (`next/core-web-vitals` + `next/typescript`). **Broken on Next 16**: `next lint` was removed in Next 16 (`Invalid project directory: .../lint`); `bunx eslint` also errors (circular config in `@eslint/eslintrc` compat). PR gate still runs `bun run lint` so it will fail on this branch until migrated via `npx @next/codemod@canary next-lint-to-eslint-cli .`.
+- `bun run lint` — `eslint .` (ESLint flat config with `eslint-config-next` `core-web-vitals` + `typescript`; migrated via `next-lint-to-eslint-cli` for Next 16).
 - `bunx tsc --noEmit` — typecheck (no `typecheck` script; CI runs `bunx tsc --noEmit` directly)
 - `bun run build` — production build (`next build`); `NEXT_TELEMETRY_DISABLED=1` in CI
 - No test framework configured — no `test` script.
@@ -38,7 +38,7 @@
 - `.env.example`: `LINEAR_API_KEY` (or fallback `LINEAR_ACCESS_TOKEN`), `LINEAR_TEAM_ID=SER`, optional `LINEAR_PROJECT_ID` / `LINEAR_LABEL_IDS`. Not yet wired — future Linear wiring for the contact form. Do not commit `.env`. (Bidirectional Linear ↔ GitHub sync is deprecated — GitHub issues are the tracker.)
 
 ## Branches
-- Active feature branches off `main`: `feature/ui-kit`, `feature/webgl`, `feature/fonts`, `feature/shadcn`, `chore/next-16` (this branch — Next 15→16 bump). Check `git branch -a` before creating new work.
+- Active branches: `main` + `chore/lander-cleanup` (this branch — lander cleanup). Check `git branch -a` before creating new work.
 
 ## Gotchas
 - `next lint` was removed in Next 16 — see Commands/lint note above; do not paper over by switching CI to `bunx eslint` without fixing compat.

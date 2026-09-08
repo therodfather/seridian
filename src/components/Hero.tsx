@@ -16,10 +16,10 @@ export function Hero() {
         <div className="mx-auto max-w-3xl text-center">
           <Badge
             variant="outline"
-            className="mb-6 inline-flex items-center gap-2 rounded-full border-seridian-500/20 bg-seridian-500/5 px-4 py-1.5 text-seridian-300"
+            className="mb-6 inline-flex max-w-full items-center gap-2 whitespace-normal rounded-2xl border-seridian-500/20 bg-seridian-500/5 px-3 py-1.5 text-center text-seridian-300 sm:rounded-full sm:px-4"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-seridian-400" />
-            <span className="font-mono text-sm text-seridian-300">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-seridian-400" />
+            <span className="break-words font-mono text-xs leading-relaxed text-seridian-300 sm:text-sm">
               Cloud Infrastructure & Application Development
             </span>
           </Badge>

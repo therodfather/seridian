@@ -1,5 +1,29 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery, QueryCtx, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+import { Doc } from "./_generated/dataModel";
+
+export async function requireUser(
+  ctx: QueryCtx | MutationCtx,
+  pubkey: string,
+): Promise<Doc<"users">> {
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_pubkey", (q) => q.eq("pubkey", pubkey))
+    .first();
+
+  if (!user) {
+    throw new Error("Unauthorized: unknown user");
+  }
+
+  return user;
+}
+
+export const testRequireUser = internalQuery({
+  args: { pubkey: v.string() },
+  handler: async (ctx, args) => {
+    return await requireUser(ctx, args.pubkey);
+  },
+});
 
 export const list = query({
   args: {},
